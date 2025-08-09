@@ -1,6 +1,7 @@
 import { useGoogleAuth } from '@/hooks/useGoogleAuthTemp';
 import React from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 
 interface GoogleSignInButtonProps {
   onSuccess?: () => void;
@@ -17,6 +18,8 @@ export function GoogleSignInButton({
     try {
       await signIn();
       onSuccess?.();
+      // Navigate to channels tab after successful login
+      router.replace('/(tabs)/channels');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Google 로그인에 실패했습니다.';
       onError?.(errorMessage);

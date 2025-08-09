@@ -27,6 +27,24 @@ interface GoogleVerifyResponse {
   };
 }
 
+interface YoutubeChannel {
+  channelId: string;
+  handle: string;
+  title: string;
+  description?: string;
+  thumbnail?: string;
+  subscriberCount?: string;
+  videoCount?: string;
+}
+
+interface UserChannel {
+  id: number;
+  userId: number;
+  channelId: string;
+  createdAt: string;
+  youtubeChannel: YoutubeChannel;
+}
+
 class ApiService {
   private async makeRequest<T>(
     endpoint: string,
@@ -129,6 +147,28 @@ class ApiService {
   async healthCheck(): Promise<ApiResponse<{ message: string }>> {
     return this.makeRequest<{ message: string }>('/api/user', {
       method: 'GET',
+    });
+  }
+
+  // Channel-related endpoints
+  async searchChannels(query: string): Promise<ApiResponse<YoutubeChannel[]>> {
+    return this.makeRequest<YoutubeChannel[]>(`/api/channels/search?query=${encodeURIComponent(query)}`);
+  }
+
+  async getUserChannels(userId: number): Promise<ApiResponse<UserChannel[]>> {
+    return this.makeRequest<UserChannel[]>(`/api/channels/${userId}`);
+  }
+
+  async addChannel(channelId: string): Promise<ApiResponse<{ success: boolean; message?: string }>> {
+    return this.makeRequest<{ success: boolean; message?: string }>('/api/channels', {
+      method: 'POST',
+      body: JSON.stringify({ channelId }),
+    });
+  }
+
+  async deleteChannel(channelId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.makeRequest<{ success: boolean }>(`/api/channels/${channelId}`, {
+      method: 'DELETE',
     });
   }
 }

@@ -1,25 +1,57 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { YoutubeChannelSearch } from '@/components/YoutubeChannelSearch';
+import { ChannelList } from '@/components/ChannelList';
+import { useUserChannels } from '@/hooks/useUserChannels';
 
 export default function ChannelsScreen() {
+  const { refreshChannels, channelCount, isLoading } = useUserChannels();
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const handleRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshChannels();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshChannels]);
+
+  const handleChannelAdded = React.useCallback(() => {
+    // Refresh the channel list when a new channel is added
+    refreshChannels();
+  }, [refreshChannels]);
+
+  const handleChannelDeleted = React.useCallback(() => {
+    // Channel list is automatically updated by the hook
+    // This callback is for any additional actions if needed
+  }, []);
+
+  console.log('📺 ChannelsScreen rendering with channelCount:', channelCount);
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.content}>
-          <Text style={styles.title}>YouTube 채널</Text>
-          <Text style={styles.subtitle}>
-            모니터링할 YouTube 채널을 관리하세요
-          </Text>
-          
-          {/* TODO: Implement channel list and management */}
-          <View style={styles.card}>
-            <Text style={styles.cardText}>
-              채널 관리 기능이 곧 추가됩니다
-            </Text>
-          </View>
+      <View style={styles.content}>
+        {/* Fixed search header */}
+        <View style={styles.searchSection}>
+          <YoutubeChannelSearch
+            onChannelAdded={handleChannelAdded}
+            maxChannels={3}
+            currentChannelCount={channelCount}
+          />
         </View>
-      </ScrollView>
+
+        {/* Scrollable channel list */}
+        <View style={styles.listSection}>
+          <ChannelList 
+            onChannelDeleted={handleChannelDeleted} 
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            }
+          />
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -29,34 +61,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
   content: {
-    paddingVertical: 24,
+    flex: 1,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginBottom: 24,
-  },
-  card: {
+  searchSection: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    minHeight: 200, // Ensure minimum height for visibility
   },
-  cardText: {
-    color: '#111827',
-    textAlign: 'center',
-    fontSize: 16,
+  listSection: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
   },
 });
