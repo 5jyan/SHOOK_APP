@@ -44,6 +44,13 @@ export default function TabLayout() {
             }}
           />
           <Tabs.Screen
+            name="summaries"
+            options={{
+              title: '요약',
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="doc.text.fill" color={color} />,
+            }}
+          />
+          <Tabs.Screen
             name="settings"
             options={{
               title: '설정',

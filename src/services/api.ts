@@ -1,5 +1,4 @@
 // API service for backend communication
-import { secureStorage } from '@/lib/storage';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -52,6 +51,19 @@ interface UserChannel {
   youtubeChannel: YoutubeChannel;
 }
 
+// Video summary types based on backend API spec
+interface VideoSummary {
+  videoId: string;
+  channelId: string;
+  title: string;
+  publishedAt: string; // ISO 8601 date-time
+  summary: string | null;
+  transcript: string | null;
+  processed: boolean;
+  errorMessage: string | null;
+  createdAt: string; // ISO 8601 date-time
+}
+
 class ApiService {
   private async makeRequest<T>(
     endpoint: string,
@@ -60,7 +72,9 @@ class ApiService {
     try {
       const url = `${API_BASE_URL}${endpoint}`;
       
+      console.log(`📡 API_BASE_URL: ${API_BASE_URL}`);
       console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
+      console.log(`📡 Request options:`, JSON.stringify(options, null, 2));
       
       const response = await fetch(url, {
         headers: {
@@ -129,7 +143,7 @@ class ApiService {
 
   // Temporary mobile login endpoint
   async mobileLogin(email: string, username: string): Promise<ApiResponse<GoogleVerifyResponse>> {
-    return this.makeRequest<GoogleVerifyResponse>('/api/auth/mobile/login', {
+    return this.makeRequest<GoogleVerifyResponse>('/api/auth/google/mobile/login', {
       method: 'POST',
       body: JSON.stringify({ email, username }),
     });
@@ -204,9 +218,24 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  // Video summaries endpoint - GET /api/videos
+  async getVideoSummaries(): Promise<ApiResponse<VideoSummary[]>> {
+    console.log('🚀 [apiService.getVideoSummaries] Starting API call to /api/videos');
+    console.log('🚀 [apiService.getVideoSummaries] API_BASE_URL:', API_BASE_URL);
+    console.log('🚀 [apiService.getVideoSummaries] Full URL will be:', `${API_BASE_URL}/api/videos`);
+    
+    const result = await this.makeRequest<VideoSummary[]>('/api/videos');
+    
+    console.log('🚀 [apiService.getVideoSummaries] API call completed, result:', result);
+    return result;
+  }
 }
 
 export const apiService = new ApiService();
 
+console.log('🚀 [API Service] ApiService instance created');
+console.log('🚀 [API Service] API_BASE_URL at module level:', API_BASE_URL);
+
 // Export interfaces for use in other files
-export type { YoutubeChannel, UserChannel, BackendUserChannel };
+export type { BackendUserChannel, UserChannel, VideoSummary, YoutubeChannel };
