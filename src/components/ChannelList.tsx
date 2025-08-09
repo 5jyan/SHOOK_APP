@@ -9,25 +9,8 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useUserChannels } from '@/hooks/useUserChannels';
-
-interface YoutubeChannel {
-  channelId: string;
-  handle: string;
-  title: string;
-  description?: string;
-  thumbnail?: string;
-  subscriberCount?: string;
-  videoCount?: string;
-}
-
-interface UserChannel {
-  id: number;
-  userId: number;
-  channelId: string;
-  createdAt: string;
-  youtubeChannel: YoutubeChannel;
-}
+import { useChannels } from '@/contexts/ChannelsContext';
+import { type YoutubeChannel, type UserChannel } from '@/services/api';
 
 interface ChannelListProps {
   onChannelDeleted?: (channelId: string) => void;
@@ -35,8 +18,20 @@ interface ChannelListProps {
 }
 
 export function ChannelList({ onChannelDeleted, refreshControl }: ChannelListProps) {
-  const { channels, isLoading, error, deleteChannel, refreshChannels, channelCount } = useUserChannels();
+  const { channels, isLoading, error, deleteChannel, refreshChannels, channelCount } = useChannels();
   const [deletingChannelId, setDeletingChannelId] = React.useState<string | null>(null);
+
+  console.log('📺 [ChannelList] rendering:', {
+    channelCount,
+    channelsLength: channels.length,
+    isLoading,
+    error,
+    channelsPreview: channels.slice(0, 2).map(ch => ({ 
+      id: ch?.id, 
+      title: ch?.youtubeChannel?.title,
+      channelId: ch?.youtubeChannel?.channelId 
+    }))
+  });
 
   const handleDeleteChannel = (channel: UserChannel) => {
     Alert.alert(

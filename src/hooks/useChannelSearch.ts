@@ -1,15 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { apiService } from '@/services/api';
-
-interface YoutubeChannel {
-  channelId: string;
-  handle: string;
-  title: string;
-  description?: string;
-  thumbnail?: string;
-  subscriberCount?: string;
-  videoCount?: string;
-}
+import { apiService, type YoutubeChannel } from '@/services/api';
 
 export function useChannelSearch() {
   const [searchTerm, setSearchTerm] = useState('');

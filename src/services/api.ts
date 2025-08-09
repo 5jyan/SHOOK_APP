@@ -37,6 +37,13 @@ interface YoutubeChannel {
   videoCount?: string;
 }
 
+// Backend actually returns this structure
+interface BackendUserChannel extends YoutubeChannel {
+  subscriptionId: number;
+  subscribedAt: string | null;
+}
+
+// Our app's expected structure
 interface UserChannel {
   id: number;
   userId: number;
@@ -156,7 +163,33 @@ class ApiService {
   }
 
   async getUserChannels(userId: number): Promise<ApiResponse<UserChannel[]>> {
-    return this.makeRequest<UserChannel[]>(`/api/channels/${userId}`);
+    const response = await this.makeRequest<BackendUserChannel[]>(`/api/channels/${userId}`);
+    
+    if (response.success && response.data) {
+      // Transform backend data structure to what our app expects
+      const transformedChannels: UserChannel[] = response.data.map((backendChannel) => ({
+        id: backendChannel.subscriptionId,
+        userId: userId,
+        channelId: backendChannel.channelId,
+        createdAt: backendChannel.subscribedAt || new Date().toISOString(),
+        youtubeChannel: {
+          channelId: backendChannel.channelId,
+          handle: backendChannel.handle,
+          title: backendChannel.title,
+          description: backendChannel.description,
+          thumbnail: backendChannel.thumbnail,
+          subscriberCount: backendChannel.subscriberCount,
+          videoCount: backendChannel.videoCount,
+        }
+      }));
+      
+      return {
+        ...response,
+        data: transformedChannels
+      };
+    }
+    
+    return response as ApiResponse<UserChannel[]>;
   }
 
   async addChannel(channelId: string): Promise<ApiResponse<{ success: boolean; message?: string }>> {
@@ -174,3 +207,6 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
+
+// Export interfaces for use in other files
+export type { YoutubeChannel, UserChannel, BackendUserChannel };

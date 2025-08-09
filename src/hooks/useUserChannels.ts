@@ -1,24 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiService } from '@/services/api';
+import { apiService, type YoutubeChannel, type UserChannel } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
-
-interface YoutubeChannel {
-  channelId: string;
-  handle: string;
-  title: string;
-  description?: string;
-  thumbnail?: string;
-  subscriberCount?: string;
-  videoCount?: string;
-}
-
-interface UserChannel {
-  id: number;
-  userId: number;
-  channelId: string;
-  createdAt: string;
-  youtubeChannel: YoutubeChannel;
-}
 
 export function useUserChannels() {
   const { user } = useAuthStore();
@@ -48,7 +30,9 @@ export function useUserChannels() {
       
       if (response.success) {
         console.log('✅ User channels fetched successfully:', response.data);
+        console.log('📊 Channel data structure:', JSON.stringify(response.data, null, 2));
         setChannels(response.data || []);
+        console.log('📋 Channels set to state, count:', response.data?.length || 0);
       } else {
         console.error('❌ Failed to fetch user channels:', response.error);
         setError(response.error || 'Failed to fetch channels');

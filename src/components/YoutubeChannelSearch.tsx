@@ -11,31 +11,23 @@ import {
   Alert
 } from 'react-native';
 import { useChannelSearch } from '@/hooks/useChannelSearch';
-import { apiService } from '@/services/api';
+import { useChannels } from '@/contexts/ChannelsContext';
+import { apiService, type YoutubeChannel } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
-
-interface YoutubeChannel {
-  channelId: string;
-  handle: string;
-  title: string;
-  description?: string;
-  thumbnail?: string;
-  subscriberCount?: string;
-  videoCount?: string;
-}
 
 interface YoutubeChannelSearchProps {
   onChannelAdded?: (channel: YoutubeChannel) => void;
   maxChannels?: number;
-  currentChannelCount?: number;
+  currentChannelCount?: number; // Keep for backward compatibility, but use internal count
 }
 
 export function YoutubeChannelSearch({
   onChannelAdded,
   maxChannels = 3,
-  currentChannelCount = 0,
+  currentChannelCount = 0, // Fallback value
 }: YoutubeChannelSearchProps) {
   const { user } = useAuthStore();
+  const { channelCount, refreshChannels } = useChannels(); // Get real-time channel count from shared context
   const {
     searchTerm,
     setSearchTerm,
@@ -49,7 +41,9 @@ export function YoutubeChannelSearch({
 
   const [isAddingChannel, setIsAddingChannel] = React.useState(false);
 
-  const isChannelLimitReached = currentChannelCount >= maxChannels;
+  // Use the real-time channel count from the context instead of the prop
+  const currentCount = channelCount || currentChannelCount;
+  const isChannelLimitReached = currentCount >= maxChannels;
 
   const handleAddChannel = async (channel?: YoutubeChannel) => {
     const channelToAdd = channel || selectedChannel;
@@ -76,14 +70,20 @@ export function YoutubeChannelSearch({
       const response = await apiService.addChannel(channelToAdd.channelId);
       
       if (response.success) {
-        console.log('✅ Channel added successfully');
+        console.log('✅ [YoutubeChannelSearch] Channel added successfully:', response.data);
         Alert.alert(
           '채널 추가 성공', 
           `"${channelToAdd.title}" 채널이 성공적으로 추가되었습니다.`,
-          [{ text: '확인', onPress: () => {} }]
+          [{ 
+            text: '확인', 
+            onPress: () => {
+              console.log('🔄 [YoutubeChannelSearch] Alert confirmed, refreshing shared channels');
+              refreshChannels();
+              onChannelAdded?.(channelToAdd);
+            } 
+          }]
         );
         clearSearch();
-        onChannelAdded?.(channelToAdd);
       } else {
         console.error('❌ Failed to add channel:', response.error);
         Alert.alert('채널 추가 실패', response.error || '채널 추가 중 오류가 발생했습니다.');
@@ -155,12 +155,14 @@ export function YoutubeChannelSearch({
     </Pressable>
   );
 
-  console.log('🔍 YoutubeChannelSearch rendering:', { 
+  console.log('🔍 [YoutubeChannelSearch] rendering:', { 
     searchTerm, 
     channelsCount: channels.length, 
     isLoading, 
     error,
-    currentChannelCount,
+    channelCountFromContext: channelCount,
+    channelCountFromProp: currentChannelCount,
+    currentCount,
     isChannelLimitReached 
   });
 
@@ -173,7 +175,7 @@ export function YoutubeChannelSearch({
         </Text>
         {isChannelLimitReached && (
           <Text style={styles.warningText}>
-            채널 추가 최대 개수({maxChannels}개)에 도달했습니다.
+            채널 추가 최대 개수({maxChannels}개)에 도달했습니다. (현재: {currentCount}개)
           </Text>
         )}
       </View>

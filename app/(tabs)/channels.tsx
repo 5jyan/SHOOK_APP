@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { YoutubeChannelSearch } from '@/components/YoutubeChannelSearch';
 import { ChannelList } from '@/components/ChannelList';
-import { useUserChannels } from '@/hooks/useUserChannels';
+import { useChannels } from '@/contexts/ChannelsContext';
 
 export default function ChannelsScreen() {
-  const { refreshChannels, channelCount, isLoading } = useUserChannels();
+  const { refreshChannels, channelCount, isLoading } = useChannels();
   const [refreshing, setRefreshing] = React.useState(false);
 
   const handleRefresh = React.useCallback(async () => {
@@ -20,15 +20,17 @@ export default function ChannelsScreen() {
 
   const handleChannelAdded = React.useCallback(() => {
     // Refresh the channel list when a new channel is added
+    console.log('🔄 [ChannelsScreen] handleChannelAdded called, refreshing channels...');
     refreshChannels();
   }, [refreshChannels]);
 
   const handleChannelDeleted = React.useCallback(() => {
-    // Channel list is automatically updated by the hook
-    // This callback is for any additional actions if needed
-  }, []);
+    // Refresh channels to update the count immediately
+    console.log('🗑️ [ChannelsScreen] handleChannelDeleted called, refreshing channels...');
+    refreshChannels();
+  }, [refreshChannels]);
 
-  console.log('📺 ChannelsScreen rendering with channelCount:', channelCount);
+  console.log('📺 [ChannelsScreen] rendering with channelCount:', channelCount);
 
   return (
     <SafeAreaView style={styles.container}>
