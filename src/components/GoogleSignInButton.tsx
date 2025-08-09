@@ -1,8 +1,7 @@
 import React from 'react';
-import { View, Text, Image, Alert } from 'react-native';
+import { View, Text, Image, Alert, StyleSheet } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
-import { cn } from '@/lib/utils';
 
 interface GoogleSignInButtonProps {
   onSuccess?: () => void;

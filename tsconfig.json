@@ -7,12 +7,14 @@
     "noImplicitOverride": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@/components/*": ["./src/components/*"],
-      "@/hooks/*": ["./src/hooks/*"],
+      "@/components/*": ["./components/*", "./src/components/*"],
+      "@/hooks/*": ["./hooks/*", "./src/hooks/*"],
       "@/services/*": ["./src/services/*"],
       "@/stores/*": ["./src/stores/*"],
       "@/lib/*": ["./src/lib/*"],
-      "@/types/*": ["./src/types/*"]
+      "@/types/*": ["./src/types/*"],
+      "@/constants/*": ["./constants/*"],
+      "@/assets/*": ["./assets/*"]
     }
   },
   "include": [
