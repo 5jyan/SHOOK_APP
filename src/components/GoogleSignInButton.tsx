@@ -1,18 +1,15 @@
+import { useGoogleAuth } from '@/hooks/useGoogleAuthTemp';
 import React from 'react';
-import { View, Text, Image, Alert, StyleSheet } from 'react-native';
-import { Button } from '@/components/ui/Button';
-import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 interface GoogleSignInButtonProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
-  className?: string;
 }
 
 export function GoogleSignInButton({
   onSuccess,
   onError,
-  className,
 }: GoogleSignInButtonProps) {
   const { signIn, isLoading, error } = useGoogleAuth();
 
@@ -35,36 +32,80 @@ export function GoogleSignInButton({
   }, [error, onError]);
 
   return (
-    <View className={cn("w-full", className)}>
-      <Button
-        variant="outline"
-        size="lg"
+    <View style={styles.container}>
+      <Pressable
         onPress={handleSignIn}
-        loading={isLoading}
         disabled={isLoading}
-        className="w-full bg-white border-gray-300 shadow-sm"
+        style={[styles.button, isLoading && styles.buttonDisabled]}
       >
-        <View className="flex-row items-center justify-center space-x-3">
+        <View style={styles.buttonContent}>
           {!isLoading && (
             <Image
               source={{
                 uri: 'https://developers.google.com/identity/images/g-logo.png',
               }}
-              className="w-5 h-5"
+              style={styles.googleIcon}
               resizeMode="contain"
             />
           )}
-          <Text className="text-gray-700 font-medium text-base ml-3">
+          <Text style={styles.buttonText}>
             {isLoading ? '로그인 중...' : 'Google로 계속하기'}
           </Text>
         </View>
-      </Button>
+      </Pressable>
       
       {error && (
-        <Text className="text-destructive text-sm mt-2 text-center">
+        <Text style={styles.errorText}>
           {error}
         </Text>
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  button: {
+    width: '100%',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 12,
+  },
+  buttonText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+});

@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+import { router } from 'expo-router';
+import React from 'react';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AuthScreen() {
   const handleSuccess = () => {
@@ -14,38 +14,38 @@ export default function AuthScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        style={styles.keyboardView}
       >
-        <View className="flex-1 justify-center px-6">
-          <View className="mb-12 text-center">
-            <Text className="text-4xl font-bold text-foreground mb-3 text-center">Shook</Text>
-            <Text className="text-lg text-muted-foreground text-center leading-6">
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Shook</Text>
+            <Text style={styles.subtitle}>
               YouTube 채널을 모니터링하고{'\n'}새 영상을 알림으로 받아보세요
             </Text>
           </View>
 
-          <View className="space-y-6">
+          <View style={styles.authSection}>
             <GoogleSignInButton
               onSuccess={handleSuccess}
               onError={handleError}
             />
 
-            <View className="space-y-2">
-              <Text className="text-center text-sm text-muted-foreground">
+            <View style={styles.termsSection}>
+              <Text style={styles.termsText}>
                 로그인하면 다음 약관에 동의한 것으로 간주됩니다
               </Text>
-              <View className="flex-row justify-center space-x-4">
-                <Text className="text-sm text-primary underline">이용약관</Text>
-                <Text className="text-sm text-primary underline">개인정보처리방침</Text>
+              <View style={styles.termsLinks}>
+                <Text style={styles.linkText}>이용약관</Text>
+                <Text style={styles.linkText}>개인정보처리방침</Text>
               </View>
             </View>
           </View>
 
-          <View className="mt-12">
-            <Text className="text-center text-xs text-muted-foreground">
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
               안전하고 간편한 Google 로그인으로{'\n'}계정을 생성하거나 기존 계정에 로그인하세요
             </Text>
           </View>
@@ -54,3 +54,64 @@ export default function AuthScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  header: {
+    marginBottom: 48,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  authSection: {
+    gap: 24,
+  },
+  termsSection: {
+    gap: 8,
+  },
+  termsText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  termsLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  linkText: {
+    fontSize: 14,
+    color: '#3b82f6',
+    textDecorationLine: 'underline',
+  },
+  footer: {
+    marginTop: 48,
+  },
+  footerText: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#6b7280',
+  },
+});

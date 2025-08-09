@@ -1,8 +1,33 @@
-import { MMKV } from 'react-native-mmkv';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 
-// Ultra-fast storage for non-sensitive data
-export const storage = new MMKV();
+// Storage for non-sensitive data using AsyncStorage (Expo Go compatible)
+export const storage = {
+  getString: async (key: string): Promise<string | undefined> => {
+    try {
+      const value = await AsyncStorage.getItem(key);
+      return value ?? undefined;
+    } catch {
+      return undefined;
+    }
+  },
+  
+  set: async (key: string, value: string): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(key, value);
+    } catch {
+      // Ignore storage errors
+    }
+  },
+  
+  delete: async (key: string): Promise<void> => {
+    try {
+      await AsyncStorage.removeItem(key);
+    } catch {
+      // Ignore storage errors
+    }
+  }
+};
 
 // Secure storage for sensitive data
 export const secureStorage = {
@@ -21,16 +46,16 @@ export const secureStorage = {
 
 // Storage utilities with type safety
 export const createStorageItem = <T>(key: string, defaultValue: T) => ({
-  get: (): T => {
-    const value = storage.getString(key);
+  get: async (): Promise<T> => {
+    const value = await storage.getString(key);
     return value ? JSON.parse(value) : defaultValue;
   },
   
-  set: (value: T) => {
-    storage.set(key, JSON.stringify(value));
+  set: async (value: T): Promise<void> => {
+    await storage.set(key, JSON.stringify(value));
   },
   
-  remove: () => {
-    storage.delete(key);
+  remove: async (): Promise<void> => {
+    await storage.delete(key);
   }
 });

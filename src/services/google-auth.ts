@@ -1,6 +1,5 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
-import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
 import { secureStorage } from '@/lib/storage';
 
@@ -55,24 +54,15 @@ class GoogleAuthService {
 
   async signIn(): Promise<GoogleUser> {
     try {
-      // Generate PKCE challenge for security
-      const codeChallenge = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        Crypto.getRandomBytes(32).toString(),
-        { encoding: Crypto.CryptoEncoding.BASE64URL }
-      );
-
       const redirectUri = this.getRedirectUri();
       const clientId = this.getClientId();
 
-      // Create auth request
+      // Create auth request (simplified without PKCE for now)
       const request = new AuthSession.AuthRequest({
         clientId,
         scopes: this.scopes,
         responseType: AuthSession.ResponseType.Code,
         redirectUri,
-        codeChallenge,
-        codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
         additionalParameters: {
           access_type: 'offline', // Get refresh token
           prompt: 'consent', // Force consent screen to get refresh token
@@ -93,8 +83,7 @@ class GoogleAuthService {
       // Exchange code for tokens
       const tokenResponse = await this.exchangeCodeForTokens(
         result.params.code,
-        redirectUri,
-        codeChallenge
+        redirectUri
       );
 
       // Get user profile
@@ -116,8 +105,7 @@ class GoogleAuthService {
 
   private async exchangeCodeForTokens(
     code: string,
-    redirectUri: string,
-    codeVerifier: string
+    redirectUri: string
   ): Promise<GoogleTokenResponse> {
     const response = await fetch(this.tokenUrl, {
       method: 'POST',
@@ -129,7 +117,6 @@ class GoogleAuthService {
         code,
         redirect_uri: redirectUri,
         grant_type: 'authorization_code',
-        code_verifier: codeVerifier,
       }).toString(),
     });
 

@@ -1,8 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as Google from 'expo-auth-session/providers/google';
 import { useAuthStore } from '@/stores/auth-store';
-import { Platform } from 'react-native';
 import { secureStorage } from '@/lib/storage';
+import { apiService } from '@/services/api';
+
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface UseGoogleAuthReturn {
   signIn: () => Promise<void>;
@@ -27,7 +31,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
   
   const { login, logout, setLoading } = useAuthStore();
 
-  // Use Expo's Google provider
+  // Use Expo's Google provider for real OAuth
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
@@ -47,50 +51,54 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
 
   const handleGoogleResponse = async () => {
     try {
-      if (!response?.authentication?.accessToken) {
-        throw new Error('No access token received');
+      console.log('✅ Google OAuth successful, processing response...');
+
+      if (!response?.authentication?.idToken) {
+        throw new Error('ID 토큰을 받지 못했습니다.');
       }
 
-      // Get user info using access token
-      const userInfoResponse = await fetch(
-        `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${response.authentication.accessToken}`
-      );
+      const idToken = response.authentication.idToken;
+      console.log('📤 Sending ID token to backend for verification...');
 
-      if (!userInfoResponse.ok) {
-        throw new Error('Failed to fetch user profile');
+      // Send ID token to your backend for verification
+      const verifyResponse = await apiService.verifyGoogleToken(idToken);
+
+      if (verifyResponse.success) {
+        console.log('✅ Backend verification successful:', verifyResponse.data.user);
+        
+        // Transform backend user to mobile app user format
+        const user = {
+          id: verifyResponse.data.user.id.toString(),
+          username: verifyResponse.data.user.username,
+          email: verifyResponse.data.user.email,
+          picture: undefined, // Backend doesn't store picture
+          givenName: undefined,
+          familyName: undefined,
+          verified: true,
+        };
+
+        // Store authentication info
+        if (response.authentication.accessToken) {
+          await secureStorage.setItem('google_access_token', response.authentication.accessToken);
+        }
+        await secureStorage.setItem('google_id_token', idToken);
+
+        // Update auth store
+        login(user);
+        setError(null);
+        
+        console.log('✅ User authenticated and logged in:', user);
+      } else {
+        throw new Error(verifyResponse.error || 'Backend verification failed');
       }
 
-      const googleUser: GoogleUser = await userInfoResponse.json();
-
-      // Store tokens securely
-      await secureStorage.setItem('google_access_token', response.authentication.accessToken);
-      
-      if (response.authentication.refreshToken) {
-        await secureStorage.setItem('google_refresh_token', response.authentication.refreshToken);
-      }
-
-      // Transform Google user to our User type
-      const user = {
-        id: googleUser.id,
-        username: googleUser.name,
-        email: googleUser.email,
-        picture: googleUser.picture,
-        givenName: googleUser.given_name,
-        familyName: googleUser.family_name,
-        verified: googleUser.verified_email,
-      };
-
-      // Update auth store
-      login(user);
-
-      setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error 
         ? err.message 
         : 'Google 로그인에 실패했습니다.';
       
       setError(errorMessage);
-      console.error('Google Sign-In Error:', err);
+      console.error('❌ Google Sign-In Error:', err);
     } finally {
       setIsLoading(false);
       setLoading(false);
@@ -103,11 +111,14 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       setLoading(true);
       setError(null);
 
+      console.log('🚀 Starting Google Sign-In process...');
+
       if (!request) {
-        throw new Error('Google Auth request not initialized');
+        throw new Error('Google Auth가 초기화되지 않았습니다.');
       }
 
-      // Prompt for authentication
+      // Start Google OAuth flow
+      console.log('📱 Opening Google OAuth...');
       await promptAsync();
       
     } catch (err) {
@@ -116,7 +127,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         : 'Google 로그인에 실패했습니다.';
       
       setError(errorMessage);
-      console.error('Google Sign-In Error:', err);
+      console.error('❌ Sign-In Error:', err);
       setIsLoading(false);
       setLoading(false);
     }
@@ -127,14 +138,29 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       setIsLoading(true);
       setError(null);
 
-      // Clear stored tokens
+      console.log('🚪 Starting sign-out process...');
+
+      // Notify backend about logout
+      console.log('📤 Notifying backend about logout...');
+      const logoutResponse = await apiService.logout();
+      
+      if (logoutResponse.success) {
+        console.log('✅ Backend logout successful');
+      } else {
+        console.warn('⚠️ Backend logout failed:', logoutResponse.error);
+      }
+
+      // Clear stored tokens regardless of backend response
       await Promise.all([
         secureStorage.removeItem('google_access_token'),
+        secureStorage.removeItem('google_id_token'),
         secureStorage.removeItem('google_refresh_token'),
       ]);
       
       // Update auth store
       logout();
+
+      console.log('✅ Local logout successful');
 
     } catch (err) {
       const errorMessage = err instanceof Error 
@@ -142,7 +168,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         : '로그아웃에 실패했습니다.';
       
       setError(errorMessage);
-      console.error('Sign-Out Error:', err);
+      console.error('❌ Sign-Out Error:', err);
     } finally {
       setIsLoading(false);
     }
