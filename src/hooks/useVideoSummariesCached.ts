@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { apiService, VideoSummary } from '@/services/api';
+import { apiService, VideoSummary, UserChannel } from '@/services/api';
 import { videoCacheService } from '@/services/video-cache';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -211,17 +211,37 @@ export interface SummaryCardData {
 
 export const transformVideoSummaryToCardData = (
   video: VideoSummary, 
+  channels: UserChannel[] = [],
   channelName?: string
 ): SummaryCardData => {
-  // Use channelTitle from API response, fallback to channelName parameter, then "Unknown Channel"
-  const finalChannelName = video.channelTitle || channelName || 'Unknown Channel';
+  // Find channel data from ChannelsContext first
+  const channelData = channels.find(ch => ch.youtubeChannel.channelId === video.channelId);
+  
+  // Priority order for channel info:
+  // 1. ChannelsContext data (most reliable, includes thumbnail)
+  // 2. Video API response data 
+  // 3. Parameter fallback
+  // 4. Default
+  const finalChannelName = channelData?.youtubeChannel.title || video.channelTitle || channelName || 'Unknown Channel';
+  const finalChannelThumbnail = channelData?.youtubeChannel.thumbnail || 
+    `https://via.placeholder.com/60/4285f4/ffffff?text=${finalChannelName.charAt(0) || 'C'}`;
+  
+  // Debug log to check thumbnail data sources
+  console.log('🖼️ [transformVideoSummaryToCardData] Thumbnail debug:', {
+    videoTitle: video.title.substring(0, 30) + '...',
+    channelId: video.channelId,
+    channelFromContext: !!channelData,
+    contextThumbnail: channelData?.youtubeChannel.thumbnail,
+    finalThumbnail: finalChannelThumbnail,
+    isPlaceholder: !channelData?.youtubeChannel.thumbnail
+  });
   
   return {
     id: video.videoId,
     videoId: video.videoId,
     videoTitle: video.title,
     channelName: finalChannelName,
-    channelThumbnail: `https://via.placeholder.com/60/4285f4/ffffff?text=${finalChannelName.charAt(0) || 'C'}`,
+    channelThumbnail: finalChannelThumbnail,
     videoThumbnail: `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`,
     summary: video.summary || '요약이 아직 생성되지 않았습니다.',
     createdAt: video.createdAt,

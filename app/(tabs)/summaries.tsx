@@ -6,12 +6,15 @@ import { SummaryCard } from '@/components/SummaryCard';
 import { EmptyState } from '@/components/EmptyState';
 import { useVideoSummariesCached, transformVideoSummaryToCardData, SummaryCardData } from '@/hooks/useVideoSummariesCached';
 import { useAuthStore } from '@/stores/auth-store';
+import { useChannels } from '@/contexts/ChannelsContext';
 
 export default function SummariesScreen() {
   console.log('📺 [SummariesScreen] Component mounting/re-rendering');
   
   const { user } = useAuthStore();
+  const { channels } = useChannels(); // Get channel data from context
   console.log('📺 [SummariesScreen] User from auth store:', user);
+  console.log('📺 [SummariesScreen] Channels from context:', channels.length);
   
   const { 
     data: videoSummaries = [], 
@@ -57,11 +60,31 @@ export default function SummariesScreen() {
   
   // Transform API data to match component interface
   const summaries: SummaryCardData[] = React.useMemo(() => {
-    return videoSummaries
-      .filter(video => video.processed && video.summary) // Only show processed videos with summaries
-      .map(video => transformVideoSummaryToCardData(video))
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()); // Sort by publish date
-  }, [videoSummaries]);
+    const filtered = videoSummaries.filter(video => video.processed && video.summary);
+    console.log('📺 [SummariesScreen] Filtered videos:', filtered.length);
+    
+    if (filtered.length > 0) {
+      console.log('📺 [SummariesScreen] Sample videos before sorting:', filtered.slice(0, 3).map(v => ({
+        title: v.title.substring(0, 30) + '...',
+        publishedAt: v.publishedAt,
+        createdAt: v.createdAt
+      })));
+    }
+    
+    const transformed = filtered.map(video => transformVideoSummaryToCardData(video, channels));
+    // Sort by createdAt (when video was processed) which is more reliable for showing latest content
+    const sorted = transformed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    if (sorted.length > 0) {
+      console.log('📺 [SummariesScreen] Sample videos after sorting:', sorted.slice(0, 3).map(v => ({
+        title: v.videoTitle.substring(0, 30) + '...',
+        publishedAt: v.publishedAt,
+        publishedDate: new Date(v.publishedAt).toISOString()
+      })));
+    }
+    
+    return sorted;
+  }, [videoSummaries, channels]);
 
   const handleRefresh = React.useCallback(async () => {
     setRefreshing(true);

@@ -130,9 +130,9 @@ export class VideoCacheService {
         return isValid;
       });
 
-      // Sort by publishedAt (newest first)
+      // Sort by createdAt (when video was processed - newest first)
       validEntries.sort((a, b) => 
-        new Date(b.data.publishedAt).getTime() - new Date(a.data.publishedAt).getTime()
+        new Date(b.data.createdAt).getTime() - new Date(a.data.createdAt).getTime()
       );
 
       const videos = validEntries.map(entry => entry.data);
@@ -208,10 +208,10 @@ export class VideoCacheService {
       
       console.log(`📦 [VideoCache] Found ${actuallyNewVideos.length} actually new videos (${newVideos.length - actuallyNewVideos.length} were already cached)`);
       
-      // Combine and sort
+      // Combine and sort by createdAt (when video was processed)
       const allVideos = [...actuallyNewVideos, ...cachedVideos];
       allVideos.sort((a, b) => 
-        new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
       // Save merged data
