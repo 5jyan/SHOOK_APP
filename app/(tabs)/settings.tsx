@@ -7,6 +7,7 @@ import { useGoogleAuth } from '@/hooks/useGoogleAuthTemp';
 import { BackendTestButton } from '@/components/BackendTestButton';
 import { PushNotificationTestButton } from '@/components/PushNotificationTestButton';
 import { CacheStatsButton } from '@/components/CacheStatsButton';
+import { ManualMonitoringButton } from '@/components/ManualMonitoringButton';
 
 export default function SettingsScreen() {
   const { user } = useAuthStore();
@@ -99,6 +100,7 @@ export default function SettingsScreen() {
           {/* Backend Test Section */}
           <View style={styles.settingsContainer}>
             <Text style={styles.sectionTitle}>개발자 도구</Text>
+            <ManualMonitoringButton />
             <BackendTestButton />
             <PushNotificationTestButton />
             <CacheStatsButton />

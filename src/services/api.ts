@@ -285,6 +285,15 @@ class ApiService {
       method: 'POST',
     });
   }
+
+  // Manual monitoring trigger endpoint
+  async triggerManualMonitoring(): Promise<ApiResponse<{ success: boolean; message: string; timestamp: string }>> {
+    console.log('🔄 [apiService.triggerManualMonitoring] Triggering manual YouTube monitoring');
+    
+    return this.makeRequest<{ success: boolean; message: string; timestamp: string }>('/api/admin/trigger-monitoring', {
+      method: 'POST',
+    });
+  }
 }
 
 export const apiService = new ApiService();
