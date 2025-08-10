@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { secureStorage } from '@/lib/storage';
+import { notificationService } from '@/services/notification';
 
 interface User {
   id: string;
@@ -43,6 +44,11 @@ export const useAuthStore = create<AuthStore>()(
           state.user = user;
           state.isAuthenticated = true;
           state.isLoading = false;
+          
+          // Initialize push notifications after login
+          notificationService.initialize().catch((error) => {
+            console.error('Failed to initialize notifications:', error);
+          });
         }),
 
       logout: () =>
@@ -50,6 +56,11 @@ export const useAuthStore = create<AuthStore>()(
           state.user = null;
           state.isAuthenticated = false;
           state.isLoading = false;
+          
+          // Clear push notification token on logout
+          notificationService.clearToken().catch((error) => {
+            console.error('Failed to clear notification token:', error);
+          });
         }),
 
       updateUser: (updates: Partial<User>) =>

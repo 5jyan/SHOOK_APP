@@ -11,6 +11,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { queryClient, restoreQueryClient } from '@/lib/query-client';
+import { notificationService } from '@/services/notification';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -25,9 +26,17 @@ export default function RootLayout() {
     // Restore persisted queries
     restoreQueryClient();
     
+    // Setup notification listeners
+    const listeners = notificationService.addNotificationListeners();
+    
     if (loaded) {
       SplashScreen.hideAsync();
     }
+
+    return () => {
+      // Cleanup notification listeners on unmount
+      notificationService.removeNotificationListeners(listeners);
+    };
   }, [loaded]);
 
   if (!loaded) {

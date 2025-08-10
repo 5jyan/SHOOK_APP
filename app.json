@@ -1,8 +1,9 @@
 {
   "expo": {
     "name": "Shook - YouTube Monitor",
-    "slug": "shook-app",
+    "slug": "shook",
     "version": "1.0.0",
+    "owner": "saulpark",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "shookapp",
@@ -20,7 +21,9 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLName": "google",
-            "CFBundleURLSchemes": ["com.shook.app"]
+            "CFBundleURLSchemes": [
+              "com.shook.app"
+            ]
           }
         ]
       }
@@ -41,7 +44,10 @@
       "intentFilters": [
         {
           "action": "VIEW",
-          "category": ["DEFAULT", "BROWSABLE"],
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
           "data": {
             "scheme": "com.shook.app"
           }
@@ -83,6 +89,12 @@
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a8839540-39ec-431e-a346-bdfdff731ecd"
+      },
+      "router": {}
     }
   }
 }

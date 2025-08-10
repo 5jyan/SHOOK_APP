@@ -230,6 +230,41 @@ class ApiService {
     console.log('🚀 [apiService.getVideoSummaries] API call completed, result:', result);
     return result;
   }
+
+  // Push notification endpoints
+  async registerPushToken(tokenData: PushTokenData): Promise<ApiResponse<RegisterPushTokenResponse>> {
+    console.log('🔔 [apiService.registerPushToken] Registering push token:', tokenData.token.substring(0, 20) + '...');
+    
+    return this.makeRequest<RegisterPushTokenResponse>('/api/push-tokens', {
+      method: 'POST',
+      body: JSON.stringify(tokenData),
+    });
+  }
+
+  async unregisterPushToken(deviceId: string): Promise<ApiResponse<RegisterPushTokenResponse>> {
+    console.log('🔔 [apiService.unregisterPushToken] Unregistering push token for device:', deviceId);
+    
+    return this.makeRequest<RegisterPushTokenResponse>(`/api/push-tokens/${deviceId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async updatePushToken(tokenData: PushTokenData): Promise<ApiResponse<RegisterPushTokenResponse>> {
+    console.log('🔔 [apiService.updatePushToken] Updating push token:', tokenData.token.substring(0, 20) + '...');
+    
+    return this.makeRequest<RegisterPushTokenResponse>(`/api/push-tokens/${tokenData.deviceId}`, {
+      method: 'PUT',
+      body: JSON.stringify(tokenData),
+    });
+  }
+
+  async sendTestPushNotification(): Promise<ApiResponse<RegisterPushTokenResponse>> {
+    console.log('🔔 [apiService.sendTestPushNotification] Sending test push notification');
+    
+    return this.makeRequest<RegisterPushTokenResponse>('/api/push-tokens/test', {
+      method: 'POST',
+    });
+  }
 }
 
 export const apiService = new ApiService();
@@ -237,5 +272,18 @@ export const apiService = new ApiService();
 console.log('🚀 [API Service] ApiService instance created');
 console.log('🚀 [API Service] API_BASE_URL at module level:', API_BASE_URL);
 
+// Push notification interfaces
+interface PushTokenData {
+  token: string;
+  deviceId: string;
+  platform: string;
+  appVersion: string;
+}
+
+interface RegisterPushTokenResponse {
+  success: boolean;
+  message?: string;
+}
+
 // Export interfaces for use in other files
-export type { BackendUserChannel, UserChannel, VideoSummary, YoutubeChannel };
+export type { BackendUserChannel, UserChannel, VideoSummary, YoutubeChannel, PushTokenData, RegisterPushTokenResponse };
