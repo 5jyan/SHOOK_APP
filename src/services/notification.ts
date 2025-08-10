@@ -4,6 +4,8 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import { useNotificationStore } from '@/stores/notification-store';
 import { apiService, type PushTokenData } from './api';
 
 // Configure how notifications are handled when received
@@ -43,12 +45,15 @@ export class NotificationService {
       return;
     }
 
+    useNotificationStore.getState().setRegistering(true);
+
     try {
       console.log('🔔 [NotificationService] Initializing notification service...');
       
       // Check if device supports push notifications
       if (!Device.isDevice) {
         console.warn('🔔 [NotificationService] Push notifications only work on physical devices');
+        useNotificationStore.getState().setRegistered(false, 'Push notifications only work on physical devices');
         return;
       }
 
@@ -56,6 +61,7 @@ export class NotificationService {
       const permission = await this.requestPermissions();
       if (!permission.granted) {
         console.warn('🔔 [NotificationService] Notification permissions denied');
+        useNotificationStore.getState().setRegistered(false, 'Notification permissions denied');
         return;
       }
 
@@ -65,13 +71,23 @@ export class NotificationService {
         this.pushToken = token;
         console.log('🔔 [NotificationService] Successfully initialized with token:', token.substring(0, 20) + '...');
         
+        console.log('🔔 [NotificationService] Calling registerWithBackend...');
         // Register with backend
-        await this.registerWithBackend();
+        const success = await this.registerWithBackend();
+        console.log('🔔 [NotificationService] registerWithBackend returned:', success);
+        useNotificationStore.getState().setRegistered(success);
+
+      } else {
+        useNotificationStore.getState().setRegistered(false, 'Could not get push token');
       }
 
       this.isInitialized = true;
     } catch (error) {
       console.error('🔔 [NotificationService] Failed to initialize:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      useNotificationStore.getState().setRegistered(false, errorMessage);
+    } finally {
+      useNotificationStore.getState().setRegistering(false);
     }
   }
 
@@ -280,6 +296,7 @@ export class NotificationService {
     this.pushToken = null;
     this.isInitialized = false;
     await AsyncStorage.removeItem('expo_push_token');
+    useNotificationStore.getState().reset();
   }
 
   // Add notification listeners
@@ -298,12 +315,32 @@ export class NotificationService {
     const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
       console.log('🔔 [NotificationService] User tapped notification:', response);
       
-      // Handle notification tap (you can customize this)
-      // For example, navigate to specific screen, open video, etc.
+      // Handle notification tap - navigate to summaries tab
       const data = response.notification.request.content.data;
-      if (data?.videoId) {
-        console.log('🔔 [NotificationService] User tapped video notification:', data.videoId);
-        // TODO: Navigate to video summary detail screen
+      
+      try {
+        console.log('🔔 [NotificationService] Navigating to summaries tab...');
+        
+        // Navigate to summaries tab when notification is tapped
+        router.replace('/(tabs)/summaries');
+        
+        // Optional: If there's specific video data, you could navigate to detail screen
+        if (data?.videoId) {
+          console.log('🔔 [NotificationService] Video ID in notification:', data.videoId);
+          // Could navigate to specific video detail later:
+          // router.push({
+          //   pathname: '/summary-detail',
+          //   params: { summaryId: data.videoId, videoTitle: data.videoTitle || 'New Video' }
+          // });
+        }
+      } catch (error) {
+        console.error('🔔 [NotificationService] Error navigating to summaries:', error);
+        // Fallback: try to navigate to summaries tab
+        try {
+          router.replace('/(tabs)/summaries');
+        } catch (fallbackError) {
+          console.error('🔔 [NotificationService] Fallback navigation also failed:', fallbackError);
+        }
       }
     });
 

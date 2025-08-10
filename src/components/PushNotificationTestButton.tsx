@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { useNotificationStore } from '@/stores/notification-store';
 import { apiService } from '@/services/api';
 
 export function PushNotificationTestButton() {
   const [isLoading, setIsLoading] = useState(false);
+  const { isRegistering, isRegistered, error } = useNotificationStore();
 
   const handleTestPushNotification = async () => {
     setIsLoading(true);
@@ -40,21 +42,35 @@ export function PushNotificationTestButton() {
     }
   };
 
+  const getButtonState = () => {
+    if (isRegistering) {
+      return { disabled: true, text: '알림 등록 중...' };
+    }
+    if (!isRegistered) {
+      return { disabled: true, text: '알림 등록 실패' };
+    }
+    if (isLoading) {
+      return { disabled: true, text: '발송 중...' };
+    }
+    return { disabled: false, text: '🔔 테스트 알림 보내기' };
+  };
+
+  const buttonState = getButtonState();
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>푸시 알림 테스트</Text>
       <Text style={styles.description}>
         테스트 푸시 알림을 발송하여 알림 시스템이 정상적으로 작동하는지 확인합니다.
+        {error && <Text style={styles.errorText}>오류: {error}</Text>}
       </Text>
       
       <Pressable
         onPress={handleTestPushNotification}
-        disabled={isLoading}
-        style={[styles.button, isLoading && styles.disabledButton]}
+        disabled={buttonState.disabled}
+        style={[styles.button, buttonState.disabled && styles.disabledButton]}
       >
-        <Text style={styles.buttonText}>
-          {isLoading ? '발송 중...' : '🔔 테스트 알림 보내기'}
-        </Text>
+        <Text style={styles.buttonText}>{buttonState.text}</Text>
       </Pressable>
     </View>
   );
@@ -94,5 +110,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: 4,
   },
 });
