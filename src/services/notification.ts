@@ -137,9 +137,20 @@ export class NotificationService {
         } catch (devError) {
           console.error('🔔 [NotificationService] Failed to get token without project ID:', devError);
           
-          // Create a mock token for development
-          const mockToken = `ExponentPushToken[dev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}]`;
-          console.warn('🔔 [NotificationService] Using mock token for development:', mockToken.substring(0, 20) + '...');
+          // Check if we already have a cached mock token for this device
+          const cachedMockToken = await AsyncStorage.getItem('expo_push_token');
+          if (cachedMockToken && cachedMockToken.startsWith('ExponentPushToken[dev-')) {
+            console.warn('🔔 [NotificationService] Reusing existing mock token:', cachedMockToken.substring(0, 20) + '...');
+            return cachedMockToken;
+          }
+          
+          // Create a stable mock token for development based on device info
+          const deviceInfo = await Device.getDeviceTypeAsync();
+          const deviceId = Constants.sessionId || 'unknown';
+          const stableId = `dev-${deviceInfo}-${deviceId.slice(0, 8)}`;
+          const mockToken = `ExponentPushToken[${stableId}]`;
+          
+          console.warn('🔔 [NotificationService] Created stable mock token for development:', mockToken.substring(0, 20) + '...');
           
           await AsyncStorage.setItem('expo_push_token', mockToken);
           return mockToken;
@@ -162,9 +173,20 @@ export class NotificationService {
     } catch (error) {
       console.error('🔔 [NotificationService] Error getting push token:', error);
       
-      // Create a fallback mock token for development
-      const fallbackToken = `ExponentPushToken[fallback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}]`;
-      console.warn('🔔 [NotificationService] Using fallback token:', fallbackToken.substring(0, 20) + '...');
+      // Check if we already have a cached fallback token
+      const cachedFallbackToken = await AsyncStorage.getItem('expo_push_token');
+      if (cachedFallbackToken && cachedFallbackToken.startsWith('ExponentPushToken[fallback-')) {
+        console.warn('🔔 [NotificationService] Reusing existing fallback token:', cachedFallbackToken.substring(0, 20) + '...');
+        return cachedFallbackToken;
+      }
+      
+      // Create a stable fallback token based on device info
+      const deviceInfo = await Device.getDeviceTypeAsync();
+      const deviceId = Constants.sessionId || 'unknown';
+      const stableId = `fallback-${deviceInfo}-${deviceId.slice(0, 8)}`;
+      const fallbackToken = `ExponentPushToken[${stableId}]`;
+      
+      console.warn('🔔 [NotificationService] Created stable fallback token:', fallbackToken.substring(0, 20) + '...');
       
       await AsyncStorage.setItem('expo_push_token', fallbackToken);
       return fallbackToken;

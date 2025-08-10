@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { SummaryCard } from '@/components/SummaryCard';
 import { EmptyState } from '@/components/EmptyState';
-import { useVideoSummaries, transformVideoSummaryToCardData, SummaryCardData } from '@/hooks/useVideoSummaries';
+import { useVideoSummariesCached, transformVideoSummaryToCardData, SummaryCardData } from '@/hooks/useVideoSummariesCached';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function SummariesScreen() {
@@ -17,14 +17,22 @@ export default function SummariesScreen() {
     data: videoSummaries = [], 
     isLoading, 
     error, 
-    refetch 
-  } = useVideoSummaries();
+    refetch,
+    cacheData,
+    queryState 
+  } = useVideoSummariesCached();
   
   console.log('📺 [SummariesScreen] Hook results:', {
     videoSummariesCount: videoSummaries.length,
     isLoading,
-    error: error?.message || null
+    error: error?.message || null,
+    fromCache: cacheData?.fromCache,
+    cacheStats: cacheData?.cacheStats,
+    lastSync: cacheData?.lastSync ? new Date(cacheData.lastSync).toISOString() : null
   });
+  
+  // Log cache performance details
+  console.log('📦 [SummariesScreen] Cache performance:', queryState);
   
   const [refreshing, setRefreshing] = React.useState(false);
   

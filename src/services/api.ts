@@ -1,4 +1,5 @@
 // API service for backend communication
+import { decodeVideoHtmlEntities } from '@/utils/html-decode';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -62,6 +63,7 @@ interface VideoSummary {
   processed: boolean;
   errorMessage: string | null;
   createdAt: string; // ISO 8601 date-time
+  channelTitle: string; // Channel name from JOIN with youtube_channels table
 }
 
 class ApiService {
@@ -220,14 +222,32 @@ class ApiService {
   }
 
   // Video summaries endpoint - GET /api/videos
-  async getVideoSummaries(): Promise<ApiResponse<VideoSummary[]>> {
-    console.log('🚀 [apiService.getVideoSummaries] Starting API call to /api/videos');
+  async getVideoSummaries(since?: number): Promise<ApiResponse<VideoSummary[]>> {
+    const endpoint = since ? `/api/videos?since=${since}` : '/api/videos';
+    
+    if (since) {
+      console.log(`🚀 [apiService.getVideoSummaries] Incremental sync since ${new Date(since).toISOString()}`);
+    } else {
+      console.log('🚀 [apiService.getVideoSummaries] Full sync requested');
+    }
+    
     console.log('🚀 [apiService.getVideoSummaries] API_BASE_URL:', API_BASE_URL);
-    console.log('🚀 [apiService.getVideoSummaries] Full URL will be:', `${API_BASE_URL}/api/videos`);
+    console.log('🚀 [apiService.getVideoSummaries] Full URL will be:', `${API_BASE_URL}${endpoint}`);
     
-    const result = await this.makeRequest<VideoSummary[]>('/api/videos');
+    const result = await this.makeRequest<VideoSummary[]>(endpoint);
     
-    console.log('🚀 [apiService.getVideoSummaries] API call completed, result:', result);
+    // Apply HTML entity decoding to video titles and summaries (redundant safety check)
+    if (result.success && result.data) {
+      console.log('🔄 [apiService.getVideoSummaries] Applying HTML entity decoding to video data');
+      result.data = decodeVideoHtmlEntities(result.data);
+    }
+    
+    if (since) {
+      console.log(`🚀 [apiService.getVideoSummaries] Incremental sync completed: ${result.data?.length || 0} new videos`);
+    } else {
+      console.log(`🚀 [apiService.getVideoSummaries] Full sync completed: ${result.data?.length || 0} total videos`);
+    }
+    
     return result;
   }
 
