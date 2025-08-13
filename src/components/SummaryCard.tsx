@@ -1,10 +1,10 @@
 import React from 'react';
 import {
-  View,
-  Text,
   Image,
   Pressable,
   StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
 interface SummaryData {
@@ -53,12 +53,12 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
   return (
     <Pressable 
       style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed
+        styles.listItem,
+        pressed && styles.listItemPressed
       ]}
       onPress={onPress}
     >
-      <View style={styles.cardContent}>
+      <View style={styles.listContent}>
         {/* Video Thumbnail */}
         <View style={styles.thumbnailContainer}>
           <Image 
@@ -66,45 +66,32 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
             style={styles.videoThumbnail}
             resizeMode="cover"
           />
-          <View style={styles.durationBadge}>
-            <Text style={styles.durationText}>{summary.duration}</Text>
-          </View>
         </View>
 
         {/* Content */}
-        <View style={styles.content}>
-          {/* Channel Info */}
-          <View style={styles.channelRow}>
-            <Image 
-              source={{ uri: summary.channelThumbnail }}
-              style={styles.channelThumbnail}
-              resizeMode="cover"
-            />
-            <Text style={styles.channelName} numberOfLines={1}>
-              {summary.channelName}
-            </Text>
-            <Text style={styles.timeAgo}>
-              {formatTimeAgo(summary.createdAt)}
-            </Text>
-          </View>
-
+        <View style={styles.textContent}>
           {/* Video Title */}
           <Text style={styles.videoTitle} numberOfLines={2}>
             {summary.videoTitle}
           </Text>
-
-          {/* Summary Preview */}
-          <Text style={styles.summaryPreview} numberOfLines={3}>
-            {summary.summary}
+                    {/* Time Info */}
+          <Text style={styles.timeAgo}>
+            {formatTimeAgo(summary.publishedAt)}
           </Text>
 
-          {/* Action Row */}
-          <View style={styles.actionRow}>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>AI 요약</Text>
-            </View>
-            <Text style={styles.readMore}>자세히 보기 →</Text>
+          {/* Channel Info with Avatar */}
+          <View style={styles.channelRow}>
+            <Image 
+              source={{ uri: summary.channelThumbnail }}
+              style={styles.channelAvatar}
+              resizeMode="cover"
+            />
+            
+            <Text style={styles.channelName} numberOfLines={1}>
+              {summary.channelName}
+            </Text>
           </View>
+          
         </View>
       </View>
     </Pressable>
@@ -112,109 +99,59 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: {
+  listItem: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
-  cardPressed: {
-    opacity: 0.95,
-    transform: [{ scale: 0.99 }],
+  listItemPressed: {
+    backgroundColor: '#f9fafb',
   },
-  cardContent: {
-    padding: 16,
+  listContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   thumbnailContainer: {
-    position: 'relative',
-    marginBottom: 12,
+    marginRight: 12,
   },
   videoThumbnail: {
-    width: '100%',
-    height: 180,
-    borderRadius: 12,
+    width: 160,
+    height: 90,
+    borderRadius: 8,
     backgroundColor: '#f1f5f9',
   },
-  durationBadge: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  durationText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  content: {
+  textContent: {
     flex: 1,
+    paddingTop: 2,
+  },
+  videoTitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#0f0f0f',
+    lineHeight: 20,
+    marginBottom: 4,
   },
   channelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 2,
   },
-  channelThumbnail: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginRight: 8,
+  channelAvatar: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#f1f5f9',
+    marginRight: 6,
   },
   channelName: {
+    fontSize: 12,
+    color: '#606060',
+    fontWeight: '400',
     flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
   },
   timeAgo: {
     fontSize: 12,
-    color: '#9ca3af',
-  },
-  videoTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    lineHeight: 22,
-    marginBottom: 12,
-  },
-  summaryPreview: {
-    fontSize: 14,
-    color: '#4b5563',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  statusBadge: {
-    backgroundColor: '#dbeafe',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2563eb',
-  },
-  readMore: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4285f4',
+    color: '#606060',
+    marginBottom: 6,
   },
 });

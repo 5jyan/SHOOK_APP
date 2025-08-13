@@ -139,7 +139,7 @@ export default function SummaryDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={handleBackPress} style={styles.backButton}>
@@ -210,8 +210,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingVertical: 4,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
@@ -219,8 +218,6 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f9fafb',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -232,8 +229,6 @@ const styles = StyleSheet.create({
   shareButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f9fafb',
     justifyContent: 'center',
     alignItems: 'center',
   },

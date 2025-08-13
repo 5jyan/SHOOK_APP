@@ -161,6 +161,13 @@ export default function SummariesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.placeholder} />
+        <Text style={styles.headerTitle}>요약 리스트</Text>
+        <View style={styles.placeholder} />
+      </View>
+      
       <FlatList
         data={summaries}
         renderItem={renderSummaryCard}
@@ -178,10 +185,28 @@ export default function SummariesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#ffffff',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  placeholder: {
+    width: 40,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
   },
   listContainer: {
-    padding: 16,
+    paddingTop: 0,
   },
   loadingContainer: {
     flex: 1,
