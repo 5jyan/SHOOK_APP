@@ -1,31 +1,41 @@
+import { EmptyState } from '@/components/EmptyState';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useUserChannels } from '@/hooks/useUserChannels';
+import { useVideoSummaries } from '@/hooks/useVideoSummaries';
+import { transformVideoSummaryToCardData } from '@/hooks/useVideoSummariesCached';
+import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  Image,
-  Pressable,
-  StyleSheet,
-  Share,
-  Linking,
   ActivityIndicator,
+  Image,
+  Linking,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useVideoSummaries } from '@/hooks/useVideoSummaries';
-import { EmptyState } from '@/components/EmptyState';
 
 export default function SummaryDetailScreen() {
   const params = useLocalSearchParams();
   const videoId = params.summaryId as string;
   
   const { data: videoSummaries = [], isLoading, error, refetch } = useVideoSummaries();
+  const { channels } = useUserChannels();
   
-  // Find the specific video by ID
+  // Find the specific video by ID and transform it to get channel info
   const videoSummary = React.useMemo(() => {
     return videoSummaries.find(video => video.videoId === videoId);
   }, [videoSummaries, videoId]);
+  
+  // Transform to get channel information using cached data (includes real thumbnails)
+  const cardData = React.useMemo(() => {
+    if (!videoSummary) return null;
+    return transformVideoSummaryToCardData(videoSummary, channels, videoSummary.channelTitle);
+  }, [videoSummary, channels]);
   
   if (isLoading) {
     return (
@@ -89,6 +99,45 @@ export default function SummaryDetailScreen() {
     });
   };
 
+  const renderFormattedSummary = (summary: string) => {
+    const lines = summary.split('\n').filter(line => line.trim() !== '');
+    
+    return lines.map((line, index) => {
+      const trimmedLine = line.trim();
+      const nextLine = lines[index + 1]?.trim();
+      const isLastBulletBeforeNumber = /^[-*•]/.test(trimmedLine) && nextLine && /^\d+\./.test(nextLine);
+      
+      // 번호 목록 (1., 2., 3. 등)
+      if (/^\d+\./.test(trimmedLine)) {
+        return (
+          <View key={index} style={styles.numberedItem}>
+            <Text style={styles.numberedText}>{trimmedLine}</Text>
+          </View>
+        );
+      }
+      
+      // 불렛 포인트 (-, *, • 등)
+      if (/^[-*•]/.test(trimmedLine)) {
+        return (
+          <View key={index} style={[
+            styles.bulletItem,
+            isLastBulletBeforeNumber && styles.lastBulletBeforeNumber
+          ]}>
+            <Text style={styles.bulletPoint}>•</Text>
+            <Text style={styles.bulletText}>{trimmedLine.substring(1).trim()}</Text>
+          </View>
+        );
+      }
+      
+      // 일반 텍스트
+      return (
+        <Text key={index} style={styles.summaryText}>
+          {trimmedLine}
+        </Text>
+      );
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -105,61 +154,46 @@ export default function SummaryDetailScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Video Thumbnail */}
-        <Pressable onPress={handleOpenVideo} style={styles.thumbnailContainer}>
-          <Image 
-            source={{ uri: `https://img.youtube.com/vi/${videoSummary.videoId}/maxresdefault.jpg` }}
-            style={styles.videoThumbnail}
-            resizeMode="cover"
-          />
-          <View style={styles.playOverlay}>
-            <IconSymbol name="play.fill" size={32} color="#ffffff" />
-          </View>
-        </Pressable>
-
         {/* Video Info */}
         <View style={styles.videoInfo}>
           <Text style={styles.videoTitle}>{videoSummary.title}</Text>
+          <Text style={styles.publishDate}>
+            {formatDate(videoSummary.publishedAt)}
+          </Text>
           
           <View style={styles.channelRow}>
             <Image 
-              source={{ uri: `https://via.placeholder.com/60/4285f4/ffffff?text=CH` }}
+              source={{ uri: cardData?.channelThumbnail || `https://via.placeholder.com/60/4285f4/ffffff?text=C` }}
               style={styles.channelThumbnail}
               resizeMode="cover"
             />
             <View style={styles.channelInfo}>
-              <Text style={styles.channelName}>채널 정보</Text>
-              <Text style={styles.publishDate}>
-                {formatDate(videoSummary.publishedAt)}
-              </Text>
+              <Text style={styles.channelName}>{cardData?.channelName || 'Unknown Channel'}</Text>
             </View>
+            <TouchableOpacity 
+              onPress={handleOpenVideo} 
+              style={styles.youtubeIconButton}
+              activeOpacity={0.6}
+            >
+              <Image 
+                source={require('../assets/images/youtube_icon.png')} 
+                style={styles.youtubeIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
           </View>
-
-          <Pressable onPress={handleOpenVideo} style={styles.openVideoButton}>
-            <IconSymbol name="play.rectangle.fill" size={20} color="#ffffff" />
-            <Text style={styles.openVideoText}>YouTube에서 보기</Text>
-          </Pressable>
         </View>
 
         {/* Summary Content */}
         <View style={styles.summarySection}>
-          <View style={styles.summaryHeader}>
-            <IconSymbol name="doc.text.fill" size={24} color="#2563eb" />
-            <Text style={styles.sectionTitle}>AI 요약</Text>
-            <View style={styles.aibadge}>
-              <Text style={styles.aiBadgeText}>AI 생성</Text>
-            </View>
-          </View>
           
           <View style={styles.summaryContent}>
-            <Text style={styles.summaryText}>
-              {videoSummary.summary || '요약이 아직 생성되지 않았습니다.'}
-            </Text>
+            {videoSummary.summary ? 
+              renderFormattedSummary(videoSummary.summary) : 
+              <Text style={styles.summaryText}>요약이 아직 생성되지 않았습니다.</Text>
+            }
           </View>
 
-          <Text style={styles.disclaimer}>
-            * 이 요약은 AI가 자동으로 생성한 것으로, 실제 영상 내용과 다를 수 있습니다.
-          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -206,41 +240,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  thumbnailContainer: {
-    position: 'relative',
-    aspectRatio: 16 / 9,
-    backgroundColor: '#000000',
-  },
-  videoThumbnail: {
-    width: '100%',
-    height: '100%',
-  },
-  playOverlay: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -24 }, { translateY: -24 }],
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  durationBadge: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  durationText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
   videoInfo: {
     padding: 16,
   },
@@ -249,12 +248,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     lineHeight: 28,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   channelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: -6,
   },
   channelThumbnail: {
     width: 40,
@@ -275,25 +274,21 @@ const styles = StyleSheet.create({
   publishDate: {
     fontSize: 14,
     color: '#6b7280',
+    marginBottom: 16,
   },
-  openVideoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#dc2626',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 8,
+  youtubeIconButton: {
+    padding: 8,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    borderWidth: 0,
   },
-  openVideoText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+  youtubeIcon: {
+    width: 32,
+    height: 32,
   },
   summarySection: {
-    padding: 16,
-    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -328,6 +323,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#374151',
     lineHeight: 24,
+    marginBottom: 8,
+  },
+  numberedItem: {
+    marginBottom: 8,
+    paddingLeft: 0,
+  },
+  numberedText: {
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: 24,
+    fontWeight: 'bold',
+  },
+  bulletItem: {
+    flexDirection: 'row',
+    marginBottom: 6,
+    paddingLeft: 16,
+  },
+  lastBulletBeforeNumber: {
+    marginBottom: 16,
+  },
+  bulletPoint: {
+    fontSize: 16,
+    color: '#374151',
+    marginRight: 8,
+    fontWeight: '600',
+  },
+  bulletText: {
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: 24,
+    flex: 1,
   },
   disclaimer: {
     fontSize: 12,

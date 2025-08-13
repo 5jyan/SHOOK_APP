@@ -65,12 +65,13 @@ export const transformVideoSummaryToCardData = (
   video: VideoSummary, 
   channelName?: string
 ): SummaryCardData => {
+  const finalChannelName = channelName || video.channelTitle || 'Unknown Channel';
   return {
     id: video.videoId,
     videoId: video.videoId,
     videoTitle: video.title,
-    channelName: channelName || 'Unknown Channel',
-    channelThumbnail: `https://via.placeholder.com/60/4285f4/ffffff?text=${channelName?.charAt(0) || 'C'}`,
+    channelName: finalChannelName,
+    channelThumbnail: `https://via.placeholder.com/60/ff6b6b/ffffff?text=${encodeURIComponent(finalChannelName.charAt(0))}`,
     videoThumbnail: `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`,
     summary: video.summary || '요약이 아직 생성되지 않았습니다.',
     createdAt: video.createdAt,
