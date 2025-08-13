@@ -58,8 +58,13 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         // Store mock tokens
         await secureStorage.setItem('mobile_auth_token', 'mobile-test-token-' + Date.now());
 
-        // Update auth store
+        // Update auth store and wait for completion
+        console.log('🔄 Updating auth store with user data...');
         login(user);
+        
+        // Wait a moment for the store to update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         setError(null);
         
         console.log('✅ Mobile user authenticated and logged in');
@@ -76,6 +81,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       
       setError(errorMessage);
       console.error('❌ Mobile Sign-In Error:', err);
+      throw err; // Re-throw so the component can handle it
     } finally {
       setIsLoading(false);
       setLoading(false);

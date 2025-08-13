@@ -11,7 +11,7 @@
     "newArchEnabled": true,
     "runtimeVersion": "1.0.0",
     "updates": {
-      "url": "https://u.expo.dev/your-project-id"
+      "url": "https://u.expo.dev/a8839540-39ec-431e-a346-bdfdff731ecd"
     },
     "ios": {
       "supportsTablet": true,
@@ -35,7 +35,6 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.shook.app",
-      "versionCode": 1,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.VIBRATE",
@@ -82,7 +81,7 @@
       [
         "expo-updates",
         {
-          "username": "your-username"
+          "username": "saulpark"
         }
       ]
     ],

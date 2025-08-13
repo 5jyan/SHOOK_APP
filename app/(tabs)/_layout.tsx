@@ -37,6 +37,12 @@ export default function TabLayout() {
             }}
           />
           <Tabs.Screen
+            name="index"
+            options={{
+              href: null, // Hide from tab bar
+            }}
+          />
+          <Tabs.Screen
             name="summaries"
             options={{
               title: '요약',

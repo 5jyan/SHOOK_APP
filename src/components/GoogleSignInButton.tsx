@@ -16,12 +16,14 @@ export function GoogleSignInButton({
 
   const handleSignIn = async () => {
     try {
+      console.log('🔘 Google sign-in button pressed');
       await signIn();
+      console.log('✅ Sign-in completed successfully');
       onSuccess?.();
-      // Navigate to channels tab after successful login
-      router.replace('/(tabs)/channels');
+      // Don't navigate here - let ProtectedRoute handle it automatically
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Google 로그인에 실패했습니다.';
+      console.error('❌ Sign-in failed:', errorMessage);
       onError?.(errorMessage);
       Alert.alert('로그인 오류', errorMessage);
     }

@@ -53,6 +53,10 @@ export default function RootLayout() {
               headerShown: false,
               presentation: 'modal' 
             }} />
+            <Stack.Screen name="auth-complex" options={{ 
+              headerShown: false,
+              presentation: 'modal' 
+            }} />
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />
