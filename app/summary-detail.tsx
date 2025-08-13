@@ -97,7 +97,7 @@ export default function SummaryDetailScreen() {
           <IconSymbol name="chevron.left" size={24} color="#374151" />
         </Pressable>
         
-        <Text style={styles.headerTitle}>요약</Text>
+        <Text style={styles.headerTitle}>상세 내용</Text>
         
         <Pressable onPress={handleSharePress} style={styles.shareButton}>
           <IconSymbol name="square.and.arrow.up" size={24} color="#374151" />
@@ -176,7 +176,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 8,
+    paddingBottom: 12,
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
