@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, RefreshControl } from 'react-native';
+import { View, StyleSheet, RefreshControl, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { YoutubeChannelSearch } from '@/components/YoutubeChannelSearch';
 import { ChannelList } from '@/components/ChannelList';
@@ -34,14 +34,22 @@ export default function ChannelsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.placeholder} />
+        <Text style={styles.headerTitle}>채널</Text>
+        <View style={styles.placeholder} />
+      </View>
       <View style={styles.content}>
         {/* Fixed search header */}
         <View style={styles.searchSection}>
-          <YoutubeChannelSearch
-            onChannelAdded={handleChannelAdded}
-            maxChannels={3}
-            currentChannelCount={channelCount}
-          />
+          <View style={styles.searchWrapper}>
+            <YoutubeChannelSearch
+              onChannelAdded={handleChannelAdded}
+              maxChannels={3}
+              currentChannelCount={channelCount}
+            />
+          </View>
         </View>
 
         {/* Scrollable channel list */}
@@ -63,14 +71,33 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  placeholder: {
+    width: 40,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
   content: {
     flex: 1,
   },
   searchSection: {
     backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
     minHeight: 200, // Ensure minimum height for visibility
+  },
+  searchWrapper: {
+    backgroundColor: '#f9fafb', // Subtle different background to separate from header
   },
   listSection: {
     flex: 1,
