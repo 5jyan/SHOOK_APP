@@ -9,10 +9,9 @@ config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 config.resolver.alias = {
   ...config.resolver.alias,
   'react-native$': 'react-native-web',
+  '@': path.resolve(__dirname),
   '@/components': path.resolve(__dirname, 'components'),
-  '@/src/components': path.resolve(__dirname, 'src/components'),
   '@/hooks': path.resolve(__dirname, 'hooks'),
-  '@/src/hooks': path.resolve(__dirname, 'src/hooks'),
   '@/services': path.resolve(__dirname, 'src/services'),
   '@/stores': path.resolve(__dirname, 'src/stores'),
   '@/lib': path.resolve(__dirname, 'src/lib'),
