@@ -2,6 +2,7 @@ import React from 'react';
 import { View, FlatList, StyleSheet, RefreshControl, Text, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import { SummaryCard } from '@/components/SummaryCard';
 import { EmptyState } from '@/components/EmptyState';
 import { useVideoSummariesCached, transformVideoSummaryToCardData, SummaryCardData } from '@/hooks/useVideoSummariesCached';
@@ -11,6 +12,7 @@ import { useChannels } from '@/contexts/ChannelsContext';
 export default function SummariesScreen() {
   console.log('📺 [SummariesScreen] Component mounting/re-rendering');
   
+  const isFocused = useIsFocused();
   const { user } = useAuthStore();
   const { channels } = useChannels(); // Get channel data from context
   console.log('📺 [SummariesScreen] User from auth store:', user);
@@ -39,24 +41,13 @@ export default function SummariesScreen() {
   
   const [refreshing, setRefreshing] = React.useState(false);
   
-  // Add explicit effect to test API call
+  // Refetch when tab is focused
   React.useEffect(() => {
-    console.log('📺 [SummariesScreen] useEffect triggered - component mounted');
-    console.log('📺 [SummariesScreen] Will call refetch to test API...');
-    
-    // Test API call when component mounts
-    const testApiCall = async () => {
-      try {
-        console.log('📺 [SummariesScreen] Calling refetch() manually...');
-        await refetch();
-        console.log('📺 [SummariesScreen] Manual refetch completed');
-      } catch (error) {
-        console.error('📺 [SummariesScreen] Manual refetch failed:', error);
-      }
-    };
-    
-    testApiCall();
-  }, []); // Empty dependency array - only run on mount
+    if (isFocused) {
+      console.log('📺 [SummariesScreen] Tab focused - checking for new data...');
+      refetch();
+    }
+  }, [isFocused, refetch]);
   
   // Transform API data to match component interface
   const summaries: SummaryCardData[] = React.useMemo(() => {

@@ -1,8 +1,7 @@
 import { EmptyState } from '@/components/EmptyState';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useUserChannels } from '@/hooks/useUserChannels';
-import { useVideoSummaries } from '@/hooks/useVideoSummaries';
-import { transformVideoSummaryToCardData } from '@/hooks/useVideoSummariesCached';
+import { useVideoSummariesCached, transformVideoSummaryToCardData } from '@/hooks/useVideoSummariesCached';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
@@ -23,7 +22,7 @@ export default function SummaryDetailScreen() {
   const params = useLocalSearchParams();
   const videoId = params.summaryId as string;
   
-  const { data: videoSummaries = [], isLoading, error, refetch } = useVideoSummaries();
+  const { data: videoSummaries = [], isLoading, error, refetch } = useVideoSummariesCached();
   const { channels } = useUserChannels();
   
   // Find the specific video by ID and transform it to get channel info

@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useNotificationStore } from '@/stores/notification-store';
 import { apiService, type PushTokenData } from './api';
+import { queryClient } from '@/lib/query-client';
 
 // Configure how notifications are handled when received
 Notifications.setNotificationHandler({
@@ -307,34 +308,71 @@ export class NotificationService {
     const notificationListener = Notifications.addNotificationReceivedListener(notification => {
       console.log('🔔 [NotificationService] Notification received while app running:', notification);
       
-      // Handle the notification (you can customize this)
-      // For example, update app state, show custom UI, etc.
+      // Handle the notification - refresh video summaries data using incremental sync
+      const data = notification.request.content.data;
+      
+      if (data?.type === 'new_video_summary') {
+        console.log('🔔 [NotificationService] New video summary notification received, triggering incremental sync...');
+        console.log('🔔 [NotificationService] Video data:', {
+          videoId: data.videoId,
+          channelId: data.channelId,
+          channelName: data.channelName
+        });
+        
+        // Trigger refetch which will use incremental sync to get only new videos
+        queryClient.refetchQueries({
+          queryKey: ['videoSummariesCached']
+        }).then(() => {
+          console.log('🔔 [NotificationService] Video summaries refetch completed - new video should be in cache now');
+        }).catch((error) => {
+          console.error('🔔 [NotificationService] Error during video summaries refetch:', error);
+        });
+        
+        // Also refetch regular video summaries cache for compatibility
+        queryClient.refetchQueries({
+          queryKey: ['videoSummaries']
+        });
+      }
     });
 
     // Listener for when user taps on notification
     const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
       console.log('🔔 [NotificationService] User tapped notification:', response);
       
-      // Handle notification tap - navigate to summaries tab
+      // Handle notification tap - navigate to specific summary or summaries tab
       const data = response.notification.request.content.data;
       
       try {
-        console.log('🔔 [NotificationService] Navigating to summaries tab...');
+        // Trigger incremental sync before navigation to ensure fresh data
+        if (data?.type === 'new_video_summary') {
+          console.log('🔔 [NotificationService] Triggering incremental sync before navigation...');
+          
+          // Use refetch instead of invalidate to leverage incremental sync
+          queryClient.refetchQueries({
+            queryKey: ['videoSummariesCached']
+          });
+          
+          queryClient.refetchQueries({
+            queryKey: ['videoSummaries']
+          });
+        }
         
-        // Navigate to summaries tab when notification is tapped
-        router.replace('/(tabs)/summaries');
-        
-        // Optional: If there's specific video data, you could navigate to detail screen
+        // If there's specific video data, navigate to detail screen
         if (data?.videoId) {
-          console.log('🔔 [NotificationService] Video ID in notification:', data.videoId);
-          // Could navigate to specific video detail later:
-          // router.push({
-          //   pathname: '/summary-detail',
-          //   params: { summaryId: data.videoId, videoTitle: data.videoTitle || 'New Video' }
-          // });
+          console.log('🔔 [NotificationService] Navigating to summary detail for video:', data.videoId);
+          
+          router.push({
+            pathname: '/summary-detail',
+            params: { summaryId: data.videoId }
+          });
+        } else {
+          console.log('🔔 [NotificationService] No videoId, navigating to summaries tab...');
+          
+          // Fallback: Navigate to summaries tab when no specific video ID
+          router.replace('/(tabs)/summaries');
         }
       } catch (error) {
-        console.error('🔔 [NotificationService] Error navigating to summaries:', error);
+        console.error('🔔 [NotificationService] Error navigating to summary detail:', error);
         // Fallback: try to navigate to summaries tab
         try {
           router.replace('/(tabs)/summaries');
