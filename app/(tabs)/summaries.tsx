@@ -154,9 +154,7 @@ export default function SummariesScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.placeholder} />
         <Text style={styles.headerTitle}>요약 리스트</Text>
-        <View style={styles.placeholder} />
       </View>
       
       <FlatList
@@ -179,21 +177,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
-  placeholder: {
-    width: 40,
-  },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: 'bold',
     color: '#111827',
   },
   listContainer: {

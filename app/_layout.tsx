@@ -12,6 +12,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { queryClient, restoreQueryClient } from '@/lib/query-client';
 import { notificationService } from '@/services/notification';
+import { ChannelsProvider } from '@/contexts/ChannelsContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -46,8 +47,9 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
+        <ChannelsProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
             <Stack.Screen name="auth" options={{ 
               headerShown: false,
@@ -59,9 +61,11 @@ export default function RootLayout() {
             }} />
             <Stack.Screen name="+not-found" />
             <Stack.Screen name="summary-detail" options={{ headerShown: false }} />
-          </Stack>
-          <StatusBar style="dark" />
-        </ThemeProvider>
+            <Stack.Screen name="channel-search" options={{ headerShown: false }} />
+            </Stack>
+            <StatusBar style="dark" />
+          </ThemeProvider>
+        </ChannelsProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

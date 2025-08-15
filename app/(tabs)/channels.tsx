@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, RefreshControl, Text } from 'react-native';
+import { StyleSheet, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { YoutubeChannelSearch } from '@/components/YoutubeChannelSearch';
+import { router } from 'expo-router';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import { ChannelList } from '@/components/ChannelList';
 import { useChannels } from '@/contexts/ChannelsContext';
 
@@ -18,17 +19,15 @@ export default function ChannelsScreen() {
     }
   }, [refreshChannels]);
 
-  const handleChannelAdded = React.useCallback(() => {
-    // Refresh the channel list when a new channel is added
-    console.log('🔄 [ChannelsScreen] handleChannelAdded called, refreshing channels...');
-    refreshChannels();
-  }, [refreshChannels]);
-
   const handleChannelDeleted = React.useCallback(() => {
     // Refresh channels to update the count immediately
     console.log('🗑️ [ChannelsScreen] handleChannelDeleted called, refreshing channels...');
     refreshChannels();
   }, [refreshChannels]);
+
+  const handleSearchPress = () => {
+    router.push('/channel-search');
+  };
 
   console.log('📺 [ChannelsScreen] rendering with channelCount:', channelCount);
 
@@ -36,32 +35,18 @@ export default function ChannelsScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.placeholder} />
         <Text style={styles.headerTitle}>채널</Text>
-        <View style={styles.placeholder} />
+        <TouchableOpacity onPress={handleSearchPress} style={styles.searchButton}>
+          <IconSymbol name="magnifyingglass" size={24} color="#374151" />
+        </TouchableOpacity>
       </View>
-      <View style={styles.content}>
-        {/* Fixed search header */}
-        <View style={styles.searchSection}>
-          <View style={styles.searchWrapper}>
-            <YoutubeChannelSearch
-              onChannelAdded={handleChannelAdded}
-              maxChannels={3}
-              currentChannelCount={channelCount}
-            />
-          </View>
-        </View>
-
-        {/* Scrollable channel list */}
-        <View style={styles.listSection}>
-          <ChannelList 
-            onChannelDeleted={handleChannelDeleted} 
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-            }
-          />
-        </View>
-      </View>
+      {/* Channel List */}
+      <ChannelList 
+        onChannelDeleted={handleChannelDeleted} 
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      />
     </SafeAreaView>
   );
 }
@@ -81,26 +66,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
-  placeholder: {
-    width: 40,
+  searchButton: {
+    padding: 8,
+    borderRadius: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: 'bold',
     color: '#111827',
-  },
-  content: {
-    flex: 1,
-  },
-  searchSection: {
-    backgroundColor: '#ffffff',
-    minHeight: 200, // Ensure minimum height for visibility
-  },
-  searchWrapper: {
-    backgroundColor: '#f9fafb', // Subtle different background to separate from header
-  },
-  listSection: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
   },
 });
