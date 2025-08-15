@@ -5,9 +5,8 @@ import { router } from 'expo-router';
 
 export default function AuthScreen() {
   const handlePress = () => {
-    Alert.alert('로그인', 'Google 로그인 기능을 구현 중입니다.', [
-      { text: '확인', onPress: () => router.replace('/') }
-    ]);
+    // Redirect to the real auth screen
+    router.replace('/auth-complex');
   };
 
   return (

@@ -24,7 +24,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             await signOut();
-            router.replace('/auth');
+            router.replace('/auth-complex');
           },
         },
       ]
