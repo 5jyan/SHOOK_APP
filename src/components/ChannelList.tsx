@@ -1,16 +1,16 @@
+import { useChannels } from '@/contexts/ChannelsContext';
+import { type UserChannel } from '@/services/api';
 import React from 'react';
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   Pressable,
   StyleSheet,
-  Alert,
-  ActivityIndicator,
+  Text,
+  View,
 } from 'react-native';
-import { useChannels } from '@/contexts/ChannelsContext';
-import { type YoutubeChannel, type UserChannel } from '@/services/api';
 
 interface ChannelListProps {
   onChannelDeleted?: (channelId: string) => void;
@@ -176,10 +176,7 @@ export function ChannelList({ onChannelDeleted, refreshControl }: ChannelListPro
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>구독 중인 채널 ({channelCount}개)</Text>
-      </View>
-      
+
       <FlatList
         data={channels}
         renderItem={renderChannelItem}

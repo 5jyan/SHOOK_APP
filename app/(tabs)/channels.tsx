@@ -1,10 +1,10 @@
-import React from 'react';
-import { StyleSheet, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { ChannelList } from '@/components/ChannelList';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useChannels } from '@/contexts/ChannelsContext';
+import { router } from 'expo-router';
+import React from 'react';
+import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChannelsScreen() {
   const { refreshChannels, channelCount, isLoading } = useChannels();
@@ -35,7 +35,7 @@ export default function ChannelsScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>채널</Text>
+        <Text style={styles.headerTitle}>나의 채널</Text>
         <TouchableOpacity onPress={handleSearchPress} style={styles.searchButton}>
           <IconSymbol name="magnifyingglass" size={24} color="#374151" />
         </TouchableOpacity>
