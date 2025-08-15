@@ -1,7 +1,7 @@
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 import { router } from 'expo-router';
 import React from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AuthScreen() {
@@ -21,6 +21,11 @@ export default function AuthScreen() {
       >
         <View style={styles.content}>
           <View style={styles.header}>
+            <Image 
+              source={require('../assets/images/Shook.png')} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>Shook</Text>
             <Text style={styles.subtitle}>
               YouTube 채널을 모니터링하고{'\n'}새 영상을 알림으로 받아보세요
@@ -71,6 +76,11 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 48,
     alignItems: 'center',
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 16,
   },
   title: {
     fontSize: 36,
