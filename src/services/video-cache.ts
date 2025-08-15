@@ -318,6 +318,36 @@ export class VideoCacheService {
     
     return false;
   }
+
+  // Remove videos from a specific channel
+  async removeChannelVideos(channelId: string): Promise<VideoSummary[]> {
+    console.log(`📦 [VideoCache] Removing videos from channel: ${channelId}`);
+    const startTime = Date.now();
+    
+    try {
+      const cachedVideos = await this.getCachedVideos();
+      
+      // Filter out videos from the specified channel
+      const remainingVideos = cachedVideos.filter(video => video.channelId !== channelId);
+      const removedCount = cachedVideos.length - remainingVideos.length;
+      
+      console.log(`📦 [VideoCache] Removed ${removedCount} videos from channel ${channelId}`);
+      
+      if (removedCount > 0) {
+        // Save updated cache
+        await this.saveVideosToCache(remainingVideos);
+        
+        const removeTime = Date.now() - startTime;
+        console.log(`📦 [VideoCache] Channel videos removal completed in ${removeTime}ms`);
+      }
+      
+      return remainingVideos;
+    } catch (error) {
+      console.error('📦 [VideoCache] Error removing channel videos:', error);
+      // Return original cached videos on error
+      return await this.getCachedVideos();
+    }
+  }
 }
 
 // Export singleton instance

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiService, type UserChannel } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
+import { videoCacheService } from '@/services/video-cache';
 
 interface ChannelsContextType {
   channels: UserChannel[];
@@ -75,8 +76,20 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
       
       if (response.success) {
         console.log('✅ [ChannelsContext] Channel deleted successfully');
+        
         // Update local state immediately
         setChannels(prev => prev.filter(ch => ch.youtubeChannel.channelId !== channelId));
+        
+        // Remove related video summaries from cache
+        console.log('🗑️ [ChannelsContext] Removing related video summaries from cache...');
+        try {
+          await videoCacheService.removeChannelVideos(channelId);
+          console.log('✅ [ChannelsContext] Related video summaries removed from cache');
+        } catch (cacheError) {
+          console.error('❌ [ChannelsContext] Error removing video summaries from cache:', cacheError);
+          // Don't fail the channel deletion if cache cleanup fails
+        }
+        
         return true;
       } else {
         console.error('❌ [ChannelsContext] Failed to delete channel:', response.error);

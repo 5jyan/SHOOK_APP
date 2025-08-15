@@ -1,5 +1,6 @@
 import { useChannels } from '@/contexts/ChannelsContext';
 import { type UserChannel } from '@/services/api';
+import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -22,6 +23,7 @@ interface ChannelListProps {
 export function ChannelList({ onChannelDeleted, refreshControl }: ChannelListProps) {
   const { channels, isLoading, error, deleteChannel, refreshChannels, channelCount } = useChannels();
   const [deletingChannelId, setDeletingChannelId] = React.useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   console.log('📺 [ChannelList] rendering:', {
     channelCount,
@@ -52,6 +54,11 @@ export function ChannelList({ onChannelDeleted, refreshControl }: ChannelListPro
             try {
               await deleteChannel(channel.youtubeChannel.channelId);
               onChannelDeleted?.(channel.youtubeChannel.channelId);
+              
+              // Invalidate video summaries cache to refresh UI
+              console.log('🔄 [ChannelList] Invalidating video summaries cache after channel deletion');
+              queryClient.invalidateQueries({ queryKey: ['videoSummariesCached'] });
+              
               Alert.alert('구독 취소 완료', `"${channel.youtubeChannel.title}" 채널 구독이 취소되었습니다.`);
             } catch (err) {
               Alert.alert(

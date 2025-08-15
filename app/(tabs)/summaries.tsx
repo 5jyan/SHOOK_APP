@@ -24,7 +24,8 @@ export default function SummariesScreen() {
     error, 
     refetch,
     cacheData,
-    queryState 
+    queryState,
+    removeChannelVideos 
   } = useVideoSummariesCached();
   
   console.log('📺 [SummariesScreen] Hook results:', {

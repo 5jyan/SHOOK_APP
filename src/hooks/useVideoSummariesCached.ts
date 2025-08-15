@@ -183,12 +183,32 @@ export const useVideoSummariesCached = () => {
   };
 
   console.log('📦 [useVideoSummariesCached] Query state:', queryState);
+
+  // Function to remove videos from a specific channel
+  const removeChannelVideos = async (channelId: string) => {
+    console.log(`📦 [useVideoSummariesCached] Removing videos from channel: ${channelId}`);
+    
+    try {
+      // Remove from cache
+      const updatedVideos = await videoCacheService.removeChannelVideos(channelId);
+      
+      // Update TanStack Query cache
+      query.refetch();
+      
+      console.log(`📦 [useVideoSummariesCached] Successfully removed videos from channel: ${channelId}`);
+      return updatedVideos;
+    } catch (error) {
+      console.error('📦 [useVideoSummariesCached] Error removing channel videos:', error);
+      throw error;
+    }
+  };
   
   return {
     ...query,
     data: query.data?.videos || [],
     cacheData: query.data,
     queryState,
+    removeChannelVideos, // Export the function
   };
 };
 
