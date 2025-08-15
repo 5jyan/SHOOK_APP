@@ -20,6 +20,7 @@ interface GoogleVerifyResponse {
     email: string;
     googleId: string;
     authProvider: string;
+    role: 'user' | 'tester' | 'manager';
     slackUserId?: string;
     slackChannelId?: string;
     slackEmail?: string;

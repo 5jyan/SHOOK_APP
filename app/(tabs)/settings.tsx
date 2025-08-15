@@ -4,10 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/auth-store';
 import { useGoogleAuth } from '@/hooks/useGoogleAuthTemp';
-import { BackendTestButton } from '@/components/BackendTestButton';
-import { PushNotificationTestButton } from '@/components/PushNotificationTestButton';
-import { CacheStatsButton } from '@/components/CacheStatsButton';
-import { ManualMonitoringButton } from '@/components/ManualMonitoringButton';
 
 export default function SettingsScreen() {
   const { user } = useAuthStore();
@@ -30,6 +26,24 @@ export default function SettingsScreen() {
       ]
     );
   };
+
+  const handleDeveloperToolsPress = () => {
+    router.push('/developer-tools');
+  };
+
+  // Check if user has developer access (manager or tester)
+  // Temporarily allow all users to see developer tools for debugging
+  const hasDeveloperAccess = true; // user?.role === 'manager' || user?.role === 'tester';
+  
+  // Debug logging
+  console.log('🔍 [SettingsScreen] User debug info:', {
+    userId: user?.id,
+    username: user?.username,
+    email: user?.email,
+    role: user?.role,
+    hasDeveloperAccess,
+    rawUser: user,
+  });
 
   const settingsItems = [
     {
@@ -54,6 +68,13 @@ export default function SettingsScreen() {
       },
     },
   ];
+
+  // Developer tools item (only for manager/tester)
+  const developerToolsItem = {
+    title: '개발자 도구',
+    description: '개발 및 테스트를 위한 도구들입니다',
+    onPress: handleDeveloperToolsPress,
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -92,18 +113,16 @@ export default function SettingsScreen() {
                       인증됨
                     </Text>
                   )}
+                  {user?.role && (
+                    <Text style={[styles.badge, styles.roleBadge]}>
+                      {user.role === 'user' ? '사용자' : 
+                       user.role === 'tester' ? '테스터' : 
+                       user.role === 'manager' ? '관리자' : user.role}
+                    </Text>
+                  )}
                 </View>
               </View>
             </View>
-          </View>
-
-          {/* Backend Test Section */}
-          <View style={styles.settingsContainer}>
-            <Text style={styles.sectionTitle}>개발자 도구</Text>
-            <ManualMonitoringButton />
-            <BackendTestButton />
-            <PushNotificationTestButton />
-            <CacheStatsButton />
           </View>
 
           {/* Settings Items */}
@@ -122,6 +141,21 @@ export default function SettingsScreen() {
                 </Text>
               </Pressable>
             ))}
+            
+            {/* Developer Tools Button (only for manager/tester) */}
+            {hasDeveloperAccess && (
+              <Pressable
+                onPress={developerToolsItem.onPress}
+                style={[styles.settingItem, styles.developerToolsItem]}
+              >
+                <Text style={styles.settingTitle}>
+                  {developerToolsItem.title}
+                </Text>
+                <Text style={styles.settingDescription}>
+                  {developerToolsItem.description}
+                </Text>
+              </Pressable>
+            )}
           </View>
 
           {/* Logout Button */}
@@ -212,6 +246,10 @@ const styles = StyleSheet.create({
     color: '#2563eb',
     backgroundColor: '#dbeafe',
   },
+  roleBadge: {
+    color: '#7c3aed',
+    backgroundColor: '#e9d5ff',
+  },
   settingsContainer: {
     marginBottom: 24,
   },
@@ -238,6 +276,11 @@ const styles = StyleSheet.create({
   settingDescription: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  developerToolsItem: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#f59e0b',
+    backgroundColor: '#fffbeb',
   },
   logoutButton: {
     backgroundColor: '#ef4444',

@@ -44,12 +44,14 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
 
       if (loginResponse.success && loginResponse.data?.user) {
         console.log('✅ Backend mobile login successful:', loginResponse.data.user);
+        console.log('🔍 [Login] User role from backend:', loginResponse.data.user.role);
         
         // Transform backend user to mobile app format
         const user = {
           id: loginResponse.data.user.id.toString(),
           username: loginResponse.data.user.username,
           email: loginResponse.data.user.email,
+          role: loginResponse.data.user.role,
           picture: 'https://via.placeholder.com/100/4285f4/ffffff?text=MT',
           givenName: 'Mobile',
           familyName: 'Test',

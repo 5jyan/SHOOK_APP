@@ -62,6 +62,7 @@ export default function RootLayout() {
             <Stack.Screen name="+not-found" />
             <Stack.Screen name="summary-detail" options={{ headerShown: false }} />
             <Stack.Screen name="channel-search" options={{ headerShown: false }} />
+            <Stack.Screen name="developer-tools" options={{ headerShown: false }} />
             </Stack>
             <StatusBar style="dark" />
           </ThemeProvider>
