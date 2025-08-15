@@ -9,8 +9,10 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 
 interface ChannelListProps {
   onChannelDeleted?: (channelId: string) => void;
@@ -33,28 +35,28 @@ export function ChannelList({ onChannelDeleted, refreshControl }: ChannelListPro
     }))
   });
 
-  const handleDeleteChannel = (channel: UserChannel) => {
+  const handleUnsubscribeChannel = (channel: UserChannel) => {
     Alert.alert(
-      '채널 삭제',
-      `"${channel.youtubeChannel.title}" 채널을 삭제하시겠습니까?`,
+      '구독 취소',
+      `"${channel.youtubeChannel.title}" 채널 구독을 취소하시겠습니까?`,
       [
         {
           text: '취소',
           style: 'cancel',
         },
         {
-          text: '삭제',
+          text: '구독 취소',
           style: 'destructive',
           onPress: async () => {
             setDeletingChannelId(channel.youtubeChannel.channelId);
             try {
               await deleteChannel(channel.youtubeChannel.channelId);
               onChannelDeleted?.(channel.youtubeChannel.channelId);
-              Alert.alert('삭제 완료', `"${channel.youtubeChannel.title}" 채널이 삭제되었습니다.`);
+              Alert.alert('구독 취소 완료', `"${channel.youtubeChannel.title}" 채널 구독이 취소되었습니다.`);
             } catch (err) {
               Alert.alert(
-                '삭제 실패', 
-                err instanceof Error ? err.message : '채널 삭제 중 오류가 발생했습니다.'
+                '구독 취소 실패', 
+                err instanceof Error ? err.message : '채널 구독 취소 중 오류가 발생했습니다.'
               );
             } finally {
               setDeletingChannelId(null);
@@ -67,13 +69,20 @@ export function ChannelList({ onChannelDeleted, refreshControl }: ChannelListPro
 
   const formatSubscriberCount = (count?: string): string => {
     if (!count) return '';
-    const num = parseInt(count);
+    
+    // 숫자만 추출
+    const numbers = count.replace(/[^0-9]/g, '');
+    if (!numbers) return '';
+    
+    const num = parseInt(numbers);
     if (num >= 1000000) {
-      return `${(num / 1000000).toFixed(1)}M subscribers`;
+      const millions = num / 1000000;
+      return millions % 1 === 0 ? `${millions}M` : `${millions.toFixed(1)}M`;
     } else if (num >= 1000) {
-      return `${(num / 1000).toFixed(1)}K subscribers`;
+      const thousands = num / 1000;
+      return thousands % 1 === 0 ? `${thousands}K` : `${thousands.toFixed(1)}K`;
     }
-    return `${num} subscribers`;
+    return num.toString();
   };
 
   const formatDate = (dateString: string): string => {
@@ -94,6 +103,16 @@ export function ChannelList({ onChannelDeleted, refreshControl }: ChannelListPro
 
     return (
       <View style={styles.channelItem}>
+        {/* 우측 상단 하트 버튼 */}
+        <TouchableOpacity
+          style={styles.heartButton}
+          onPress={() => handleUnsubscribeChannel(item)}
+          disabled={deletingChannelId === item.youtubeChannel.channelId}
+          activeOpacity={0.6}
+        >
+          <IconSymbol name="heart.fill" size={20} color="#ef4444" />
+        </TouchableOpacity>
+
         <View style={styles.channelContent}>
           {item.youtubeChannel.thumbnail ? (
             <Image
@@ -111,33 +130,15 @@ export function ChannelList({ onChannelDeleted, refreshControl }: ChannelListPro
             <Text style={styles.channelTitle} numberOfLines={2}>
               {item.youtubeChannel.title || '제목 없음'}
             </Text>
-            {item.youtubeChannel.handle && (
-              <Text style={styles.channelHandle}>@{item.youtubeChannel.handle}</Text>
-            )}
             {item.youtubeChannel.subscriberCount && (
               <Text style={styles.subscriberCount}>
-                {formatSubscriberCount(item.youtubeChannel.subscriberCount)}
+                구독자 {formatSubscriberCount(item.youtubeChannel.subscriberCount)}
               </Text>
             )}
             <Text style={styles.addedDate}>
               {item.createdAt ? formatDate(item.createdAt) : '날짜 없음'}에 추가됨
             </Text>
           </View>
-
-          <Pressable
-            style={[
-              styles.deleteButton,
-              deletingChannelId === item.youtubeChannel.channelId && styles.disabledButton
-            ]}
-            onPress={() => handleDeleteChannel(item)}
-            disabled={deletingChannelId === item.youtubeChannel.channelId}
-          >
-            {deletingChannelId === item.youtubeChannel.channelId ? (
-              <ActivityIndicator size="small" color="#ef4444" />
-            ) : (
-              <Text style={styles.deleteButtonText}>삭제</Text>
-            )}
-          </Pressable>
         </View>
       </View>
     );
@@ -209,6 +210,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   channelItem: {
+    position: 'relative',
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
@@ -253,13 +255,8 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 4,
   },
-  channelHandle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 2,
-  },
   subscriberCount: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#9ca3af',
     marginBottom: 2,
   },
@@ -267,20 +264,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#9ca3af',
   },
-  deleteButton: {
-    backgroundColor: '#fee2e2',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginLeft: 8,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  deleteButtonText: {
-    color: '#dc2626',
-    fontSize: 12,
-    fontWeight: '600',
+  heartButton: {
+    position: 'absolute',
+    top: 8,
+    right: 12,
+    zIndex: 1,
+    padding: 8,
   },
   loadingContainer: {
     flex: 1,
