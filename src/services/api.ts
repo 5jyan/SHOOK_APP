@@ -104,11 +104,16 @@ class ApiService {
           throw new Error(`Server returned ${response.status}: ${text.substring(0, 100)}...`);
         }
         
-        // Try to parse as JSON anyway
-        try {
-          data = JSON.parse(text);
-        } catch {
-          throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
+        // Special handling for logout endpoint that returns plain text "OK"
+        if (endpoint === '/api/logout' && text.trim() === 'OK') {
+          data = { success: true };
+        } else {
+          // Try to parse as JSON anyway
+          try {
+            data = JSON.parse(text);
+          } catch {
+            throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
+          }
         }
       }
 

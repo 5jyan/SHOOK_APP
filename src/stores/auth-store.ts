@@ -57,7 +57,7 @@ export const useAuthStore = create<AuthStore>()(
           state.isAuthenticated = false;
           state.isLoading = false;
           
-          // Clear push notification token on logout
+          // Clear push notification token (local only)
           notificationService.clearToken().catch((error) => {
             console.error('Failed to clear notification token:', error);
           });

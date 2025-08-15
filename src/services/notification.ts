@@ -291,13 +291,15 @@ export class NotificationService {
   async clearToken(): Promise<void> {
     console.log('🔔 [NotificationService] Clearing push token...');
     
-    // Unregister from backend first
-    await this.unregisterWithBackend();
-    
+    // Don't unregister from backend here - this should be done before logout
+    // Just clear local state
     this.pushToken = null;
     this.isInitialized = false;
     await AsyncStorage.removeItem('expo_push_token');
+    await AsyncStorage.removeItem('push_token_registered');
     useNotificationStore.getState().reset();
+    
+    console.log('🔔 [NotificationService] Push token cleared from local storage');
   }
 
   // Add notification listeners

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
 import { secureStorage } from '@/lib/storage';
 import { apiService } from '@/services/api';
+import { notificationService } from '@/services/notification';
 
 interface UseGoogleAuthReturn {
   signIn: () => Promise<void>;
@@ -95,7 +96,16 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
 
       console.log('🚪 Starting mobile sign-out...');
 
-      // Notify backend
+      // Step 1: Unregister push token from backend BEFORE logout (while session is still valid)
+      try {
+        console.log('🔔 Unregistering push token before logout...');
+        await notificationService.unregisterWithBackend();
+        console.log('✅ Push token unregistered successfully');
+      } catch (pushError) {
+        console.warn('⚠️ Failed to unregister push token (continuing with logout):', pushError);
+      }
+
+      // Step 2: Notify backend about logout
       const logoutResponse = await apiService.logout();
       
       if (logoutResponse.success) {
@@ -104,9 +114,10 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         console.warn('⚠️ Backend logout failed:', logoutResponse.error);
       }
 
-      // Clear tokens
+      // Step 3: Clear local tokens and state
       await secureStorage.removeItem('mobile_auth_token');
       
+      // Note: auth store logout() will call notificationService.clearToken()
       logout();
       console.log('✅ Mobile logout successful');
 
