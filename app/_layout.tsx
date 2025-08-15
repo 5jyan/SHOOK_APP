@@ -13,6 +13,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { queryClient, restoreQueryClient } from '@/lib/query-client';
 import { notificationService } from '@/services/notification';
 import { ChannelsProvider } from '@/contexts/ChannelsContext';
+import { GlobalUIDebugger } from '@/components/GlobalUIDebugger';
+import { FloatingDebugButton } from '@/components/FloatingDebugButton';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -65,6 +67,8 @@ export default function RootLayout() {
             <Stack.Screen name="developer-tools" options={{ headerShown: false }} />
             </Stack>
             <StatusBar style="dark" />
+            <FloatingDebugButton />
+            <GlobalUIDebugger />
           </ThemeProvider>
         </ChannelsProvider>
       </QueryClientProvider>

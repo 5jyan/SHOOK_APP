@@ -1,7 +1,7 @@
 import { EmptyState } from '@/components/EmptyState';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useUserChannels } from '@/hooks/useUserChannels';
-import { useVideoSummariesCached, transformVideoSummaryToCardData } from '@/hooks/useVideoSummariesCached';
+import { transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
@@ -209,25 +209,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 3,
+    paddingVertical: 12,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: 'bold',
     color: '#111827',
   },
   shareButton: {
-    width: 40,
-    height: 40,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },

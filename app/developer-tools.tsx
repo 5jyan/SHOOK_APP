@@ -6,6 +6,9 @@ import { BackendTestButton } from '@/components/BackendTestButton';
 import { PushNotificationTestButton } from '@/components/PushNotificationTestButton';
 import { CacheStatsButton } from '@/components/CacheStatsButton';
 import { ManualMonitoringButton } from '@/components/ManualMonitoringButton';
+import { UIDebuggerButton } from '@/components/UIDebuggerButton';
+import { AdvancedUIDebuggerButton } from '@/components/AdvancedUIDebuggerButton';
+import { GlobalDebuggerButton } from '@/components/GlobalDebuggerButton';
 import { TouchableOpacity } from 'react-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
@@ -33,6 +36,11 @@ export default function DeveloperToolsScreen() {
 
           {/* Developer Tools Section */}
           <View style={styles.toolsContainer}>
+            <Text style={styles.sectionTitle}>UI 디버깅</Text>
+            <GlobalDebuggerButton />
+            <UIDebuggerButton />
+            <AdvancedUIDebuggerButton />
+            
             <Text style={styles.sectionTitle}>모니터링 도구</Text>
             <ManualMonitoringButton />
             

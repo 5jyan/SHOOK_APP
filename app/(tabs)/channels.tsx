@@ -67,11 +67,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f1f5f9',
   },
   searchButton: {
-    padding: 8,
     borderRadius: 8,
+    marginRight: 8
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#111827',
   },

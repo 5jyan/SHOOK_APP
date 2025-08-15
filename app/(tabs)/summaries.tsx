@@ -1,13 +1,13 @@
-import React from 'react';
-import { View, FlatList, StyleSheet, RefreshControl, Text, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { useIsFocused } from '@react-navigation/native';
-import { SummaryCard } from '@/components/SummaryCard';
 import { EmptyState } from '@/components/EmptyState';
-import { useVideoSummariesCached, transformVideoSummaryToCardData, SummaryCardData } from '@/hooks/useVideoSummariesCached';
-import { useAuthStore } from '@/stores/auth-store';
+import { SummaryCard } from '@/components/SummaryCard';
 import { useChannels } from '@/contexts/ChannelsContext';
+import { SummaryCardData, transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
+import { useAuthStore } from '@/stores/auth-store';
+import { useIsFocused } from '@react-navigation/native';
+import { router } from 'expo-router';
+import React from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SummariesScreen() {
   console.log('📺 [SummariesScreen] Component mounting/re-rendering');
@@ -178,7 +178,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   header: {
-    alignItems: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#ffffff',
@@ -186,7 +188,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f1f5f9',
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#111827',
   },
