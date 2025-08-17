@@ -32,7 +32,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
-    scopes: ['openid', 'profile', 'email'],
+    scopes: ['profile', 'email'], // 더 간단한 스코프로 테스트
   });
 
   useEffect(() => {
@@ -103,12 +103,25 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       setLoading(true);
       setError(null);
 
+      console.log('🚀 Starting Google Sign-In...');
+      console.log('🔧 OAuth Config:', {
+        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS?.substring(0, 20) + '...',
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID?.substring(0, 20) + '...',
+        requestReady: !!request,
+      });
+
       if (!request) {
         throw new Error('Google Auth request not initialized');
       }
 
       // Prompt for authentication
-      await promptAsync();
+      console.log('📱 Prompting for Google authentication...');
+      const result = await promptAsync();
+      console.log('📋 Google Sign-In result:', {
+        type: result?.type,
+        error: result?.error,
+        hasAuthentication: !!(result as any)?.authentication,
+      });
       
     } catch (err) {
       const errorMessage = err instanceof Error 

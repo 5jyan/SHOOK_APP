@@ -1,7 +1,6 @@
 import { useGoogleAuth } from '@/hooks/useGoogleAuthTemp';
 import React from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
 
 interface GoogleSignInButtonProps {
   onSuccess?: () => void;

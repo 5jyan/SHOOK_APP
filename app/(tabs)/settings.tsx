@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable, Alert, Image, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { useAuthStore } from '@/stores/auth-store';
 import { useGoogleAuth } from '@/hooks/useGoogleAuthTemp';
+import { useAuthStore } from '@/stores/auth-store';
+import { router } from 'expo-router';
+import React from 'react';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const { user } = useAuthStore();

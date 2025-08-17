@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "npx @expo/cli start --port 19003",
+    "start:tunnel": "npx @expo/cli start --port 19003 --tunnel",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "npx @expo/cli start --android",
     "ios": "npx @expo/cli start --ios",
