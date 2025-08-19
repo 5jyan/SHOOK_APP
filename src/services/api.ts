@@ -36,6 +36,9 @@ interface YoutubeChannel {
   thumbnail?: string;
   subscriberCount?: string;
   videoCount?: string;
+  isActive?: boolean;
+  lastRssError?: string | null;
+  lastRssErrorAt?: string | null;
 }
 
 // Backend actually returns this structure
@@ -202,6 +205,9 @@ class ApiService {
           thumbnail: backendChannel.thumbnail,
           subscriberCount: backendChannel.subscriberCount,
           videoCount: backendChannel.videoCount,
+          isActive: backendChannel.isActive,
+          lastRssError: backendChannel.lastRssError,
+          lastRssErrorAt: backendChannel.lastRssErrorAt,
         }
       }));
       

@@ -137,11 +137,15 @@ export function ChannelList({ onChannelDeleted, refreshControl }: ChannelListPro
             <Text style={styles.channelTitle} numberOfLines={2}>
               {item.youtubeChannel.title || '제목 없음'}
             </Text>
-            {item.youtubeChannel.subscriberCount && (
+            {item.youtubeChannel.isActive === false ? (
+              <Text style={styles.inactiveChannelText}>
+                비활성화된 채널입니다
+              </Text>
+            ) : item.youtubeChannel.subscriberCount ? (
               <Text style={styles.subscriberCount}>
                 구독자 {formatSubscriberCount(item.youtubeChannel.subscriberCount)}
               </Text>
-            )}
+            ) : null}
             <Text style={styles.addedDate}>
               {item.createdAt ? formatDate(item.createdAt) : '날짜 없음'}에 추가됨
             </Text>
@@ -265,6 +269,12 @@ const styles = StyleSheet.create({
   subscriberCount: {
     fontSize: 13,
     color: '#9ca3af',
+    marginBottom: 2,
+  },
+  inactiveChannelText: {
+    fontSize: 13,
+    color: '#ef4444', // 빨간색
+    fontWeight: '600',
     marginBottom: 2,
   },
   addedDate: {
