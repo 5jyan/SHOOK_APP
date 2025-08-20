@@ -128,6 +128,8 @@ shook_app/
 npm start
 # 또는
 npx expo start
+# 또는 wifi 없이 tunnel 모드로 실행
+npx expo start --tunnel
 
 # 특정 플랫폼에서 실행
 npm run android     # Android 에뮬레이터/기기에서 실행
