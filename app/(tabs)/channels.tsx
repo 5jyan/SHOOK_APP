@@ -1,5 +1,6 @@
 import { ChannelList } from '@/components/ChannelList';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useChannels } from '@/contexts/ChannelsContext';
 import { router } from 'expo-router';
 import React from 'react';
@@ -9,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function ChannelsScreen() {
   const { refreshChannels, channelCount, isLoading } = useChannels();
   const [refreshing, setRefreshing] = React.useState(false);
+  const tabBarHeight = useBottomTabOverflow();
 
   const handleRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -46,6 +48,7 @@ export default function ChannelsScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
+        tabBarHeight={tabBarHeight}
       />
     </SafeAreaView>
   );

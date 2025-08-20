@@ -1,5 +1,6 @@
 import { EmptyState } from '@/components/EmptyState';
 import { SummaryCard } from '@/components/SummaryCard';
+import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useChannels } from '@/contexts/ChannelsContext';
 import { SummaryCardData, transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
 import { useAuthStore } from '@/stores/auth-store';
@@ -15,6 +16,7 @@ export default function SummariesScreen() {
   const isFocused = useIsFocused();
   const { user } = useAuthStore();
   const { channels } = useChannels(); // Get channel data from context
+  const tabBarHeight = useBottomTabOverflow();
   console.log('📺 [SummariesScreen] User from auth store:', user);
   console.log('📺 [SummariesScreen] Channels from context:', channels.length);
   
@@ -162,7 +164,7 @@ export default function SummariesScreen() {
         data={summaries}
         renderItem={renderSummaryCard}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[styles.listContainer, { paddingBottom: Math.max(16, tabBarHeight * 0.7) }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />

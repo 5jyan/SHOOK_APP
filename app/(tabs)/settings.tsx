@@ -1,3 +1,4 @@
+import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useGoogleAuth } from '@/hooks/useGoogleAuthTemp';
 import { useAuthStore } from '@/stores/auth-store';
 import { router } from 'expo-router';
@@ -8,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function SettingsScreen() {
   const { user } = useAuthStore();
   const { signOut, isLoading } = useGoogleAuth();
+  const tabBarHeight = useBottomTabOverflow();
 
   const handleLogout = () => {
     Alert.alert(
@@ -83,7 +85,7 @@ export default function SettingsScreen() {
         <Text style={styles.headerTitle}>설정</Text>
       </View>
       
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(24, tabBarHeight * 0.7) }}>
         <View style={styles.content}>
 
           {/* User Info */}

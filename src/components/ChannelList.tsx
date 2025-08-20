@@ -18,9 +18,10 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 interface ChannelListProps {
   onChannelDeleted?: (channelId: string) => void;
   refreshControl?: React.ReactElement;
+  tabBarHeight?: number;
 }
 
-export function ChannelList({ onChannelDeleted, refreshControl }: ChannelListProps) {
+export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0 }: ChannelListProps) {
   const { channels, isLoading, error, deleteChannel, refreshChannels, channelCount } = useChannels();
   const [deletingChannelId, setDeletingChannelId] = React.useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -194,7 +195,7 @@ export function ChannelList({ onChannelDeleted, refreshControl }: ChannelListPro
         renderItem={renderChannelItem}
         keyExtractor={(item) => item?.id?.toString() || `channel-${Date.now()}-${Math.random()}`}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[styles.listContainer, { paddingBottom: Math.max(16, tabBarHeight * 0.7) }]}
         refreshControl={refreshControl}
       />
     </View>
