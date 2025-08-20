@@ -46,7 +46,8 @@ export default function ChannelSearchScreen() {
   const [loadingChannelId, setLoadingChannelId] = React.useState<string | null>(null);
   const maxChannels = 3;
   const maxSearchResults = 10; // 검색 결과는 최대 10개
-  const isChannelLimitReached = channelCount >= maxChannels;
+  // manager 역할 사용자는 채널 제한이 없음
+  const isChannelLimitReached = user?.role !== 'manager' && channelCount >= maxChannels;
 
   // Auto-focus on search input when screen loads
   React.useEffect(() => {
@@ -233,6 +234,11 @@ export default function ChannelSearchScreen() {
             {isChannelLimitReached && (
               <Text style={styles.limitWarning}>
                 현재 최대 {maxChannels}개 채널을 구독 중입니다
+              </Text>
+            )}
+            {user?.role === 'manager' && channelCount >= maxChannels && (
+              <Text style={styles.managerInfo}>
+                매니저 권한으로 무제한 채널 구독 가능
               </Text>
             )}
           </View>
@@ -431,6 +437,13 @@ const styles = StyleSheet.create({
   limitWarning: {
     fontSize: 14,
     color: '#f59e0b',
+    textAlign: 'center',
+    marginTop: 16,
+    fontWeight: '500',
+  },
+  managerInfo: {
+    fontSize: 14,
+    color: '#10b981',
     textAlign: 'center',
     marginTop: 16,
     fontWeight: '500',
