@@ -1,4 +1,5 @@
 import { EmptyState } from '@/components/EmptyState';
+import { ShookLoadingScreen } from '@/components/ShookLoadingScreen';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useUserChannels } from '@/hooks/useUserChannels';
 import { transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
@@ -39,27 +40,25 @@ export default function SummaryDetailScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4285f4" />
-          <Text style={styles.loadingText}>요약을 불러오는 중...</Text>
-        </View>
+        <ShookLoadingScreen message="요약을 불러오는 중..." />
       </SafeAreaView>
     );
   }
   
-  if (error || !videoSummary) {
+  // Show error state with loading screen
+  if (error) {
     return (
       <SafeAreaView style={styles.container}>
-        <EmptyState
-          title="요약을 찾을 수 없습니다"
-          description="해당 영상의 요약이 존재하지 않거나 삭제되었습니다."
-          icon="exclamationmark.triangle"
-          action={
-            <Pressable style={styles.retryButton} onPress={() => router.back()}>
-              <Text style={styles.retryButtonText}>뒤로 가기</Text>
-            </Pressable>
-          }
-        />
+        <ShookLoadingScreen message="요약을 불러오는 중..." />
+      </SafeAreaView>
+    );
+  }
+
+  // Show loading screen if no video summary found (data might still be loading)
+  if (!videoSummary) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ShookLoadingScreen message="요약을 불러오는 중..." />
       </SafeAreaView>
     );
   }
