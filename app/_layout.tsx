@@ -15,6 +15,7 @@ import { notificationService } from '@/services/notification';
 import { ChannelsProvider } from '@/contexts/ChannelsContext';
 import { GlobalUIDebugger } from '@/components/GlobalUIDebugger';
 import { FloatingDebugButton } from '@/components/FloatingDebugButton';
+import { initializeLogger } from '@/utils/logger';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -26,6 +27,9 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    // Initialize logger with timestamps
+    initializeLogger();
+    
     // Restore persisted queries
     restoreQueryClient();
     
