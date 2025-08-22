@@ -1,7 +1,37 @@
 // API service for backend communication
 import { decodeVideoHtmlEntities } from '@/utils/html-decode';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+// 플랫폼별 로컬 API URL 결정
+const getLocalApiUrl = (localUrls: any) => {
+  if (typeof localUrls === 'string') {
+    return localUrls;
+  }
+  
+  if (typeof localUrls === 'object') {
+    if (Platform.OS === 'android') {
+      return localUrls.android || localUrls.default;
+    } else if (Platform.OS === 'ios') {
+      return localUrls.ios || localUrls.default;
+    } else if (Platform.OS === 'web') {
+      return localUrls.web || localUrls.default;
+    }
+    return localUrls.default;
+  }
+  
+  return 'http://localhost:3000';
+};
+
+// app.config.js에서 설정한 환경별 API URL 사용
+const configApiUrl = Constants.expoConfig?.extra?.apiUrl;
+const API_BASE_URL = getLocalApiUrl(configApiUrl) || 'http://localhost:3000';
+
+// 디버깅을 위한 로그
+console.log('🔧 Platform.OS:', Platform.OS);
+console.log('🔧 configApiUrl:', configApiUrl);
+console.log('🔧 API_BASE_URL:', API_BASE_URL);
+console.log('🔧 Constants.expoConfig?.extra:', Constants.expoConfig?.extra);
 
 interface ApiResponse<T> {
   data: T;
