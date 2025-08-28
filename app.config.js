@@ -40,16 +40,7 @@ export default {
     ],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.shook.app",
-      infoPlist: {
-        LSApplicationQueriesSchemes: ["kakaokompassauth", "kakaolink"],
-        CFBundleURLTypes: [
-          {
-            CFBundleURLName: "kakao-login",
-            CFBundleURLSchemes: [`kakao${process.env.EXPO_PUBLIC_KAKAO_APP_KEY}`]
-          }
-        ]
-      }
+      bundleIdentifier: "com.shook.app"
     },
     android: {
       adaptiveIcon: {
@@ -78,22 +69,6 @@ export default {
         {
           iosUrlScheme: "com.googleusercontent.apps.441727275663-eqkgdijbp2mfbnk8jfrqja6uo9ul0ecd"
         }
-      ],
-      [
-        "@react-native-seoul/kakao-login",
-        {
-          kakaoAppKey: process.env.EXPO_PUBLIC_KAKAO_APP_KEY,
-          overrideKakaoSDKVersion: "2.11.2",
-          kotlinVersion: "1.9.0"
-        }
-      ],
-      [
-        "expo-build-properties",
-        {
-          android: {
-            extraMavenRepos: ["https://devrepo.kakao.com/nexus/content/groups/public/"]
-          }
-        }
       ]
     ],
     experiments: {
@@ -105,7 +80,6 @@ export default {
       googleClientIdIos: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
       googleClientIdAndroid: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
       googleClientIdWeb: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
-      kakaoAppKey: process.env.EXPO_PUBLIC_KAKAO_APP_KEY,
       appScheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
       isLocal: IS_LOCAL,
       isDev: IS_DEV,

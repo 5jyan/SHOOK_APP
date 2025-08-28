@@ -13,11 +13,6 @@ interface User {
   givenName?: string;
   familyName?: string;
   verified?: boolean;
-  // Kakao-specific fields (with kakao_ prefix)
-  kakao_id?: string;
-  kakao_nickname?: string;
-  kakao_profile_image?: string;
-  kakao_email?: string;
 }
 
 interface AuthState {

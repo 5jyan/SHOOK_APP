@@ -17,7 +17,6 @@
     "@hookform/resolvers": "^5.2.1",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-google-signin/google-signin": "^15.0.0",
-    "@react-native-seoul/kakao-login": "^5.4.1",
     "@react-navigation/bottom-tabs": "^7.4.5",
     "@react-navigation/elements": "^2.6.2",
     "@react-navigation/native": "^7.1.17",

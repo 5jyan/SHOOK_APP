@@ -2,22 +2,10 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { KakaoSignInButton } from '@/components/KakaoSignInButton';
-import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 export default function AuthScreen() {
-  const handleSuccess = () => {
-    console.log('🎉 Login success - redirecting to main app');
-    // Navigation will be handled automatically by ProtectedRoute
-  };
-
-  const handleError = (error: string) => {
-    console.error('🔴 Login error:', error);
-    Alert.alert('로그인 오류', error);
-  };
-
-  const handleComplexAuth = () => {
-    // Fallback to complex auth screen if needed
+  const handlePress = () => {
+    // Redirect to the real auth screen
     router.replace('/auth-complex');
   };
 
@@ -36,16 +24,9 @@ export default function AuthScreen() {
           </Text>
         </View>
 
-        <View style={styles.buttonContainer}>
-          <KakaoSignInButton 
-            onSuccess={handleSuccess} 
-            onError={handleError} 
-          />
-          <GoogleSignInButton 
-            onSuccess={handleSuccess} 
-            onError={handleError} 
-          />
-        </View>
+        <Pressable style={styles.button} onPress={handlePress}>
+          <Text style={styles.buttonText}>Google로 계속하기</Text>
+        </Pressable>
 
         <Text style={styles.terms}>
           로그인하면 이용약관과 개인정보처리방침에 동의한 것으로 간주됩니다
@@ -86,9 +67,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
-  buttonContainer: {
-    width: '100%',
+  button: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
     marginBottom: 24,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   terms: {
     fontSize: 12,
