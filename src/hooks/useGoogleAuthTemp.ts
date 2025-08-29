@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { secureStorage } from '@/lib/storage';
 import { apiService } from '@/services/api';
 import { notificationService } from '@/services/notification';
+import { authLogger } from '@/utils/logger-enhanced';
 
 interface UseGoogleAuthReturn {
   signIn: () => Promise<void>;
@@ -23,19 +24,19 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       setLoading(true);
       setError(null);
 
-      console.log('🚀 Starting temporary mobile login...');
+      authLogger.info('Starting temporary mobile login');
 
       // Skip the health check and go directly to login
-      console.log('🔍 Attempting mobile login directly...');
+      authLogger.debug('Attempting mobile login directly');
 
       // Temporary: simulate Google user data
       const tempEmail = 'mobile.test@example.com';
       const tempUsername = 'Mobile Test User';
 
-      console.log('📤 Sending mobile login to backend...');
+      authLogger.info('Sending mobile login to backend', { email: tempEmail, username: tempUsername });
       const loginResponse = await apiService.mobileLogin(tempEmail, tempUsername);
 
-      console.log('📋 Login response received:', {
+      authLogger.info('Login response received', {
         success: loginResponse.success,
         error: loginResponse.error,
         hasData: !!loginResponse.data,
@@ -43,8 +44,8 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       });
 
       if (loginResponse.success && loginResponse.data?.user) {
-        console.log('✅ Backend mobile login successful:', loginResponse.data.user);
-        console.log('🔍 [Login] User role from backend:', loginResponse.data.user.role);
+        authLogger.info('Backend mobile login successful', { user: loginResponse.data.user });
+        authLogger.info('[Login] User role from backend', { role: loginResponse.data.user.role });
         
         // Transform backend user to mobile app format
         const user = {
@@ -62,7 +63,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         await secureStorage.setItem('mobile_auth_token', 'mobile-test-token-' + Date.now());
 
         // Update auth store and wait for completion
-        console.log('🔄 Updating auth store with user data...');
+        authLogger.info('Updating auth store with user data', { userId: user.id, email: user.email });
         login(user);
         
         // Wait a moment for the store to update
@@ -70,10 +71,10 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         
         setError(null);
         
-        console.log('✅ Mobile user authenticated and logged in');
+        authLogger.info('Mobile user authenticated and logged in', { userId: user.id });
       } else {
         const errorMessage = loginResponse.error || 'Backend mobile login failed - no user data received';
-        console.error('❌ Mobile login failed:', errorMessage);
+        authLogger.error('Mobile login failed', { errorMessage });
         throw new Error(errorMessage);
       }
 
@@ -83,7 +84,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         : '모바일 로그인에 실패했습니다.';
       
       setError(errorMessage);
-      console.error('❌ Mobile Sign-In Error:', err);
+      authLogger.error('Mobile Sign-In Error', { error: err instanceof Error ? err.message : String(err) });
       throw err; // Re-throw so the component can handle it
     } finally {
       setIsLoading(false);
@@ -96,24 +97,24 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       setIsLoading(true);
       setError(null);
 
-      console.log('🚪 Starting mobile sign-out...');
+      authLogger.info('Starting mobile sign-out');
 
       // Step 1: Unregister push token from backend BEFORE logout (while session is still valid)
       try {
-        console.log('🔔 Unregistering push token before logout...');
+        authLogger.info('Unregistering push token before logout');
         await notificationService.unregisterWithBackend();
-        console.log('✅ Push token unregistered successfully');
+        authLogger.info('Push token unregistered successfully');
       } catch (pushError) {
-        console.warn('⚠️ Failed to unregister push token (continuing with logout):', pushError);
+        authLogger.warn('Failed to unregister push token (continuing with logout)', { error: pushError instanceof Error ? pushError.message : String(pushError) });
       }
 
       // Step 2: Notify backend about logout
       const logoutResponse = await apiService.logout();
       
       if (logoutResponse.success) {
-        console.log('✅ Backend logout successful');
+        authLogger.info('Backend logout successful');
       } else {
-        console.warn('⚠️ Backend logout failed:', logoutResponse.error);
+        authLogger.warn('Backend logout failed', { error: logoutResponse.error });
       }
 
       // Step 3: Clear local tokens and state
@@ -121,7 +122,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       
       // Note: auth store logout() will call notificationService.clearToken()
       logout();
-      console.log('✅ Mobile logout successful');
+      authLogger.info('Mobile logout successful');
 
     } catch (err) {
       const errorMessage = err instanceof Error 
@@ -129,7 +130,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         : '로그아웃에 실패했습니다.';
       
       setError(errorMessage);
-      console.error('❌ Sign-Out Error:', err);
+      authLogger.error('Sign-Out Error', { error: err instanceof Error ? err.message : String(err) });
     } finally {
       setIsLoading(false);
     }

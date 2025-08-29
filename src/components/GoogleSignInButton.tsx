@@ -1,6 +1,7 @@
 import { useGoogleAuth } from '@/hooks/useGoogleAuthTemp';
 import React from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { uiLogger } from '@/utils/logger-enhanced';
 
 interface GoogleSignInButtonProps {
   onSuccess?: () => void;
@@ -15,14 +16,14 @@ export function GoogleSignInButton({
 
   const handleSignIn = async () => {
     try {
-      console.log('🔘 Google sign-in button pressed');
+      uiLogger.info('Google sign-in button pressed');
       await signIn();
-      console.log('✅ Sign-in completed successfully');
+      uiLogger.info('Sign-in completed successfully');
       onSuccess?.();
       // Don't navigate here - let ProtectedRoute handle it automatically
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Google 로그인에 실패했습니다.';
-      console.error('❌ Sign-in failed:', errorMessage);
+      uiLogger.error('Sign-in failed', { error: errorMessage });
       onError?.(errorMessage);
       Alert.alert('로그인 오류', errorMessage);
     }

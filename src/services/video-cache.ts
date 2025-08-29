@@ -1,6 +1,7 @@
 // Video Summary Cache Service with AsyncStorage
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { VideoSummary } from './api';
+import { cacheLogger } from '@/utils/logger-enhanced';
 
 interface CacheEntry {
   videoId: string;
@@ -50,13 +51,13 @@ export class VideoCacheService {
 
   // Get cache metadata
   private async getCacheMetadata(): Promise<CacheMetadata> {
-    console.log('📦 [VideoCache] Getting cache metadata...');
+    cacheLogger.debug('Getting cache metadata');
     
     try {
       const metadataString = await AsyncStorage.getItem(this.CACHE_KEYS.METADATA);
       if (metadataString) {
         const metadata = JSON.parse(metadataString) as CacheMetadata;
-        console.log('📦 [VideoCache] Found metadata:', {
+        cacheLogger.debug('Found metadata', {
           lastSync: new Date(metadata.lastSyncTimestamp).toISOString(),
           totalVideos: metadata.totalVideos,
           version: metadata.cacheVersion,
@@ -65,7 +66,9 @@ export class VideoCacheService {
         return metadata;
       }
     } catch (error) {
-      console.error('📦 [VideoCache] Error reading metadata:', error);
+      cacheLogger.error('Error reading metadata', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
 
     // Return default metadata
@@ -76,13 +79,13 @@ export class VideoCacheService {
       userId: null,
     };
     
-    console.log('📦 [VideoCache] Using default metadata');
+    cacheLogger.debug('Using default metadata');
     return defaultMetadata;
   }
 
   // Update cache metadata
   private async updateCacheMetadata(updates: Partial<CacheMetadata>): Promise<void> {
-    console.log('📦 [VideoCache] Updating metadata:', updates);
+    cacheLogger.debug('Updating metadata', updates);
     
     try {
       const currentMetadata = await this.getCacheMetadata();
@@ -96,22 +99,23 @@ export class VideoCacheService {
         JSON.stringify(newMetadata)
       );
       
-      console.log('📦 [VideoCache] Metadata updated successfully');
+      cacheLogger.debug('Metadata updated successfully');
     } catch (error) {
-      console.error('📦 [VideoCache] Error updating metadata:', error);
+      cacheLogger.error('Error updating metadata', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   }
 
   // Get all cached videos
   async getCachedVideos(): Promise<VideoSummary[]> {
-    console.log('📦 [VideoCache] Getting cached videos...');
     const startTime = Date.now();
     
     try {
       const cachedData = await AsyncStorage.getItem(this.CACHE_KEYS.VIDEO_LIST);
       
       if (!cachedData) {
-        console.log('📦 [VideoCache] No cached data found');
+        cacheLogger.debug('No cached data found');
         return [];
       }
 
@@ -124,7 +128,10 @@ export class VideoCacheService {
         const isValid = age < this.MAX_CACHE_AGE;
         
         if (!isValid) {
-          console.log(`📦 [VideoCache] Expired entry removed: ${entry.videoId} (age: ${Math.round(age / (1000 * 60 * 60))}h)`);
+          cacheLogger.debug('Expired entry removed', { 
+            videoId: entry.videoId, 
+            ageHours: Math.round(age / (1000 * 60 * 60)) 
+          });
         }
         
         return isValid;
@@ -138,8 +145,11 @@ export class VideoCacheService {
       const videos = validEntries.map(entry => entry.data);
       const loadTime = Date.now() - startTime;
       
-      console.log(`📦 [VideoCache] Loaded ${videos.length} videos from cache (${loadTime}ms)`);
-      console.log(`📦 [VideoCache] Filtered out ${cacheEntries.length - validEntries.length} expired entries`);
+      cacheLogger.info('Loaded videos from cache', {
+        videoCount: videos.length,
+        loadTimeMs: loadTime,
+        expiredRemoved: cacheEntries.length - validEntries.length
+      });
 
       // Update cache if we removed expired entries
       if (cacheEntries.length !== validEntries.length) {
@@ -148,14 +158,16 @@ export class VideoCacheService {
 
       return videos;
     } catch (error) {
-      console.error('📦 [VideoCache] Error reading cached videos:', error);
+      cacheLogger.error('Error reading cached videos', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
       return [];
     }
   }
 
   // Save videos to cache
   async saveVideosToCache(videos: VideoSummary[]): Promise<void> {
-    console.log(`📦 [VideoCache] Saving ${videos.length} videos to cache...`);
+    cacheLogger.debug('Saving videos to cache', { videoCount: videos.length });
     const startTime = Date.now();
     
     try {
@@ -171,7 +183,7 @@ export class VideoCacheService {
       const limitedEntries = cacheEntries.slice(0, this.MAX_ENTRIES);
       
       if (cacheEntries.length > this.MAX_ENTRIES) {
-        console.log(`📦 [VideoCache] Limited cache to ${this.MAX_ENTRIES} entries (was ${cacheEntries.length})`);
+        cacheLogger.info('Limited cache size', { maxEntries: this.MAX_ENTRIES, originalCount: cacheEntries.length });
       }
 
       await AsyncStorage.setItem(
@@ -188,15 +200,15 @@ export class VideoCacheService {
       const saveTime = Date.now() - startTime;
       const cacheSize = JSON.stringify(limitedEntries).length / 1024; // KB
       
-      console.log(`📦 [VideoCache] Cache saved successfully (${saveTime}ms, ${cacheSize.toFixed(1)}KB)`);
+      cacheLogger.info('Cache saved successfully', { saveTimeMs: saveTime, cacheSizeKB: cacheSize.toFixed(1) });
     } catch (error) {
-      console.error('📦 [VideoCache] Error saving to cache:', error);
+      cacheLogger.error('Error saving to cache', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
   // Merge new videos with cached ones (incremental update)
   async mergeVideos(newVideos: VideoSummary[]): Promise<VideoSummary[]> {
-    console.log(`📦 [VideoCache] Merging ${newVideos.length} new videos with cache...`);
+    cacheLogger.debug('Merging new videos with cache', { newVideoCount: newVideos.length });
     const startTime = Date.now();
     
     try {
@@ -206,7 +218,7 @@ export class VideoCacheService {
       // Filter out videos that are already cached
       const actuallyNewVideos = newVideos.filter(video => !cachedVideoIds.has(video.videoId));
       
-      console.log(`📦 [VideoCache] Found ${actuallyNewVideos.length} actually new videos (${newVideos.length - actuallyNewVideos.length} were already cached)`);
+      cacheLogger.debug('Video merge analysis', { actuallyNew: actuallyNewVideos.length, alreadyCached: newVideos.length - actuallyNewVideos.length });
       
       // Combine and sort by createdAt (when video was processed)
       const allVideos = [...actuallyNewVideos, ...cachedVideos];
@@ -218,11 +230,11 @@ export class VideoCacheService {
       await this.saveVideosToCache(allVideos);
       
       const mergeTime = Date.now() - startTime;
-      console.log(`📦 [VideoCache] Merge completed in ${mergeTime}ms, total: ${allVideos.length} videos`);
+      cacheLogger.info('Video merge completed', { mergeTimeMs: mergeTime, totalVideos: allVideos.length });
       
       return allVideos;
     } catch (error) {
-      console.error('📦 [VideoCache] Error merging videos:', error);
+      cacheLogger.error('Error merging videos', { error: error instanceof Error ? error.message : String(error) });
       return newVideos; // Fallback to new videos only
     }
   }
@@ -230,13 +242,13 @@ export class VideoCacheService {
   // Get last sync timestamp
   async getLastSyncTimestamp(): Promise<number> {
     const metadata = await this.getCacheMetadata();
-    console.log(`📦 [VideoCache] Last sync timestamp: ${new Date(metadata.lastSyncTimestamp).toISOString()}`);
+    cacheLogger.debug('Retrieved last sync timestamp', { lastSync: new Date(metadata.lastSyncTimestamp).toISOString() });
     return metadata.lastSyncTimestamp;
   }
 
   // Clear cache (for logout or cache reset)
   async clearCache(): Promise<void> {
-    console.log('📦 [VideoCache] Clearing cache...');
+    cacheLogger.info('Clearing cache');
     
     try {
       await AsyncStorage.multiRemove([
@@ -245,15 +257,15 @@ export class VideoCacheService {
         this.CACHE_KEYS.CHANNEL_MAPPING,
       ]);
       
-      console.log('📦 [VideoCache] Cache cleared successfully');
+      cacheLogger.info('Cache cleared successfully');
     } catch (error) {
-      console.error('📦 [VideoCache] Error clearing cache:', error);
+      cacheLogger.error('Error clearing cache', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
   // Get cache statistics
   async getCacheStats(): Promise<CacheStats> {
-    console.log('📦 [VideoCache] Getting cache statistics...');
+    cacheLogger.debug('Getting cache statistics');
     
     try {
       const cachedData = await AsyncStorage.getItem(this.CACHE_KEYS.VIDEO_LIST);
@@ -284,7 +296,7 @@ export class VideoCacheService {
         lastSync: metadata.lastSyncTimestamp,
       };
 
-      console.log('📦 [VideoCache] Cache stats:', {
+      cacheLogger.debug('Cache statistics retrieved', {
         totalEntries: stats.totalEntries,
         cacheSizeKB: stats.cacheSize,
         oldestEntry: new Date(stats.oldestEntry).toISOString(),
@@ -294,7 +306,7 @@ export class VideoCacheService {
 
       return stats;
     } catch (error) {
-      console.error('📦 [VideoCache] Error getting stats:', error);
+      cacheLogger.error('Error getting cache stats', { error: error instanceof Error ? error.message : String(error) });
       return {
         totalEntries: 0,
         cacheSize: 0,
@@ -310,7 +322,7 @@ export class VideoCacheService {
     const metadata = await this.getCacheMetadata();
     
     if (metadata.userId !== currentUserId) {
-      console.log(`📦 [VideoCache] User changed: ${metadata.userId} -> ${currentUserId}, clearing cache`);
+      cacheLogger.info('User changed, clearing cache', { oldUserId: metadata.userId, newUserId: currentUserId });
       await this.clearCache();
       await this.updateCacheMetadata({ userId: currentUserId });
       return true;
@@ -321,7 +333,7 @@ export class VideoCacheService {
 
   // Remove videos from a specific channel
   async removeChannelVideos(channelId: string): Promise<VideoSummary[]> {
-    console.log(`📦 [VideoCache] Removing videos from channel: ${channelId}`);
+    cacheLogger.debug('Removing videos from channel', { channelId });
     const startTime = Date.now();
     
     try {
@@ -331,19 +343,19 @@ export class VideoCacheService {
       const remainingVideos = cachedVideos.filter(video => video.channelId !== channelId);
       const removedCount = cachedVideos.length - remainingVideos.length;
       
-      console.log(`📦 [VideoCache] Removed ${removedCount} videos from channel ${channelId}`);
+      cacheLogger.info('Removed videos from channel', { channelId, removedCount });
       
       if (removedCount > 0) {
         // Save updated cache
         await this.saveVideosToCache(remainingVideos);
         
         const removeTime = Date.now() - startTime;
-        console.log(`📦 [VideoCache] Channel videos removal completed in ${removeTime}ms`);
+        cacheLogger.debug('Channel videos removal completed', { removeTimeMs: removeTime });
       }
       
       return remainingVideos;
     } catch (error) {
-      console.error('📦 [VideoCache] Error removing channel videos:', error);
+      cacheLogger.error('Error removing channel videos', { error: error instanceof Error ? error.message : String(error) });
       // Return original cached videos on error
       return await this.getCachedVideos();
     }

@@ -3,6 +3,8 @@ import * as Google from 'expo-auth-session/providers/google';
 import { useAuthStore } from '@/stores/auth-store';
 import { Platform } from 'react-native';
 import { secureStorage } from '@/lib/storage';
+import { authLogger } from '@/utils/logger-enhanced';
+import { googleApiClient } from '@/utils/http-client';
 
 interface UseGoogleAuthReturn {
   signIn: () => Promise<void>;
@@ -52,8 +54,11 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       }
 
       // Get user info using access token
-      const userInfoResponse = await fetch(
-        `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${response.authentication.accessToken}`
+      const userInfoResponse = await googleApiClient.fetch(
+        `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${response.authentication.accessToken}`,
+        {
+          logResponseBody: true // 외부 API이므로 응답 바디 로깅 (민감정보는 자동 마스킹됨)
+        }
       );
 
       if (!userInfoResponse.ok) {

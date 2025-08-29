@@ -15,7 +15,7 @@ import { notificationService } from '@/services/notification';
 import { ChannelsProvider } from '@/contexts/ChannelsContext';
 import { GlobalUIDebugger } from '@/components/GlobalUIDebugger';
 import { FloatingDebugButton } from '@/components/FloatingDebugButton';
-import { initializeLogger } from '@/utils/logger';
+import { configLogger } from '@/utils/logger-enhanced';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -27,8 +27,11 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    // Initialize logger with timestamps
-    initializeLogger();
+    // Initialize enhanced logger system
+    configLogger.info('App initialization started', { 
+      loaded, 
+      colorScheme 
+    });
     
     // Restore persisted queries
     restoreQueryClient();

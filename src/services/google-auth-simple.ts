@@ -37,17 +37,10 @@ class GoogleAuthService {
   async initialize() {
     if (this.request) return;
 
-    const clientId = this.getClientId();
-    
-    const [request, response] = Google.useAuthRequest({
-      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
-      androidClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
-      webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
-      scopes: ['openid', 'profile', 'email'],
-    });
-    
-    this.request = request;
-    this.response = response;
+    // Note: This service is deprecated and should not be used.
+    // Google.useAuthRequest is a React Hook and cannot be called in class components.
+    // Use the hook-based approach in useGoogleAuth.ts instead.
+    throw new Error('GoogleAuthSimpleService is deprecated. Use useGoogleAuth hook instead.');
   }
 
   async signIn(): Promise<GoogleUser> {

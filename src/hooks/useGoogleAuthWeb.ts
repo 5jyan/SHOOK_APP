@@ -4,6 +4,8 @@ import { makeRedirectUri, useAuthRequest, ResponseType } from 'expo-auth-session
 import { useAuthStore } from '@/stores/auth-store';
 import { secureStorage } from '@/lib/storage';
 import { apiService } from '@/services/api';
+import { authLogger } from '@/utils/logger-enhanced';
+import { googleApiClient } from '@/utils/http-client';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -50,8 +52,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       setLoading(true);
       setError(null);
 
-      console.log('🚀 Starting Google Web Auth...');
-      console.log('📍 Redirect URI:', redirectUri);
+      authLogger.info('Starting Google Web Auth', { redirectUri });
 
       if (!request) {
         throw new Error('Auth request not ready');
@@ -60,14 +61,16 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       const result = await promptAsync();
       
       if (result.type === 'success') {
-        console.log('✅ OAuth successful, exchanging code for tokens...');
+        authLogger.info('OAuth successful, exchanging code for tokens', {
+          hasAuthorizationCode: !!result.params.code
+        });
         
         if (!result.params.code) {
           throw new Error('No authorization code received');
         }
 
-        // Exchange authorization code for tokens
-        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        // Exchange authorization code for tokens using enhanced HTTP client
+        const tokenResponse = await googleApiClient.fetch('https://oauth2.googleapis.com/token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -78,6 +81,8 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
             grant_type: 'authorization_code',
             redirect_uri: redirectUri,
           }),
+          // 외부 API이므로 응답 바디 로깅 활성화 (민감정보는 자동 마스킹)
+          logResponseBody: true,
         });
 
         if (!tokenResponse.ok) {
@@ -85,13 +90,18 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         }
 
         const tokens = await tokenResponse.json();
-        console.log('📤 Sending ID token to backend...');
+        authLogger.info('Sending ID token to backend for verification');
 
         // Send ID token to backend
         const verifyResponse = await apiService.verifyGoogleToken(tokens.id_token);
 
         if (verifyResponse.success) {
-          console.log('✅ Backend verification successful:', verifyResponse.data.user);
+          authLogger.info('Backend verification successful', {
+            userId: verifyResponse.data.user.id,
+            username: verifyResponse.data.user.username,
+            email: verifyResponse.data.user.email,
+            role: verifyResponse.data.user.role
+          });
           
           const user = {
             id: verifyResponse.data.user.id.toString(),
@@ -109,7 +119,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
           login(user);
           setError(null);
           
-          console.log('✅ User authenticated successfully');
+          authLogger.info('User authenticated successfully', { userId: user.id, email: user.email });
         } else {
           throw new Error(verifyResponse.error || 'Backend verification failed');
         }
@@ -123,7 +133,10 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Google 로그인에 실패했습니다.';
       setError(errorMessage);
-      console.error('❌ Google Sign-In Error:', err);
+      authLogger.error('Google Sign-In Error', {
+        error: errorMessage,
+        stack: err instanceof Error ? err.stack : undefined
+      });
     } finally {
       setIsLoading(false);
       setLoading(false);

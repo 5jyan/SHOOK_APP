@@ -2,6 +2,7 @@ import { useChannels } from '@/contexts/ChannelsContext';
 import { type UserChannel } from '@/services/api';
 import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
+import { uiLogger } from '@/utils/logger-enhanced';
 import {
   ActivityIndicator,
   Alert,
@@ -26,11 +27,11 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
   const [deletingChannelId, setDeletingChannelId] = React.useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  console.log('📺 [ChannelList] rendering:', {
+  uiLogger.debug('ChannelList rendering', {
     channelCount,
     channelsLength: channels.length,
     isLoading,
-    error,
+    error: !!error,
     channelsPreview: channels.slice(0, 2).map(ch => ({ 
       id: ch?.id, 
       title: ch?.youtubeChannel?.title,
@@ -57,7 +58,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
               onChannelDeleted?.(channel.youtubeChannel.channelId);
               
               // Invalidate video summaries cache to refresh UI
-              console.log('🔄 [ChannelList] Invalidating video summaries cache after channel deletion');
+              uiLogger.info('Invalidating video summaries cache after channel deletion');
               queryClient.invalidateQueries({ queryKey: ['videoSummariesCached'] });
               
               Alert.alert('구독 취소 완료', `"${channel.youtubeChannel.title}" 채널 구독이 취소되었습니다.`);
@@ -105,7 +106,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
   const renderChannelItem = ({ item }: { item: UserChannel }) => {
     // Safety check for item and required properties
     if (!item || !item.youtubeChannel) {
-      console.warn('Invalid channel item:', item);
+      uiLogger.warn('Invalid channel item', { item });
       return null;
     }
 

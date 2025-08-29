@@ -2,6 +2,8 @@
 import { decodeVideoHtmlEntities } from '@/utils/html-decode';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { apiLogger, configLogger } from '@/utils/logger-enhanced';
+import httpClient from '@/utils/http-client';
 
 // 플랫폼별 로컬 API URL 결정
 const getLocalApiUrl = (localUrls: any) => {
@@ -27,11 +29,13 @@ const getLocalApiUrl = (localUrls: any) => {
 const configApiUrl = Constants.expoConfig?.extra?.apiUrl;
 const API_BASE_URL = getLocalApiUrl(configApiUrl) || 'http://localhost:3000';
 
-// 디버깅을 위한 로그
-console.log('🔧 Platform.OS:', Platform.OS);
-console.log('🔧 configApiUrl:', configApiUrl);
-console.log('🔧 API_BASE_URL:', API_BASE_URL);
-console.log('🔧 Constants.expoConfig?.extra:', Constants.expoConfig?.extra);
+// API 설정 로그
+configLogger.info('API service configuration', {
+  platform: Platform.OS,
+  configApiUrl,
+  API_BASE_URL,
+  hasExtraConfig: !!Constants.expoConfig?.extra
+});
 
 interface ApiResponse<T> {
   data: T;
@@ -108,31 +112,25 @@ class ApiService {
     try {
       const url = `${API_BASE_URL}${endpoint}`;
       
-      console.log(`📡 API_BASE_URL: ${API_BASE_URL}`);
-      console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
-      console.log(`📡 Request options:`, JSON.stringify(options, null, 2));
-      
-      const response = await fetch(url, {
+      // HTTP 클라이언트를 통해 자동 로깅과 함께 요청 수행
+      const response = await httpClient.fetch(url, {
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
         },
         credentials: 'include', // Enable session cookies
         ...options,
+        // Internal API이므로 상세한 응답 바디 로깅은 비활성화
+        logResponseBody: false,
       });
-
-      console.log(`📡 API Response: ${response.status} ${response.statusText}`);
-      console.log(`📡 Response Headers:`, Object.fromEntries(response.headers.entries()));
 
       let data;
       const contentType = response.headers.get('content-type');
       
       if (contentType && contentType.includes('application/json')) {
         data = await response.json();
-        console.log(`📡 Response Data:`, JSON.stringify(data, null, 2));
       } else {
         const text = await response.text();
-        console.log(`📡 Response Text (first 500 chars):`, text.substring(0, 500));
         
         if (!response.ok) {
           throw new Error(`Server returned ${response.status}: ${text.substring(0, 100)}...`);
@@ -151,13 +149,13 @@ class ApiService {
         }
       }
 
-      // Log successful responses for debugging
-      if (response.ok) {
-        console.log(`✅ API Success: ${response.status} for ${endpoint}`);
-      }
-
       if (!response.ok) {
-        console.log(`❌ API Error Response: ${response.status} for ${endpoint}`, data);
+        apiLogger.warn('API Error Response', { 
+          endpoint, 
+          status: response.status, 
+          statusText: response.statusText,
+          error: data?.error || data?.message 
+        });
         throw new Error(data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
@@ -166,7 +164,12 @@ class ApiService {
         success: true,
       };
     } catch (error) {
-      console.error('❌ API Error:', error);
+      apiLogger.error('API Request failed', {
+        endpoint,
+        method: options.method || 'GET',
+        error: error instanceof Error ? error.message : String(error),
+      });
+      
       return {
         data: {} as T,
         success: false,
@@ -267,35 +270,41 @@ class ApiService {
   async getVideoSummaries(since?: number): Promise<ApiResponse<VideoSummary[]>> {
     const endpoint = since ? `/api/videos?since=${since}` : '/api/videos';
     
-    if (since) {
-      console.log(`🚀 [apiService.getVideoSummaries] Incremental sync since ${new Date(since).toISOString()}`);
-    } else {
-      console.log('🚀 [apiService.getVideoSummaries] Full sync requested');
-    }
-    
-    console.log('🚀 [apiService.getVideoSummaries] API_BASE_URL:', API_BASE_URL);
-    console.log('🚀 [apiService.getVideoSummaries] Full URL will be:', `${API_BASE_URL}${endpoint}`);
+    const syncType = since ? 'incremental' : 'full';
+    apiLogger.info(`Starting video summaries sync: ${syncType}`, {
+      since: since ? new Date(since).toISOString() : null,
+      endpoint,
+      syncType
+    });
     
     const result = await this.makeRequest<VideoSummary[]>(endpoint);
     
     // Apply HTML entity decoding to video titles and summaries (redundant safety check)
     if (result.success && result.data) {
-      console.log('🔄 [apiService.getVideoSummaries] Applying HTML entity decoding to video data');
+      apiLogger.debug('Applying HTML entity decoding to video data', {
+        videoCount: result.data.length
+      });
       result.data = decodeVideoHtmlEntities(result.data);
     }
     
-    if (since) {
-      console.log(`🚀 [apiService.getVideoSummaries] Incremental sync completed: ${result.data?.length || 0} new videos`);
-    } else {
-      console.log(`🚀 [apiService.getVideoSummaries] Full sync completed: ${result.data?.length || 0} total videos`);
-    }
+    apiLogger.info(`Video summaries sync completed: ${syncType}`, {
+      success: result.success,
+      videoCount: result.data?.length || 0,
+      syncType,
+      hasError: !!result.error
+    });
     
     return result;
   }
 
   // Push notification endpoints
   async registerPushToken(tokenData: PushTokenData): Promise<ApiResponse<RegisterPushTokenResponse>> {
-    console.log('🔔 [apiService.registerPushToken] Registering push token:', tokenData.token.substring(0, 20) + '...');
+    apiLogger.info('Registering push token', {
+      deviceId: tokenData.deviceId,
+      platform: tokenData.platform,
+      appVersion: tokenData.appVersion,
+      tokenPreview: tokenData.token.substring(0, 20) + '...'
+    });
     
     return this.makeRequest<RegisterPushTokenResponse>('/api/push-tokens', {
       method: 'POST',
@@ -304,7 +313,7 @@ class ApiService {
   }
 
   async unregisterPushToken(deviceId: string): Promise<ApiResponse<RegisterPushTokenResponse>> {
-    console.log('🔔 [apiService.unregisterPushToken] Unregistering push token for device:', deviceId);
+    apiLogger.info('Unregistering push token', { deviceId });
     
     return this.makeRequest<RegisterPushTokenResponse>(`/api/push-tokens/${deviceId}`, {
       method: 'DELETE',
@@ -312,7 +321,11 @@ class ApiService {
   }
 
   async updatePushToken(tokenData: PushTokenData): Promise<ApiResponse<RegisterPushTokenResponse>> {
-    console.log('🔔 [apiService.updatePushToken] Updating push token:', tokenData.token.substring(0, 20) + '...');
+    apiLogger.info('Updating push token', {
+      deviceId: tokenData.deviceId,
+      platform: tokenData.platform,
+      tokenPreview: tokenData.token.substring(0, 20) + '...'
+    });
     
     return this.makeRequest<RegisterPushTokenResponse>(`/api/push-tokens/${tokenData.deviceId}`, {
       method: 'PUT',
@@ -321,7 +334,7 @@ class ApiService {
   }
 
   async sendTestPushNotification(): Promise<ApiResponse<RegisterPushTokenResponse>> {
-    console.log('🔔 [apiService.sendTestPushNotification] Sending test push notification');
+    apiLogger.info('Sending test push notification');
     
     return this.makeRequest<RegisterPushTokenResponse>('/api/push-tokens/test', {
       method: 'POST',
@@ -330,7 +343,7 @@ class ApiService {
 
   // Manual monitoring trigger endpoint
   async triggerManualMonitoring(): Promise<ApiResponse<{ success: boolean; message: string; timestamp: string }>> {
-    console.log('🔄 [apiService.triggerManualMonitoring] Triggering manual YouTube monitoring');
+    apiLogger.info('Triggering manual YouTube monitoring');
     
     return this.makeRequest<{ success: boolean; message: string; timestamp: string }>('/api/admin/trigger-monitoring', {
       method: 'POST',
@@ -340,8 +353,12 @@ class ApiService {
 
 export const apiService = new ApiService();
 
-console.log('🚀 [API Service] ApiService instance created');
-console.log('🚀 [API Service] API_BASE_URL at module level:', API_BASE_URL);
+// API 서비스 초기화 완료 로그
+configLogger.info('API Service initialized', {
+  baseUrl: API_BASE_URL,
+  platform: Platform.OS,
+  hasCredentials: true
+});
 
 // Push notification interfaces
 interface PushTokenData {

@@ -247,7 +247,7 @@ export default function ChannelSearchScreen() {
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#4285f4" />
-                <Text style={styles.loadingText}>"{searchTerm}" 검색 중...</Text>
+                <Text style={styles.loadingText}>&ldquo;{searchTerm}&rdquo; 검색 중...</Text>
               </View>
             ) : error ? (
               <View style={styles.errorContainer}>

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { apiService, VideoSummary, UserChannel } from '@/services/api';
 import { videoCacheService } from '@/services/video-cache';
 import { useAuthStore } from '@/stores/auth-store';
+import { serviceLogger } from '@/utils/logger-enhanced';
 
 interface CacheAwareData {
   videos: VideoSummary[];
@@ -19,13 +20,13 @@ export const useVideoSummariesCached = () => {
   const { user } = useAuthStore();
   const [cacheData, setCacheData] = useState<CacheAwareData | null>(null);
   
-  console.log('📦 [useVideoSummariesCached] Hook being called');
+  serviceLogger.debug('useVideoSummariesCached hook called');
   
   const query = useQuery({
     queryKey: ['videoSummariesCached', user?.id],
     queryFn: async (): Promise<CacheAwareData> => {
-      console.log('📦 [useVideoSummariesCached] queryFn executing - hybrid cache strategy starting...');
-      const startTime = Date.now();
+      const timerId = serviceLogger.startTimer('hybrid-cache-strategy');
+      serviceLogger.info('queryFn executing - hybrid cache strategy starting');
       
       try {
         if (!user) {
@@ -36,15 +37,15 @@ export const useVideoSummariesCached = () => {
         await videoCacheService.checkUserChanged(parseInt(user.id));
 
         // Step 1: Load cached data immediately for instant UI update
-        console.log('📦 [useVideoSummariesCached] Step 1: Loading cached data...');
+        serviceLogger.debug('Step 1: Loading cached data');
         const cachedVideos = await videoCacheService.getCachedVideos();
         const cacheStats = await videoCacheService.getCacheStats();
         
-        console.log(`📦 [useVideoSummariesCached] Cached data loaded: ${cachedVideos.length} videos (${Date.now() - startTime}ms)`);
+        serviceLogger.info('Cached data loaded', { videoCount: cachedVideos.length });
 
         // Step 2: Get last sync timestamp for incremental sync
         const lastSyncTimestamp = await videoCacheService.getLastSyncTimestamp();
-        console.log(`📦 [useVideoSummariesCached] Last sync: ${new Date(lastSyncTimestamp).toISOString()}`);
+        serviceLogger.debug('Last sync timestamp', { lastSync: new Date(lastSyncTimestamp).toISOString() });
 
         // Step 3: Determine sync strategy
         const cacheAge = Date.now() - lastSyncTimestamp;
@@ -52,9 +53,9 @@ export const useVideoSummariesCached = () => {
         const shouldFullSync = cacheAge > FULL_SYNC_THRESHOLD || lastSyncTimestamp === 0;
 
         if (shouldFullSync) {
-          console.log(`📦 [useVideoSummariesCached] Full sync required (cache age: ${Math.round(cacheAge / (1000 * 60 * 60))}h)`);
+          serviceLogger.info('Full sync required', { cacheAgeHours: Math.round(cacheAge / (1000 * 60 * 60)) });
         } else {
-          console.log(`📦 [useVideoSummariesCached] Incremental sync (cache age: ${Math.round(cacheAge / (1000 * 60))}m)`);
+          serviceLogger.info('Incremental sync', { cacheAgeMinutes: Math.round(cacheAge / (1000 * 60)) });
         }
 
         // Step 4: Fetch new/updated data from server
@@ -63,11 +64,11 @@ export const useVideoSummariesCached = () => {
 
         if (shouldFullSync) {
           // Full sync - get all videos
-          console.log('📦 [useVideoSummariesCached] Performing full sync...');
+          serviceLogger.info('Performing full sync');
           serverResponse = await apiService.getVideoSummaries();
           
           if (!serverResponse.success) {
-            console.error('📦 [useVideoSummariesCached] Full sync failed:', serverResponse.error);
+            serviceLogger.error('Full sync failed', { error: serverResponse.error });
             throw new Error(serverResponse.error || 'Failed to fetch video summaries');
           }
 
@@ -75,28 +76,28 @@ export const useVideoSummariesCached = () => {
           
           // Replace entire cache
           await videoCacheService.saveVideosToCache(finalVideos);
-          console.log(`📦 [useVideoSummariesCached] Full sync completed: ${finalVideos.length} videos cached`);
+          serviceLogger.info('Full sync completed', { videosCached: finalVideos.length });
         } else {
           // Incremental sync - get only new videos
-          console.log('📦 [useVideoSummariesCached] Performing incremental sync...');
+          serviceLogger.info('Performing incremental sync');
           serverResponse = await apiService.getVideoSummaries(lastSyncTimestamp);
           
           if (!serverResponse.success) {
-            console.error('📦 [useVideoSummariesCached] Incremental sync failed:', serverResponse.error);
+            serviceLogger.error('Incremental sync failed', { error: serverResponse.error });
             throw new Error(serverResponse.error || 'Failed to fetch new video summaries');
           }
 
           const newVideos = serverResponse.data;
-          console.log(`📦 [useVideoSummariesCached] Incremental sync received ${newVideos.length} new videos`);
+          serviceLogger.info('Incremental sync received new videos', { newVideoCount: newVideos.length });
 
           if (newVideos.length > 0) {
             // Merge new videos with cached ones
             finalVideos = await videoCacheService.mergeVideos(newVideos);
-            console.log(`📦 [useVideoSummariesCached] Cache merged: ${finalVideos.length} total videos`);
+            serviceLogger.info('Cache merged', { totalVideos: finalVideos.length });
           } else {
             // No new videos, use cached data
             finalVideos = cachedVideos;
-            console.log('📦 [useVideoSummariesCached] No new videos, using cached data');
+            serviceLogger.info('No new videos, using cached data');
             
             // Update last sync timestamp even if no new videos
             await videoCacheService.updateCacheMetadata({ lastSyncTimestamp: Date.now() } as any);
@@ -105,7 +106,6 @@ export const useVideoSummariesCached = () => {
 
         // Step 5: Get updated cache stats
         const updatedCacheStats = await videoCacheService.getCacheStats();
-        const totalTime = Date.now() - startTime;
 
         const result: CacheAwareData = {
           videos: finalVideos,
@@ -118,24 +118,26 @@ export const useVideoSummariesCached = () => {
           }
         };
 
-        console.log(`📦 [useVideoSummariesCached] Hybrid sync completed in ${totalTime}ms:`, {
+        serviceLogger.endTimer(timerId, 'Hybrid sync completed');
+        serviceLogger.info('Hybrid sync details', {
           totalVideos: finalVideos.length,
           fromCache: result.fromCache,
-          cacheSize: `${updatedCacheStats.cacheSize}KB`,
+          cacheSizeKB: updatedCacheStats.cacheSize,
           syncType: shouldFullSync ? 'full' : 'incremental',
           networkVideos: shouldFullSync ? finalVideos.length : serverResponse.data.length
         });
 
         return result;
       } catch (error) {
-        console.error('📦 [useVideoSummariesCached] Hybrid sync error:', error);
+        serviceLogger.endTimer(timerId, 'Hybrid sync failed');
+        serviceLogger.error('Hybrid sync error', { error: error instanceof Error ? error.message : String(error) });
         
         // Fallback: try to return cached data on error
         try {
           const fallbackVideos = await videoCacheService.getCachedVideos();
           const fallbackStats = await videoCacheService.getCacheStats();
           
-          console.log(`📦 [useVideoSummariesCached] Using cached fallback: ${fallbackVideos.length} videos`);
+          serviceLogger.info('Using cached fallback', { videoCount: fallbackVideos.length });
           
           return {
             videos: fallbackVideos,
@@ -148,7 +150,7 @@ export const useVideoSummariesCached = () => {
             }
           };
         } catch (fallbackError) {
-          console.error('📦 [useVideoSummariesCached] Fallback also failed:', fallbackError);
+          serviceLogger.error('Fallback also failed', { error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError) });
           throw error; // Re-throw original error
         }
       }
@@ -165,7 +167,7 @@ export const useVideoSummariesCached = () => {
   useEffect(() => {
     if (query.data && query.data !== cacheData) {
       setCacheData(query.data);
-      console.log('📦 [useVideoSummariesCached] Cache data updated in component state');
+      serviceLogger.debug('Cache data updated in component state');
     }
   }, [query.data, cacheData]);
   
@@ -182,11 +184,11 @@ export const useVideoSummariesCached = () => {
     lastSync: query.data?.lastSync ? new Date(query.data.lastSync).toISOString() : null,
   };
 
-  console.log('📦 [useVideoSummariesCached] Query state:', queryState);
+  serviceLogger.debug('Query state', queryState);
 
   // Function to remove videos from a specific channel
   const removeChannelVideos = async (channelId: string) => {
-    console.log(`📦 [useVideoSummariesCached] Removing videos from channel: ${channelId}`);
+    serviceLogger.info('Removing videos from channel', { channelId });
     
     try {
       // Remove from cache
@@ -195,10 +197,10 @@ export const useVideoSummariesCached = () => {
       // Update TanStack Query cache
       query.refetch();
       
-      console.log(`📦 [useVideoSummariesCached] Successfully removed videos from channel: ${channelId}`);
+      serviceLogger.info('Successfully removed videos from channel', { channelId });
       return updatedVideos;
     } catch (error) {
-      console.error('📦 [useVideoSummariesCached] Error removing channel videos:', error);
+      serviceLogger.error('Error removing channel videos', { error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   };
@@ -247,7 +249,7 @@ export const transformVideoSummaryToCardData = (
     `https://via.placeholder.com/60/4285f4/ffffff?text=${finalChannelName.charAt(0) || 'C'}`;
   
   // Debug log to check thumbnail data sources
-  console.log('🖼️ [transformVideoSummaryToCardData] Thumbnail debug:', {
+  serviceLogger.debug('transformVideoSummaryToCardData thumbnail debug', {
     videoTitle: video.title.substring(0, 30) + '...',
     channelId: video.channelId,
     channelFromContext: !!channelData,

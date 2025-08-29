@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, Modal } from 'react-native';
 import { videoCacheService } from '@/services/video-cache';
+import { uiLogger } from '@/utils/logger-enhanced';
 
 export function CacheStatsButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,15 +12,18 @@ export function CacheStatsButton() {
     setIsLoading(true);
     
     try {
-      console.log('📊 [CacheStatsButton] Getting cache statistics...');
+      // Demonstrate new performance measurement feature
+      const stats = await uiLogger.timeAsync('cache-stats-retrieval', async () => {
+        uiLogger.info('Getting cache statistics');
+        return await videoCacheService.getCacheStats();
+      });
       
-      const stats = await videoCacheService.getCacheStats();
       setCacheStats(stats);
       setStatsModalVisible(true);
       
-      console.log('📊 [CacheStatsButton] Cache stats retrieved:', stats);
+      uiLogger.info('Cache stats retrieved', { totalEntries: stats.totalEntries, cacheSize: stats.cacheSize });
     } catch (error) {
-      console.error('📊 [CacheStatsButton] Error getting cache stats:', error);
+      uiLogger.error('Error getting cache stats', { error: error instanceof Error ? error.message : String(error) });
       Alert.alert(
         '오류',
         '캐시 정보를 가져올 수 없습니다.',
@@ -41,7 +45,7 @@ export function CacheStatsButton() {
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('🗑️ [CacheStatsButton] Clearing cache...');
+              uiLogger.info('Clearing cache');
               await videoCacheService.clearCache();
               
               // Update stats after clearing
@@ -49,9 +53,9 @@ export function CacheStatsButton() {
               setCacheStats(newStats);
               
               Alert.alert('완료', '캐시가 삭제되었습니다.');
-              console.log('🗑️ [CacheStatsButton] Cache cleared successfully');
+              uiLogger.info('Cache cleared successfully');
             } catch (error) {
-              console.error('🗑️ [CacheStatsButton] Error clearing cache:', error);
+              uiLogger.error('Error clearing cache', { error: error instanceof Error ? error.message : String(error) });
               Alert.alert('오류', '캐시 삭제 중 오류가 발생했습니다.');
             }
           },
