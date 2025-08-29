@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { apiService, type UserChannel } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { videoCacheService } from '@/services/video-cache';
+import { serviceLogger } from '@/utils/logger-enhanced';
 
 interface ChannelsContextType {
   channels: UserChannel[];
@@ -27,7 +28,7 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
 
   const fetchChannels = useCallback(async () => {
     if (!user || !user.id) {
-      console.log('📡 No user or user ID available, skipping channel fetch');
+      serviceLogger.info('No user or user ID available, skipping channel fetch');
       setChannels([]);
       setError(null);
       return;
@@ -37,7 +38,7 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
     setError(null);
 
     try {
-      console.log('📡 [ChannelsContext] Fetching user channels for user:', user.id);
+      serviceLogger.info('[ChannelsContext] Fetching user channels for user', { userId: user.id });
       const userId = parseInt(user.id, 10);
       if (isNaN(userId)) {
         throw new Error('Invalid user ID format');
@@ -46,17 +47,17 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
       const response = await apiService.getUserChannels(userId);
       
       if (response.success) {
-        console.log('✅ [ChannelsContext] User channels fetched successfully:', response.data);
-        console.log('📊 [ChannelsContext] Channel data structure:', JSON.stringify(response.data, null, 2));
+        serviceLogger.info('[ChannelsContext] User channels fetched successfully', { channelCount: response.data?.length || 0 });
+        serviceLogger.debug('[ChannelsContext] Channel data structure', { channels: response.data });
         setChannels(response.data || []);
-        console.log('📋 [ChannelsContext] Channels set to state, count:', response.data?.length || 0);
+        serviceLogger.debug('[ChannelsContext] Channels set to state', { count: response.data?.length || 0 });
       } else {
-        console.error('❌ [ChannelsContext] Failed to fetch user channels:', response.error);
+        serviceLogger.error('[ChannelsContext] Failed to fetch user channels', { error: response.error });
         setError(response.error || 'Failed to fetch channels');
         setChannels([]);
       }
     } catch (err) {
-      console.error('❌ [ChannelsContext] User channels fetch error:', err);
+      serviceLogger.error('[ChannelsContext] User channels fetch error', { error: err });
       setError(err instanceof Error ? err.message : 'An error occurred while fetching channels');
       setChannels([]);
     } finally {
@@ -65,38 +66,38 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
   }, [user]);
 
   const refreshChannels = useCallback(async () => {
-    console.log('🔄 [ChannelsContext] Refreshing channels...');
+    serviceLogger.info('[ChannelsContext] Refreshing channels');
     await fetchChannels();
   }, [fetchChannels]);
 
   const deleteChannel = useCallback(async (channelId: string): Promise<boolean> => {
     try {
-      console.log('🗑️ [ChannelsContext] Deleting channel:', channelId);
+      serviceLogger.info('[ChannelsContext] Deleting channel', { channelId });
       const response = await apiService.deleteChannel(channelId);
       
       if (response.success) {
-        console.log('✅ [ChannelsContext] Channel deleted successfully');
+        serviceLogger.info('[ChannelsContext] Channel deleted successfully');
         
         // Update local state immediately
         setChannels(prev => prev.filter(ch => ch.youtubeChannel.channelId !== channelId));
         
         // Remove related video summaries from cache
-        console.log('🗑️ [ChannelsContext] Removing related video summaries from cache...');
+        serviceLogger.info('[ChannelsContext] Removing related video summaries from cache', { channelId });
         try {
           await videoCacheService.removeChannelVideos(channelId);
-          console.log('✅ [ChannelsContext] Related video summaries removed from cache');
+          serviceLogger.info('[ChannelsContext] Related video summaries removed from cache', { channelId });
         } catch (cacheError) {
-          console.error('❌ [ChannelsContext] Error removing video summaries from cache:', cacheError);
+          serviceLogger.error('[ChannelsContext] Error removing video summaries from cache', { channelId, error: cacheError });
           // Don't fail the channel deletion if cache cleanup fails
         }
         
         return true;
       } else {
-        console.error('❌ [ChannelsContext] Failed to delete channel:', response.error);
+        serviceLogger.error('[ChannelsContext] Failed to delete channel', { channelId, error: response.error });
         throw new Error(response.error || 'Failed to delete channel');
       }
     } catch (err) {
-      console.error('❌ [ChannelsContext] Channel delete error:', err);
+      serviceLogger.error('[ChannelsContext] Channel delete error', { channelId, error: err });
       throw err;
     }
   }, []);

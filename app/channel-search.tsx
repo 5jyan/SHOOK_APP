@@ -27,6 +27,7 @@ import { useChannelSearch } from '@/hooks/useChannelSearch';
 import { useChannels } from '@/contexts/ChannelsContext';
 import { apiService, type YoutubeChannel } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
+import { serviceLogger } from '@/utils/logger-enhanced';
 
 export default function ChannelSearchScreen() {
   const searchInputRef = React.useRef<TextInput>(null);
@@ -81,20 +82,20 @@ export default function ChannelSearchScreen() {
 
     setLoadingChannelId(channel.channelId);
     try {
-      console.log('🔄 Adding channel:', channel.title);
+      serviceLogger.info('Adding channel', { channelTitle: channel.title, channelId: channel.channelId });
       const response = await apiService.addChannel(channel.channelId);
 
       if (response.success) {
-        console.log('✅ Channel added successfully');
+        serviceLogger.info('Channel added successfully', { channelTitle: channel.title });
         Alert.alert('성공', `${channel.title} 채널이 추가되었습니다.`);
         await refreshChannels();
         router.back(); // 성공 시 이전 화면으로 돌아가기
       } else {
-        console.error('❌ Failed to add channel:', response.error);
+        serviceLogger.error('Failed to add channel', { error: response.error, channelTitle: channel.title });
         Alert.alert('오류', response.error || '채널 추가에 실패했습니다.');
       }
     } catch (error) {
-      console.error('❌ Error adding channel:', error);
+      serviceLogger.error('Error adding channel', { error: error instanceof Error ? error.message : String(error), channelTitle: channel.title });
       Alert.alert('오류', '채널 추가 중 오류가 발생했습니다.');
     } finally {
       setLoadingChannelId(null);

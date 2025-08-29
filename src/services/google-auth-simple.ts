@@ -2,6 +2,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 import { secureStorage } from '@/lib/storage';
+import { authLogger } from '../utils/logger-enhanced';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -81,7 +82,12 @@ class GoogleAuthService {
 
       return user;
     } catch (error) {
-      console.error('Google Sign-In Error:', error);
+      authLogger.error('Google Sign-In failed in deprecated service', {
+        error: error instanceof Error ? error.message : String(error),
+        platform: Platform.OS,
+        service: 'GoogleAuthSimpleService',
+        deprecated: true
+      });
       throw new Error(
         error instanceof Error 
           ? error.message 
@@ -95,7 +101,11 @@ class GoogleAuthService {
       const accessToken = await secureStorage.getItem('google_access_token');
       return accessToken;
     } catch (error) {
-      console.error('Error getting access token:', error);
+      authLogger.error('Failed to get access token in deprecated service', {
+        error: error instanceof Error ? error.message : String(error),
+        service: 'GoogleAuthSimpleService',
+        deprecated: true
+      });
       return null;
     }
   }
@@ -107,7 +117,11 @@ class GoogleAuthService {
         secureStorage.removeItem('google_refresh_token'),
       ]);
     } catch (error) {
-      console.error('Sign out error:', error);
+      authLogger.error('Sign out failed in deprecated service', {
+        error: error instanceof Error ? error.message : String(error),
+        service: 'GoogleAuthSimpleService',
+        deprecated: true
+      });
     }
   }
 
@@ -129,7 +143,11 @@ class GoogleAuthService {
 
       return response.json();
     } catch (error) {
-      console.error('Get current user error:', error);
+      authLogger.error('Failed to get current user in deprecated service', {
+        error: error instanceof Error ? error.message : String(error),
+        service: 'GoogleAuthSimpleService',
+        deprecated: true
+      });
       return null;
     }
   }

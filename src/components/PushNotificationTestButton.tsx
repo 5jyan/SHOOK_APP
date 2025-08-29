@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useNotificationStore } from '@/stores/notification-store';
 import { apiService } from '@/services/api';
+import { notificationLogger } from '@/utils/logger-enhanced';
 
 export function PushNotificationTestButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,19 +12,31 @@ export function PushNotificationTestButton() {
     setIsLoading(true);
     
     try {
-      console.log('🧪 [PushTestButton] Sending test push notification...');
+      notificationLogger.info('Sending test push notification', {
+        component: 'PushNotificationTestButton',
+        action: 'test_notification_start'
+      });
       
       const response = await apiService.sendTestPushNotification();
       
       if (response.success) {
-        console.log('🧪 [PushTestButton] Test notification sent successfully');
+        notificationLogger.info('Test notification sent successfully', {
+          component: 'PushNotificationTestButton',
+          action: 'test_notification_success',
+          response: response
+        });
         Alert.alert(
           '성공',
           '테스트 푸시 알림이 발송되었습니다! 잠시 후 알림을 확인해보세요.',
           [{ text: '확인', style: 'default' }]
         );
       } else {
-        console.error('🧪 [PushTestButton] Test notification failed:', response.error);
+        notificationLogger.error('Test notification failed', {
+          component: 'PushNotificationTestButton',
+          action: 'test_notification_failure',
+          error: response.error,
+          response: response
+        });
         Alert.alert(
           '실패',
           response.error || '푸시 알림 발송에 실패했습니다.',
@@ -31,7 +44,12 @@ export function PushNotificationTestButton() {
         );
       }
     } catch (error) {
-      console.error('🧪 [PushTestButton] Error sending test notification:', error);
+      notificationLogger.error('Error sending test notification', {
+        component: 'PushNotificationTestButton',
+        action: 'test_notification_error',
+        error: error instanceof Error ? error.message : String(error),
+        errorDetails: error
+      });
       Alert.alert(
         '오류',
         '푸시 알림 테스트 중 오류가 발생했습니다.',

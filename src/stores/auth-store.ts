@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { secureStorage } from '@/lib/storage';
 import { notificationService } from '@/services/notification';
+import { authLogger } from '@/utils/logger-enhanced';
 
 interface User {
   id: string;
@@ -48,7 +49,7 @@ export const useAuthStore = create<AuthStore>()(
           
           // Initialize push notifications after login
           notificationService.initialize().catch((error) => {
-            console.error('Failed to initialize notifications:', error);
+            authLogger.error('Failed to initialize notifications', { error: error instanceof Error ? error.message : String(error) });
           });
         }),
 
@@ -60,7 +61,7 @@ export const useAuthStore = create<AuthStore>()(
           
           // Clear push notification token (local only)
           notificationService.clearToken().catch((error) => {
-            console.error('Failed to clear notification token:', error);
+            authLogger.error('Failed to clear notification token', { error: error instanceof Error ? error.message : String(error) });
           });
         }),
 

@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { storage } from './storage';
+import { serviceLogger } from '../utils/logger-enhanced';
 
 // Modern TanStack Query configuration with persistence
 export const queryClient = new QueryClient({
@@ -25,7 +26,7 @@ export const queryClient = new QueryClient({
       retry: 1,
       // Network error handling
       onError: (error) => {
-        console.error('Mutation error:', error);
+        serviceLogger.error('Mutation error', { error: error instanceof Error ? error.message : String(error) });
         // You could add toast notification here
       },
     },
@@ -58,6 +59,6 @@ export const restoreQueryClient = () => {
       });
     }
   } catch (error) {
-    console.warn('Failed to restore queries:', error);
+    serviceLogger.warn('Failed to restore queries', { error: error instanceof Error ? error.message : String(error) });
   }
 };

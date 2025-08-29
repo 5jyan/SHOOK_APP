@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { uiLogger } from '@/utils/logger-enhanced';
 
 export default function ChannelsScreen() {
   const { refreshChannels, channelCount, isLoading } = useChannels();
@@ -23,7 +24,7 @@ export default function ChannelsScreen() {
 
   const handleChannelDeleted = React.useCallback(() => {
     // Refresh channels to update the count immediately
-    console.log('🗑️ [ChannelsScreen] handleChannelDeleted called, refreshing channels...');
+    uiLogger.info('[ChannelsScreen] handleChannelDeleted called, refreshing channels');
     refreshChannels();
   }, [refreshChannels]);
 
@@ -31,7 +32,7 @@ export default function ChannelsScreen() {
     router.push('/channel-search');
   };
 
-  console.log('📺 [ChannelsScreen] rendering with channelCount:', channelCount);
+  uiLogger.debug('[ChannelsScreen] rendering', { channelCount });
 
   return (
     <SafeAreaView style={styles.container}>

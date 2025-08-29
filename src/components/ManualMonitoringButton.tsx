@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { apiService } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
+import { serviceLogger } from '@/utils/logger-enhanced';
 
 export function ManualMonitoringButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -15,12 +16,20 @@ export function ManualMonitoringButton() {
 
     try {
       setIsLoading(true);
-      console.log('🔄 [ManualMonitoringButton] Triggering manual YouTube monitoring...');
+      serviceLogger.info('Triggering manual YouTube monitoring', {
+        component: 'ManualMonitoringButton',
+        userId: user.id
+      });
       
       // Call the manual monitoring endpoint
       const response = await apiService.triggerManualMonitoring();
 
-      console.log('✅ [ManualMonitoringButton] Manual monitoring response:', response);
+      serviceLogger.info('Manual monitoring response received', {
+        component: 'ManualMonitoringButton',
+        userId: user.id,
+        success: response.success,
+        responseKeys: Object.keys(response)
+      });
       
       if (response.success) {
         Alert.alert(
@@ -32,7 +41,12 @@ export function ManualMonitoringButton() {
         throw new Error(response.error || '알 수 없는 오류가 발생했습니다');
       }
     } catch (error) {
-      console.error('❌ [ManualMonitoringButton] Error triggering monitoring:', error);
+      serviceLogger.error('Error triggering manual monitoring', {
+        component: 'ManualMonitoringButton',
+        userId: user?.id,
+        error: error instanceof Error ? error.message : String(error),
+        errorType: error instanceof Error ? error.constructor.name : typeof error
+      });
       Alert.alert(
         '오류', 
         `수동 모니터링 실행 중 오류가 발생했습니다:\n${error instanceof Error ? error.message : '알 수 없는 오류'}`,

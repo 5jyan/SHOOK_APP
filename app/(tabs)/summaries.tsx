@@ -9,16 +9,17 @@ import { router } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { uiLogger } from '@/utils/logger-enhanced';
 
 export default function SummariesScreen() {
-  console.log('📺 [SummariesScreen] Component mounting/re-rendering');
+  uiLogger.debug('[SummariesScreen] Component mounting/re-rendering');
   
   const isFocused = useIsFocused();
   const { user } = useAuthStore();
   const { channels } = useChannels(); // Get channel data from context
   const tabBarHeight = useBottomTabOverflow();
-  console.log('📺 [SummariesScreen] User from auth store:', user);
-  console.log('📺 [SummariesScreen] Channels from context:', channels.length);
+  uiLogger.debug('[SummariesScreen] User from auth store', { userId: user?.id, userEmail: user?.email });
+  uiLogger.debug('[SummariesScreen] Channels from context', { channelCount: channels.length });
   
   const { 
     data: videoSummaries = [], 
@@ -30,7 +31,7 @@ export default function SummariesScreen() {
     removeChannelVideos 
   } = useVideoSummariesCached();
   
-  console.log('📺 [SummariesScreen] Hook results:', {
+  uiLogger.debug('[SummariesScreen] Hook results', {
     videoSummariesCount: videoSummaries.length,
     isLoading,
     error: error?.message || null,
@@ -40,14 +41,14 @@ export default function SummariesScreen() {
   });
   
   // Log cache performance details
-  console.log('📦 [SummariesScreen] Cache performance:', queryState);
+  uiLogger.debug('[SummariesScreen] Cache performance', queryState);
   
   const [refreshing, setRefreshing] = React.useState(false);
   
   // Refetch when tab is focused
   React.useEffect(() => {
     if (isFocused) {
-      console.log('📺 [SummariesScreen] Tab focused - checking for new data...');
+      uiLogger.info('[SummariesScreen] Tab focused - checking for new data');
       refetch();
     }
   }, [isFocused, refetch]);
@@ -55,14 +56,16 @@ export default function SummariesScreen() {
   // Transform API data to match component interface
   const summaries: SummaryCardData[] = React.useMemo(() => {
     const filtered = videoSummaries.filter(video => video.processed && video.summary);
-    console.log('📺 [SummariesScreen] Filtered videos:', filtered.length);
+    uiLogger.debug('[SummariesScreen] Filtered videos', { filteredCount: filtered.length });
     
     if (filtered.length > 0) {
-      console.log('📺 [SummariesScreen] Sample videos before sorting:', filtered.slice(0, 3).map(v => ({
-        title: v.title.substring(0, 30) + '...',
-        publishedAt: v.publishedAt,
-        createdAt: v.createdAt
-      })));
+      uiLogger.debug('[SummariesScreen] Sample videos before sorting', {
+        samples: filtered.slice(0, 3).map(v => ({
+          title: v.title.substring(0, 30) + '...',
+          publishedAt: v.publishedAt,
+          createdAt: v.createdAt
+        }))
+      });
     }
     
     const transformed = filtered.map(video => transformVideoSummaryToCardData(video, channels));
@@ -70,11 +73,13 @@ export default function SummariesScreen() {
     const sorted = transformed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     
     if (sorted.length > 0) {
-      console.log('📺 [SummariesScreen] Sample videos after sorting:', sorted.slice(0, 3).map(v => ({
-        title: v.videoTitle.substring(0, 30) + '...',
-        publishedAt: v.publishedAt,
-        publishedDate: new Date(v.publishedAt).toISOString()
-      })));
+      uiLogger.debug('[SummariesScreen] Sample videos after sorting', {
+        samples: sorted.slice(0, 3).map(v => ({
+          title: v.videoTitle.substring(0, 30) + '...',
+          publishedAt: v.publishedAt,
+          publishedDate: new Date(v.publishedAt).toISOString()
+        }))
+      });
     }
     
     return sorted;
@@ -83,7 +88,7 @@ export default function SummariesScreen() {
   const handleRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      console.log('🔄 Refreshing summaries...');
+      uiLogger.info('Refreshing summaries');
       await refetch();
     } finally {
       setRefreshing(false);
@@ -91,7 +96,7 @@ export default function SummariesScreen() {
   }, [refetch]);
 
   const handleCardPress = (summary: SummaryCardData) => {
-    console.log('📖 Opening summary:', summary.videoTitle);
+    uiLogger.info('Opening summary', { videoTitle: summary.videoTitle, videoId: summary.videoId });
     router.push({
       pathname: '/summary-detail',
       params: { 

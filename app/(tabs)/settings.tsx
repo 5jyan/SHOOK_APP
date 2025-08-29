@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { uiLogger } from '@/utils/logger-enhanced';
 
 export default function SettingsScreen() {
   const { user } = useAuthStore();
@@ -38,13 +39,12 @@ export default function SettingsScreen() {
   const hasDeveloperAccess = true; // user?.role === 'manager' || user?.role === 'tester';
   
   // Debug logging
-  console.log('🔍 [SettingsScreen] User debug info:', {
+  uiLogger.debug('[SettingsScreen] User debug info', {
     userId: user?.id,
     username: user?.username,
     email: user?.email,
     role: user?.role,
-    hasDeveloperAccess,
-    rawUser: user,
+    hasDeveloperAccess
   });
 
   const settingsItems = [

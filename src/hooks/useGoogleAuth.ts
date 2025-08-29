@@ -95,7 +95,10 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         : 'Google 로그인에 실패했습니다.';
       
       setError(errorMessage);
-      console.error('Google Sign-In Error:', err);
+      authLogger.error('❌ Google Sign-In Error', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
     } finally {
       setIsLoading(false);
       setLoading(false);
@@ -108,11 +111,11 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       setLoading(true);
       setError(null);
 
-      console.log('🚀 Starting Google Sign-In...');
-      console.log('🔧 OAuth Config:', {
-        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS?.substring(0, 20) + '...',
-        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID?.substring(0, 20) + '...',
-        requestReady: !!request,
+      authLogger.info('🚀 Starting Google Sign-In');
+      authLogger.debug('🔧 OAuth Config', {
+        hasIosClientId: !!process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
+        hasAndroidClientId: !!process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
+        requestReady: !!request
       });
 
       if (!request) {
@@ -120,12 +123,12 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       }
 
       // Prompt for authentication
-      console.log('📱 Prompting for Google authentication...');
+      authLogger.info('📱 Prompting for Google authentication');
       const result = await promptAsync();
-      console.log('📋 Google Sign-In result:', {
+      authLogger.debug('📋 Google Sign-In result', {
         type: result?.type,
-        error: result?.error,
-        hasAuthentication: !!(result as any)?.authentication,
+        hasError: !!result?.error,
+        hasAuthentication: !!(result as any)?.authentication
       });
       
     } catch (err) {
@@ -134,7 +137,10 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         : 'Google 로그인에 실패했습니다.';
       
       setError(errorMessage);
-      console.error('Google Sign-In Error:', err);
+      authLogger.error('❌ Google Sign-In Error', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
       setIsLoading(false);
       setLoading(false);
     }
@@ -160,7 +166,10 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         : '로그아웃에 실패했습니다.';
       
       setError(errorMessage);
-      console.error('Sign-Out Error:', err);
+      authLogger.error('❌ Sign-Out Error', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
     } finally {
       setIsLoading(false);
     }

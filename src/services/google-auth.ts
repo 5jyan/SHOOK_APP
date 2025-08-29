@@ -2,6 +2,7 @@ import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 import { secureStorage } from '@/lib/storage';
+import { authLogger } from '../utils/logger-enhanced';
 
 // Ensure WebBrowser is warmed up for better UX
 WebBrowser.maybeCompleteAuthSession();
@@ -94,7 +95,12 @@ class GoogleAuthService {
 
       return user;
     } catch (error) {
-      console.error('Google Sign-In Error:', error);
+      authLogger.error('Google Sign-In failed', {
+        error: error instanceof Error ? error.message : String(error),
+        platform: Platform.OS,
+        clientId: this.getClientId().slice(0, 10) + '...',
+        scopes: this.scopes
+      });
       throw new Error(
         error instanceof Error 
           ? error.message 
@@ -175,7 +181,11 @@ class GoogleAuthService {
 
       return accessToken;
     } catch (error) {
-      console.error('Error getting access token:', error);
+      authLogger.error('Failed to get valid access token', {
+        error: error instanceof Error ? error.message : String(error),
+        hasAccessToken: !!(await secureStorage.getItem('google_access_token')),
+        hasExpiresAt: !!(await secureStorage.getItem('google_expires_at'))
+      });
       return null;
     }
   }
@@ -211,7 +221,10 @@ class GoogleAuthService {
 
       return tokenResponse.access_token;
     } catch (error) {
-      console.error('Token refresh error:', error);
+      authLogger.error('Token refresh failed', {
+        error: error instanceof Error ? error.message : String(error),
+        hasRefreshToken: !!(await secureStorage.getItem('google_refresh_token'))
+      });
       await this.signOut();
       return null;
     }
@@ -226,7 +239,9 @@ class GoogleAuthService {
         secureStorage.removeItem('google_expires_at'),
       ]);
     } catch (error) {
-      console.error('Sign out error:', error);
+      authLogger.error('Sign out failed', {
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 
@@ -240,7 +255,10 @@ class GoogleAuthService {
 
       return this.getUserProfile(accessToken);
     } catch (error) {
-      console.error('Get current user error:', error);
+      authLogger.error('Failed to get current user', {
+        error: error instanceof Error ? error.message : String(error),
+        hasValidToken: !!(await this.getValidAccessToken())
+      });
       return null;
     }
   }

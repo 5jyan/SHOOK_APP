@@ -3,6 +3,7 @@ import { ShookLoadingScreen } from '@/components/ShookLoadingScreen';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useUserChannels } from '@/hooks/useUserChannels';
 import { transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
+import { uiLogger } from '../src/utils/logger-enhanced';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
@@ -77,7 +78,11 @@ export default function SummaryDetailScreen() {
         title: videoSummary.title,
       });
     } catch (error) {
-      console.error('Share failed:', error);
+      uiLogger.error('Share operation failed', { 
+        error: error instanceof Error ? error.message : String(error),
+        videoId: videoSummary.videoId,
+        videoTitle: videoSummary.title
+      });
     }
   };
 

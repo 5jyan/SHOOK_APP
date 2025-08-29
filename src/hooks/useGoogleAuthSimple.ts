@@ -3,6 +3,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import { useAuthStore } from '@/stores/auth-store';
 import { secureStorage } from '@/lib/storage';
 import { apiService } from '@/services/api';
+import { authLogger } from '@/utils/logger-enhanced';
 
 import * as WebBrowser from 'expo-web-browser';
 
@@ -51,20 +52,24 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
 
   const handleGoogleResponse = async () => {
     try {
-      console.log('✅ Google OAuth successful, processing response...');
+      authLogger.info('✅ Google OAuth successful, processing response');
 
       if (!response?.authentication?.idToken) {
         throw new Error('ID 토큰을 받지 못했습니다.');
       }
 
       const idToken = response.authentication.idToken;
-      console.log('📤 Sending ID token to backend for verification...');
+      authLogger.info('📤 Sending ID token to backend for verification');
 
       // Send ID token to your backend for verification
       const verifyResponse = await apiService.verifyGoogleToken(idToken);
 
       if (verifyResponse.success) {
-        console.log('✅ Backend verification successful:', verifyResponse.data.user);
+        authLogger.info('✅ Backend verification successful', {
+          userId: verifyResponse.data.user.id,
+          username: verifyResponse.data.user.username,
+          email: verifyResponse.data.user.email
+        });
         
         // Transform backend user to mobile app user format
         const user = {
@@ -87,7 +92,11 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         login(user);
         setError(null);
         
-        console.log('✅ User authenticated and logged in:', user);
+        authLogger.info('✅ User authenticated and logged in', {
+          userId: user.id,
+          username: user.username,
+          email: user.email
+        });
       } else {
         throw new Error(verifyResponse.error || 'Backend verification failed');
       }
@@ -98,7 +107,10 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         : 'Google 로그인에 실패했습니다.';
       
       setError(errorMessage);
-      console.error('❌ Google Sign-In Error:', err);
+      authLogger.error('❌ Google Sign-In Error', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
     } finally {
       setIsLoading(false);
       setLoading(false);
@@ -111,14 +123,14 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       setLoading(true);
       setError(null);
 
-      console.log('🚀 Starting Google Sign-In process...');
+      authLogger.info('🚀 Starting Google Sign-In process');
 
       if (!request) {
         throw new Error('Google Auth가 초기화되지 않았습니다.');
       }
 
       // Start Google OAuth flow
-      console.log('📱 Opening Google OAuth...');
+      authLogger.info('📱 Opening Google OAuth');
       await promptAsync();
       
     } catch (err) {
@@ -127,7 +139,10 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         : 'Google 로그인에 실패했습니다.';
       
       setError(errorMessage);
-      console.error('❌ Sign-In Error:', err);
+      authLogger.error('❌ Sign-In Error', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
       setIsLoading(false);
       setLoading(false);
     }
@@ -138,16 +153,16 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       setIsLoading(true);
       setError(null);
 
-      console.log('🚪 Starting sign-out process...');
+      authLogger.info('🚪 Starting sign-out process');
 
       // Notify backend about logout
-      console.log('📤 Notifying backend about logout...');
+      authLogger.info('📤 Notifying backend about logout');
       const logoutResponse = await apiService.logout();
       
       if (logoutResponse.success) {
-        console.log('✅ Backend logout successful');
+        authLogger.info('✅ Backend logout successful');
       } else {
-        console.warn('⚠️ Backend logout failed:', logoutResponse.error);
+        authLogger.warn('⚠️ Backend logout failed', { error: logoutResponse.error });
       }
 
       // Clear stored tokens regardless of backend response
@@ -160,7 +175,7 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       // Update auth store
       logout();
 
-      console.log('✅ Local logout successful');
+      authLogger.info('✅ Local logout successful');
 
     } catch (err) {
       const errorMessage = err instanceof Error 
@@ -168,7 +183,10 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
         : '로그아웃에 실패했습니다.';
       
       setError(errorMessage);
-      console.error('❌ Sign-Out Error:', err);
+      authLogger.error('❌ Sign-Out Error', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
     } finally {
       setIsLoading(false);
     }

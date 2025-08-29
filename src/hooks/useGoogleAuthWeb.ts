@@ -148,14 +148,14 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       setIsLoading(true);
       setError(null);
 
-      console.log('🚪 Starting sign-out process...');
+      authLogger.info('🚪 Starting sign-out process');
 
       const logoutResponse = await apiService.logout();
       
       if (logoutResponse.success) {
-        console.log('✅ Backend logout successful');
+        authLogger.info('✅ Backend logout successful');
       } else {
-        console.warn('⚠️ Backend logout failed:', logoutResponse.error);
+        authLogger.warn('⚠️ Backend logout failed', { error: logoutResponse.error });
       }
 
       await Promise.all([
@@ -164,12 +164,15 @@ export function useGoogleAuth(): UseGoogleAuthReturn {
       ]);
       
       logout();
-      console.log('✅ Local logout successful');
+      authLogger.info('✅ Local logout successful');
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '로그아웃에 실패했습니다.';
       setError(errorMessage);
-      console.error('❌ Sign-Out Error:', err);
+      authLogger.error('❌ Sign-Out Error', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
     } finally {
       setIsLoading(false);
     }

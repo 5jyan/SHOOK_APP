@@ -1,28 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiService, VideoSummary } from '@/services/api';
+import { serviceLogger } from '@/utils/logger-enhanced';
 
 export const useVideoSummaries = () => {
-  console.log('🔥 [useVideoSummaries] Hook being called');
+  serviceLogger.debug('🔥 Hook being called', { hookName: 'useVideoSummaries' });
   
   const query = useQuery({
     queryKey: ['videoSummaries'], // Use stable query key
     queryFn: async () => {
-      console.log('🔥 [useVideoSummaries] queryFn executing - API call starting...');
-      console.log('🔥 [useVideoSummaries] API service:', apiService);
+      serviceLogger.debug('🔥 queryFn executing - API call starting', { hookName: 'useVideoSummaries' });
+      serviceLogger.debug('🔥 API service initialized', { hasApiService: !!apiService });
       
       try {
         const response = await apiService.getVideoSummaries();
-        console.log('🔥 [useVideoSummaries] API response received:', response);
+        serviceLogger.debug('🔥 API response received', {
+          hookName: 'useVideoSummaries',
+          success: response.success,
+          hasData: !!response.data,
+          dataLength: response.data?.length || 0
+        });
         
         if (!response.success) {
-          console.error('🔥 [useVideoSummaries] API call failed:', response.error);
+          serviceLogger.error('🔥 API call failed', {
+            hookName: 'useVideoSummaries',
+            error: response.error
+          });
           throw new Error(response.error || 'Failed to fetch video summaries');
         }
         
-        console.log('🔥 [useVideoSummaries] API call successful, data:', response.data);
+        serviceLogger.info('🔥 API call successful', {
+          hookName: 'useVideoSummaries',
+          videoCount: response.data?.length || 0
+        });
         return response.data;
       } catch (error) {
-        console.error('🔥 [useVideoSummaries] API call error:', error);
+        serviceLogger.error('🔥 API call error', {
+          hookName: 'useVideoSummaries',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
         throw error;
       }
     },
@@ -34,12 +50,13 @@ export const useVideoSummaries = () => {
     enabled: true, // Explicitly enable the query
   });
   
-  console.log('🔥 [useVideoSummaries] Query state:', {
+  serviceLogger.debug('🔥 Query state', {
+    hookName: 'useVideoSummaries',
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     isError: query.isError,
-    error: query.error?.message,
-    data: query.data?.length || 0,
+    errorMessage: query.error?.message,
+    dataCount: query.data?.length || 0,
     status: query.status,
     fetchStatus: query.fetchStatus
   });

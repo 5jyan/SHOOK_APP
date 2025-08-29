@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { apiService } from '@/services/api';
+import { serviceLogger } from '@/utils/logger-enhanced';
 
 export function BackendTestButton() {
   const [testing, setTesting] = useState(false);
@@ -11,13 +12,13 @@ export function BackendTestButton() {
     setResult('Testing backend connectivity...');
 
     try {
-      console.log('🧪 Testing backend connectivity...');
+      serviceLogger.info('Testing backend connectivity');
       const response = await apiService.getCurrentUser();
       
       if (response.success) {
         const message = `✅ Backend is running!\nAuth endpoint working\nResponse received`;
         setResult(message);
-        console.log('✅ Backend test successful:', response.data);
+        serviceLogger.info('Backend test successful', { data: response.data });
       } else {
         if (response.error?.includes('401') || response.error?.includes('Unauthorized')) {
           const message = `✅ Backend is running!\nNot authenticated (expected)\nAuth endpoint working`;
@@ -25,13 +26,13 @@ export function BackendTestButton() {
         } else {
           const message = `❌ Backend test failed:\n${response.error}`;
           setResult(message);
-          console.error('❌ Backend test failed:', response.error);
+          serviceLogger.error('Backend test failed', { error: response.error });
         }
       }
     } catch (error) {
       const message = `❌ Network error:\n${error instanceof Error ? error.message : 'Unknown error'}`;
       setResult(message);
-      console.error('❌ Backend test error:', error);
+      serviceLogger.error('Backend test error', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setTesting(false);
     }

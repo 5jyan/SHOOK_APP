@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { apiService, type YoutubeChannel } from '@/services/api';
+import { serviceLogger } from '@/utils/logger-enhanced';
 
 export function useChannelSearch() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,11 +20,14 @@ export function useChannelSearch() {
     setError(null);
 
     try {
-      console.log('🔍 Searching for channels:', query);
+      serviceLogger.info('🔍 Searching for channels', { query });
       const response = await apiService.searchChannels(query.trim());
       
       if (response.success) {
-        console.log('✅ Channel search successful:', response.data);
+        serviceLogger.info('✅ Channel search successful', { 
+          channelCount: response.data?.length || 0,
+          hasChannels: !!response.data?.length
+        });
         setChannels(response.data || []);
         
         // Auto-select the first channel if available
@@ -33,13 +37,16 @@ export function useChannelSearch() {
           setSelectedChannel(null);
         }
       } else {
-        console.error('❌ Channel search failed:', response.error);
+        serviceLogger.error('❌ Channel search failed', { error: response.error });
         setError(response.error || 'Failed to search channels');
         setChannels([]);
         setSelectedChannel(null);
       }
     } catch (err) {
-      console.error('❌ Channel search error:', err);
+      serviceLogger.error('❌ Channel search error', { 
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
       setError(err instanceof Error ? err.message : 'An error occurred while searching');
       setChannels([]);
       setSelectedChannel(null);

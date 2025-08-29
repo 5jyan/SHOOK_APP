@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiService, type YoutubeChannel, type UserChannel } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
+import { serviceLogger } from '@/utils/logger-enhanced';
 
 export function useUserChannels() {
   const { user } = useAuthStore();
@@ -10,7 +11,7 @@ export function useUserChannels() {
 
   const fetchUserChannels = useCallback(async () => {
     if (!user || !user.id) {
-      console.log('📡 No user or user ID available, skipping channel fetch');
+      serviceLogger.info('📡 No user or user ID available, skipping channel fetch');
       setChannels([]);
       setError(null);
       return;
@@ -20,7 +21,7 @@ export function useUserChannels() {
     setError(null);
 
     try {
-      console.log('📡 Fetching user channels for user:', user.id);
+      serviceLogger.info('📡 Fetching user channels for user', { userId: user.id });
       const userId = parseInt(user.id, 10);
       if (isNaN(userId)) {
         throw new Error('Invalid user ID format');
@@ -29,17 +30,23 @@ export function useUserChannels() {
       const response = await apiService.getUserChannels(userId);
       
       if (response.success) {
-        console.log('✅ User channels fetched successfully:', response.data);
-        console.log('📊 Channel data structure:', JSON.stringify(response.data, null, 2));
+        serviceLogger.info('✅ User channels fetched successfully', {
+          channelCount: response.data?.length || 0,
+          hasChannels: !!response.data?.length
+        });
+        serviceLogger.debug('📊 Channel data structure', { channelData: response.data });
         setChannels(response.data || []);
-        console.log('📋 Channels set to state, count:', response.data?.length || 0);
+        serviceLogger.debug('📋 Channels set to state', { count: response.data?.length || 0 });
       } else {
-        console.error('❌ Failed to fetch user channels:', response.error);
+        serviceLogger.error('❌ Failed to fetch user channels', { error: response.error });
         setError(response.error || 'Failed to fetch channels');
         setChannels([]);
       }
     } catch (err) {
-      console.error('❌ User channels fetch error:', err);
+      serviceLogger.error('❌ User channels fetch error', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
       setError(err instanceof Error ? err.message : 'An error occurred while fetching channels');
       setChannels([]);
     } finally {
@@ -49,19 +56,23 @@ export function useUserChannels() {
 
   const deleteChannel = useCallback(async (channelId: string) => {
     try {
-      console.log('🗑️ Deleting channel:', channelId);
+      serviceLogger.info('🗑️ Deleting channel', { channelId });
       const response = await apiService.deleteChannel(channelId);
       
       if (response.success) {
-        console.log('✅ Channel deleted successfully');
+        serviceLogger.info('✅ Channel deleted successfully', { channelId });
         setChannels(prev => prev.filter(ch => ch.youtubeChannel.channelId !== channelId));
         return true;
       } else {
-        console.error('❌ Failed to delete channel:', response.error);
+        serviceLogger.error('❌ Failed to delete channel', { channelId, error: response.error });
         throw new Error(response.error || 'Failed to delete channel');
       }
     } catch (err) {
-      console.error('❌ Channel delete error:', err);
+      serviceLogger.error('❌ Channel delete error', {
+        channelId,
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
       throw err;
     }
   }, []);

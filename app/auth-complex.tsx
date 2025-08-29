@@ -1,4 +1,5 @@
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+import { authLogger } from '../src/utils/logger-enhanced';
 import { router } from 'expo-router';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View, Image } from 'react-native';
@@ -10,7 +11,7 @@ export default function AuthScreen() {
   };
 
   const handleError = (error: string) => {
-    console.error('Auth Error:', error);
+    authLogger.error('Authentication error occurred', { error });
   };
 
   return (

@@ -1,16 +1,483 @@
-# Shook App 로깅 시스템 - 완전 마이그레이션 완료
+# 📋 Logging System Documentation
 
-## 개요
+## 🎯 Overview
 
-Shook 모바일 앱의 로깅 시스템을 **React Native 전용 Enhanced Logger**로 완전히 마이그레이션했습니다. 기존 이모지 기반 카테고리 시스템의 장점을 유지하면서 구조화된 로깅, 환경별 제어, 민감정보 보호, AsyncStorage 영속화 등 현대적 로깅 기능을 추가했습니다.
+Shook Mobile App은 **Enhanced Logging System**을 사용하여 구조화된 로깅, 성능 측정, 타임스탬프 관리를 제공합니다. 모든 로그는 **MM-DD HH:mm:ss** 형식의 타임스탬프와 구조화된 메타데이터를 포함합니다.
 
-## 1. 마이그레이션 완료 현황 
+## 🚀 Current Logging Architecture
 
-### 1.1 ✅ 완료된 주요 변경사항
+### Core Components
 
-- **Winston 호환성 문제 해결**: React Native 환경에서 발생하는 Winston 호환성 문제를 완전히 해결
-- **전체 프로젝트 로깅 표준화**: 168개+ console.log → structured logging으로 마이그레이션
-- **민감정보 보호 시스템**: 토큰, 패스워드, API 키 등 자동 마스킹
+#### 1. **TimestampService** (`src/utils/timestamp-service.ts`)
+- **고정밀 타임스탬프 생성**: MM-DD HH:mm:ss 형식 (08-29 11:48:00)
+- **Performance.now() 지원**: 밀리초 단위 정밀 측정
+- **타이머 관리**: `startTimer()`, `endTimer()`, `timeAsync()`, `timeSync()`
+- **Cross-platform 호환**: React Native 환경 최적화
+
+#### 2. **Logger Classes** (`src/utils/logger-enhanced.ts`)
+- **카테고리별 로거**: 이모지 기반 시각적 구분
+- **로그 레벨 필터링**: DEBUG/INFO/WARN/ERROR
+- **AsyncStorage 지속성**: 일별 로그 저장 (최대 100개/일)
+- **민감 정보 자동 마스킹**: 토큰, 패스워드 등 보안 정보 보호
+- **OpenTelemetry 호환**: 업계 표준 로그 구조
+
+#### 3. **HTTP Logging** (`src/utils/http-client.ts`)
+- **요청/응답 자동 로깅**: 모든 API 호출 추적
+- **내부/외부 API 구분**: 로깅 수준 차별화
+- **성능 메트릭**: 응답 시간, 상태 코드, 페이로드 크기
+- **오류 추적**: 네트워크 오류, 타임아웃 등
+
+## 📊 Logger Categories
+
+### Available Loggers
+
+```typescript
+import { 
+  apiLogger,           // 📡 API 요청/응답
+  authLogger,          // 🔐 인증/권한
+  cacheLogger,         // 📦 캐싱 시스템
+  notificationLogger,  // 🔔 푸시 알림
+  uiLogger,            // 🎨 UI 컴포넌트
+  serviceLogger,       // 🔧 비즈니스 로직
+  configLogger         // ⚙️ 설정/초기화
+} from '@/utils/logger-enhanced';
+```
+
+### Usage Examples
+
+```typescript
+// 기본 정보 로깅
+apiLogger.info('Request completed', { 
+  status: 200, 
+  duration: '245ms',
+  endpoint: '/api/videos'
+});
+
+// 구조화된 메타데이터와 함께
+authLogger.info('User authenticated', {
+  userId: user.id,
+  email: user.email,
+  provider: 'google'
+});
+
+// 에러 로깅 (자동 스택 트레이스 포함)
+serviceLogger.error('Database connection failed', {
+  error: error.message,
+  retryCount: 3,
+  connectionString: 'masked'
+});
+
+// 성능 측정
+const timerId = serviceLogger.startTimer('data-processing');
+await processLargeDataset();
+serviceLogger.endTimer(timerId, 'Data processing completed');
+```
+
+## 🔧 Log Output Format
+
+### Standard Format
+```
+08-29 11:48:00 📡 [API] Request completed {"status": 200, "duration": "245ms", "endpoint": "/api/videos"}
+08-29 11:48:01 🔐 [Auth] User authenticated {"userId": "123", "email": "test@example.com"}
+08-29 11:48:02 🎨 [UI] Component rendered {"component": "SummariesScreen", "renderTime": "15ms"}
+```
+
+### Enhanced Log Entry Structure (OpenTelemetry Compatible)
+```typescript
+{
+  timestamp: "08-29 11:48:00",           // 사용자 친화적 형식
+  "@timestamp": "2024-08-29T11:48:00.123Z", // ISO 8601 형식
+  level: "INFO",                         // 로그 레벨
+  severity: "info",                      // OpenTelemetry 표준
+  category: "API",                       // 로거 카테고리
+  message: "Request completed",          // 주요 메시지
+  metadata: { ... },                     // 구조화된 데이터
+  attributes: { ... },                   // OpenTelemetry 속성
+  platform: "ios",                      // 플랫폼 정보
+  correlationId: "req-123",             // 분산 추적 ID
+  performanceTime: 1234.56              // 고정밀 성능 시간
+}
+```
+
+## 🎯 Logging Guidelines & Best Practices
+
+### 1. **로그 레벨 사용 기준**
+
+#### DEBUG
+- **목적**: 상세한 개발 정보, 변수 값, 내부 상태
+- **프로덕션**: 표시되지 않음 (`__DEV__` 환경에서만)
+- **사용 예시**:
+```typescript
+serviceLogger.debug('Processing user input', {
+  inputLength: input.length,
+  validationRules: rules,
+  processingStep: 'sanitization'
+});
+```
+
+#### INFO
+- **목적**: 일반적인 애플리케이션 흐름, 중요한 이벤트
+- **프로덕션**: 표시됨
+- **사용 예시**:
+```typescript
+authLogger.info('User login successful', {
+  userId: user.id,
+  loginMethod: 'google-oauth',
+  sessionDuration: '24h'
+});
+```
+
+#### WARN
+- **목적**: 잠재적 문제, 복구 가능한 오류, 성능 경고
+- **프로덕션**: 표시됨
+- **사용 예시**:
+```typescript
+cacheLogger.warn('Cache miss rate high', {
+  missRate: 0.85,
+  cacheSize: '2.5MB',
+  recommendation: 'increase-cache-size'
+});
+```
+
+#### ERROR
+- **목적**: 오류, 예외, 실패한 작업
+- **프로덕션**: 표시됨
+- **사용 예시**:
+```typescript
+apiLogger.error('API request failed', {
+  endpoint: '/api/videos',
+  statusCode: 500,
+  error: error.message,
+  retryCount: 2,
+  userId: user?.id
+});
+```
+
+### 2. **메타데이터 구조화 가이드**
+
+#### ✅ 올바른 메타데이터 구조
+```typescript
+// 좋은 예: 구조화된 객체
+serviceLogger.info('Video processing completed', {
+  videoId: 'abc123',
+  duration: 120,
+  quality: 'HD',
+  processingTime: '2.3s',
+  outputSize: '15MB'
+});
+```
+
+#### ❌ 피해야 할 패턴
+```typescript
+// 나쁜 예: 문자열 연결
+console.log('Video abc123 processed in 2.3s with HD quality');
+
+// 나쁜 예: 민감한 정보 노출
+authLogger.info('Login', { password: user.password, token: accessToken });
+```
+
+### 3. **카테고리별 로거 선택 가이드**
+
+#### 📡 apiLogger
+- REST API 요청/응답
+- GraphQL 쿼리/뮤테이션
+- WebSocket 연결
+```typescript
+apiLogger.info('GraphQL query executed', {
+  query: 'getUserVideos',
+  variables: { userId: 123 },
+  executionTime: '45ms',
+  resultCount: 25
+});
+```
+
+#### 🔐 authLogger
+- 로그인/로그아웃
+- 권한 검증
+- 토큰 관리
+```typescript
+authLogger.warn('Token expires soon', {
+  userId: user.id,
+  expiresIn: '5min',
+  tokenType: 'access',
+  autoRefresh: true
+});
+```
+
+#### 🎨 uiLogger
+- 컴포넌트 렌더링
+- 사용자 상호작용
+- 내비게이션
+```typescript
+uiLogger.info('Screen navigation', {
+  from: 'SummariesScreen',
+  to: 'VideoDetailScreen',
+  navigationMethod: 'tab-press',
+  loadTime: '120ms'
+});
+```
+
+#### 🔧 serviceLogger
+- 비즈니스 로직
+- 데이터 처리
+- 백그라운드 작업
+```typescript
+serviceLogger.info('Background sync completed', {
+  syncType: 'incremental',
+  itemsProcessed: 47,
+  syncDuration: '1.2s',
+  nextSyncIn: '5min'
+});
+```
+
+### 4. **성능 측정 Best Practices**
+
+#### 비동기 작업 측정
+```typescript
+// timeAsync 사용
+const result = await serviceLogger.timeAsync('database-query', async () => {
+  return await database.findUsers({ active: true });
+});
+
+// 결과: 08-29 11:48:00 🔧 [Service] Async operation completed: database-query {"duration": 234, "performanceDuration": 234.56}
+```
+
+#### 동기 작업 측정
+```typescript
+// timeSync 사용
+const processed = serviceLogger.timeSync('data-transformation', () => {
+  return transformVideoData(rawData);
+});
+```
+
+#### 수동 타이머 관리
+```typescript
+const timerId = serviceLogger.startTimer('complex-operation');
+
+try {
+  await step1();
+  await step2();
+  await step3();
+  
+  serviceLogger.endTimer(timerId, 'Complex operation succeeded');
+} catch (error) {
+  serviceLogger.endTimer(timerId, 'Complex operation failed');
+  throw error;
+}
+```
+
+### 5. **Correlation ID 활용**
+
+분산 시스템에서 요청 추적을 위한 상관관계 ID 사용:
+
+```typescript
+// 요청 시작 시 correlation ID 설정
+const correlationId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+apiLogger.setCorrelationId(correlationId);
+
+// 모든 로그가 동일한 correlation ID를 가짐
+apiLogger.info('Processing user request', { action: 'getData' });
+serviceLogger.info('Database query started', { table: 'videos' });
+serviceLogger.info('Cache lookup', { key: 'user-videos-123' });
+
+// 요청 완료 시 정리
+apiLogger.clearCorrelationId();
+```
+
+### 6. **에러 로깅 패턴**
+
+#### 표준 에러 로깅
+```typescript
+try {
+  await riskyOperation();
+} catch (error) {
+  serviceLogger.error('Operation failed', {
+    operation: 'riskyOperation',
+    error: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+    context: { userId: user.id, retryCount: 2 }
+  });
+  
+  // 에러 재발생 여부 결정
+  throw error;
+}
+```
+
+#### 복구 가능한 에러
+```typescript
+try {
+  const result = await primaryService();
+  return result;
+} catch (error) {
+  serviceLogger.warn('Primary service failed, using fallback', {
+    primaryError: error.message,
+    fallbackService: 'cache'
+  });
+  
+  return await fallbackService();
+}
+```
+
+### 7. **보안 고려사항**
+
+#### 자동 마스킹되는 패턴
+- 토큰: `token`, `access_token`, `refresh_token`
+- 인증: `authorization`, `bearer`
+- 보안: `password`, `secret`, `api_key`
+- 세션: `cookie`, `session`
+- 알림: `ExponentPushToken[...]`
+
+#### 추가 보안 조치
+```typescript
+// 민감한 정보는 로그에서 제외
+apiLogger.info('User profile updated', {
+  userId: user.id,
+  updatedFields: ['name', 'email'], // password 필드는 제외
+  timestamp: new Date().toISOString()
+});
+
+// 또는 명시적으로 마스킹
+const maskedEmail = user.email.replace(/(.{3}).*(@.*)/, '$1***$2');
+authLogger.info('Email verification sent', {
+  userId: user.id,
+  email: maskedEmail
+});
+```
+
+## 🔍 Migration from Console.log
+
+### Before (Old Pattern)
+```typescript
+console.log('🔄 Starting sync process...');
+console.log('✅ Sync completed:', result);
+console.error('❌ Sync failed:', error);
+```
+
+### After (Enhanced Pattern)
+```typescript
+const timerId = serviceLogger.startTimer('sync-process');
+serviceLogger.info('Starting sync process', { syncType: 'full' });
+
+try {
+  const result = await syncOperation();
+  serviceLogger.endTimer(timerId, 'Sync completed successfully');
+  serviceLogger.info('Sync result', { 
+    itemsProcessed: result.count,
+    syncDuration: result.duration,
+    nextSync: result.nextScheduled
+  });
+} catch (error) {
+  serviceLogger.endTimer(timerId, 'Sync process failed');
+  serviceLogger.error('Sync operation failed', {
+    error: error.message,
+    syncType: 'full',
+    retryScheduled: true
+  });
+}
+```
+
+## 📈 Performance Monitoring
+
+### Built-in Performance Features
+
+#### 1. **Automatic Slow Operation Detection**
+1초 이상 걸리는 작업은 자동으로 WARN 레벨로 로깅됩니다:
+
+```typescript
+// 이 작업이 1초 이상 걸리면 자동으로 경고 생성
+await serviceLogger.timeAsync('slow-query', async () => {
+  return await database.complexQuery();
+});
+
+// 출력: 08-29 11:48:03 🔧 [Service] Async operation completed: slow-query (slow operation) {"duration": 1245, "performanceDuration": 1245.67}
+```
+
+#### 2. **Timer Statistics**
+```typescript
+import { getTimerStats } from '@/utils/logger-enhanced';
+
+const stats = getTimerStats();
+console.log(`Active timers: ${stats.activeTimers}`);
+stats.clearExpiredTimers(300000); // 5분 이상 된 타이머 정리
+```
+
+#### 3. **Memory and Storage Management**
+- **일별 로그 파일**: `app_logs_2024-08-29` 형식
+- **자동 정리**: 7일 이상 된 로그 파일 자동 삭제
+- **용량 제한**: 일별 최대 100개 로그 엔트리
+- **압축**: JSON 형태로 AsyncStorage에 효율적 저장
+
+## 🛠️ Development Tools
+
+### 1. **Log Viewer (CacheStatsButton 예시)**
+실제 저장된 로그를 확인할 수 있습니다:
+
+```typescript
+import { getStoredLogs } from '@/utils/logger-enhanced';
+
+const logs = await getStoredLogs('2024-08-29');
+logs.forEach(log => {
+  console.log(`${log.timestamp} [${log.category}] ${log.message}`);
+});
+```
+
+### 2. **Log Level Runtime Control**
+개발 중 로그 레벨을 동적으로 조정 가능:
+
+```typescript
+// 개발 환경에서 모든 로그 표시
+if (__DEV__) {
+  // DEBUG 레벨도 표시됨
+}
+
+// 프로덕션에서 WARN 이상만 표시
+// ERROR와 WARN만 사용자에게 표시됨
+```
+
+## 📋 Quick Reference
+
+### Common Patterns
+
+```typescript
+// 📡 API 로깅
+apiLogger.info('API call', { method: 'POST', endpoint: '/api/data', status: 200 });
+
+// 🔐 인증 로깅  
+authLogger.info('User login', { userId: '123', method: 'google' });
+
+// 🎨 UI 로깅
+uiLogger.info('Screen navigation', { from: 'Home', to: 'Profile' });
+
+// 🔧 서비스 로깅
+serviceLogger.info('Data processing', { records: 100, duration: '2.1s' });
+
+// 🔔 알림 로깅
+notificationLogger.info('Push sent', { userId: '123', type: 'video-update' });
+
+// 📦 캐시 로깅
+cacheLogger.info('Cache hit', { key: 'user-data', hitRate: 0.95 });
+
+// ⚙️ 설정 로깅
+configLogger.info('App initialized', { version: '1.0.0', platform: 'ios' });
+```
+
+### Import Statement
+```typescript
+import { 
+  apiLogger, 
+  authLogger, 
+  uiLogger, 
+  serviceLogger,
+  notificationLogger,
+  cacheLogger,
+  configLogger 
+} from '@/utils/logger-enhanced';
+```
+
+---
+
+**✅ 시스템 상태**: 모든 console.log가 구조화된 로거로 마이그레이션 완료  
+**🎯 다음 단계**: 실제 앱에서 로그 동작 검증 및 성능 모니터링
 - **HTTP 요청 통합 로깅**: 내부/외부 API 자동 구분 및 로깅
 - **AsyncStorage 영속화**: 로그 데이터 로컬 저장 및 분석 기능
 
@@ -1236,8 +1703,6 @@ class ApiService {
   }
 }
 ```
-
-### 14.7 2024년 베스트 프랙티스 요약
 
 #### ✅ 현재 구현의 장점
 - ISO 8601 표준 타임스탬프 사용

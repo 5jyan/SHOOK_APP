@@ -2,6 +2,7 @@
  * Universal HTML entity decoder utility for React Native
  * Handles common HTML entities that appear in YouTube titles and descriptions
  */
+import { serviceLogger } from './logger-enhanced';
 
 // Common HTML entity mappings
 const HTML_ENTITIES: Record<string, string> = {
@@ -97,9 +98,9 @@ export function decodeHtmlEntities(str: string): string {
 export function decodeYouTubeTitle(title: string): string {
   if (!title) return title;
 
-  console.log(`[html-decode] Original title: "${title}"`);
+  serviceLogger.debug('Decoding YouTube title', { originalTitle: title });
   const decoded = decodeHtmlEntities(title);
-  console.log(`[html-decode] Decoded title: "${decoded}"`);
+  serviceLogger.debug('YouTube title decoded', { decodedTitle: decoded });
   
   return decoded;
 }
@@ -115,7 +116,12 @@ export function decodeYouTubeSummary(summary: string): string {
   const decoded = decodeHtmlEntities(summary);
   
   // Log only first 100 chars to avoid spam
-  console.log(`[html-decode] Summary decoded: "${decoded.substring(0, 100)}${decoded.length > 100 ? '...' : ''}"`);
+  const truncatedSummary = decoded.substring(0, 100) + (decoded.length > 100 ? '...' : '');
+  serviceLogger.debug('YouTube summary decoded', { 
+    summaryPreview: truncatedSummary,
+    originalLength: summary.length,
+    decodedLength: decoded.length
+  });
   
   return decoded;
 }
