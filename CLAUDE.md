@@ -274,3 +274,296 @@ EXPO_LOCAL=true  # Enables platform-specific local URLs
 - Android: Requires `EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID` + package name
 - Web: Uses `EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB` for development testing
 - Mobile auth flow bypasses web OAuth restrictions via backend token verification
+
+## Logging System Architecture
+
+This project uses a comprehensive React Native-compatible structured logging system with enhanced features for debugging, monitoring, and security.
+
+### Enhanced Logger System
+
+**Core Logger Implementation** (`src/utils/logger-enhanced.ts`):
+- Custom React Native-compatible logger (replaces Winston for mobile compatibility)
+- AsyncStorage persistence with daily log files
+- Emoji-based categorization with structured metadata
+- Environment-based log levels (DEBUG in __DEV__, WARN+ in production)
+- Automatic sensitive data masking for tokens, passwords, secrets
+- OpenTelemetry-compatible log structure
+- High-precision timestamps with MM-DD HH:mm:ss format
+- Correlation ID support for distributed tracing
+- Performance measurement with timer utilities
+
+**Available Logger Categories**:
+```typescript
+import { 
+  apiLogger,           // 📡 API requests/responses
+  cacheLogger,         // 📦 Cache operations
+  notificationLogger,  // 🔔 Push notifications
+  uiLogger,           // 🎨 UI interactions
+  configLogger,       // ⚙️ Configuration
+  serviceLogger,      // 🔧 Service operations
+  authLogger          // 🔐 Authentication
+} from '@/utils/logger-enhanced';
+```
+
+### HTTP Request Logging
+
+**HTTP Client with Automatic Logging** (`src/utils/http-client.ts`):
+- Automatic request/response logging for all HTTP calls
+- Sensitive data masking in URLs and headers
+- Distinguishes internal vs external API calls
+- Performance timing for request duration
+- Error handling with structured error metadata
+
+```typescript
+import { httpClient, googleApiClient } from '@/utils/http-client';
+
+// Use instead of fetch() for automatic logging
+const response = await httpClient.fetch('/api/channels', {
+  method: 'POST',
+  body: JSON.stringify(data),
+  logResponseBody: true  // Optional: log response body
+});
+```
+
+### Logging Best Practices & Guidelines
+
+#### 1. Choose Appropriate Log Level
+```typescript
+// DEBUG: Development debugging, verbose information
+authLogger.debug('Processing login request', { userId, method: 'google' });
+
+// INFO: Normal application flow, important events
+serviceLogger.info('Cache sync completed', { 
+  syncType: 'incremental', 
+  itemsUpdated: 15 
+});
+
+// WARN: Unexpected but recoverable conditions
+cacheLogger.warn('Cache near size limit', { 
+  currentSize: 480, 
+  maxSize: 500 
+});
+
+// ERROR: Error conditions that need attention
+apiLogger.error('External API call failed', { 
+  url: 'https://api.example.com', 
+  status: 500,
+  error: error.message 
+});
+```
+
+#### 2. Use Structured Metadata
+```typescript
+// ✅ Good: Structured metadata for searchability
+authLogger.info('User login successful', {
+  userId: user.id,
+  method: 'google_oauth',
+  platform: Platform.OS,
+  sessionDuration: '24h'
+});
+
+// ❌ Bad: String interpolation loses structure
+authLogger.info(`User ${user.id} logged in via Google OAuth`);
+```
+
+#### 3. Security-First Logging
+```typescript
+// ✅ Sensitive data is automatically masked
+authLogger.debug('Token received', { 
+  token: 'sk-1234567890abcdef',  // → 'sk-...def'
+  refreshToken: response.refresh_token
+});
+
+// ✅ Use metadata for sensitive data (auto-masked)
+apiLogger.info('API request authenticated', {
+  authorization: request.headers.authorization,  // Auto-masked
+  endpoint: '/api/secure-data'
+});
+
+// ❌ Avoid logging sensitive data in message strings
+authLogger.info(`Token: ${token}`);  // Not auto-masked in message
+```
+
+#### 4. Performance Measurement
+```typescript
+// Method 1: Manual timer management
+const timerId = serviceLogger.startTimer('video-cache-sync');
+await performCacheSync();
+serviceLogger.endTimer(timerId, 'Cache sync completed');
+
+// Method 2: Automatic async timing
+const result = await serviceLogger.timeAsync('api-call', async () => {
+  return await httpClient.fetch('/api/videos');
+});
+
+// Method 3: Synchronous timing
+const processedData = serviceLogger.timeSync('data-processing', () => {
+  return processLargeDataSet(data);
+});
+```
+
+#### 5. Error Handling Patterns
+```typescript
+// ✅ Comprehensive error logging with context
+try {
+  await riskyOperation();
+} catch (error) {
+  serviceLogger.error('Operation failed', {
+    operation: 'riskyOperation',
+    error: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+    userId: user?.id,
+    timestamp: new Date().toISOString()
+  });
+  throw error;
+}
+
+// ✅ Service-specific error context
+try {
+  const response = await httpClient.fetch(url);
+} catch (error) {
+  apiLogger.error('HTTP request failed', {
+    url,
+    method: options.method || 'GET',
+    status: error.status,
+    error: error.message,
+    duration: performance.now() - startTime
+  });
+}
+```
+
+#### 6. Category-Specific Usage Patterns
+
+**API Logging** (`apiLogger`):
+```typescript
+// HTTP request start
+apiLogger.info('API request started', { 
+  url, method, headers: safeHeaders 
+});
+
+// HTTP response received  
+apiLogger.info('API response received', { 
+  status, duration, responseSize 
+});
+
+// Rate limiting
+apiLogger.warn('Rate limit approached', { 
+  remaining: headers['x-ratelimit-remaining'] 
+});
+```
+
+**Cache Logging** (`cacheLogger`):
+```typescript
+// Cache operations
+cacheLogger.debug('Cache hit', { key, size: data.length });
+cacheLogger.info('Cache miss, fetching from source', { key });
+cacheLogger.warn('Cache eviction triggered', { 
+  reason: 'size_limit', 
+  evictedKeys: keys.length 
+});
+```
+
+**Authentication Logging** (`authLogger`):
+```typescript
+// Auth flow events
+authLogger.info('Authentication started', { method: 'google' });
+authLogger.info('Authentication successful', { userId, sessionId });
+authLogger.warn('Authentication failed', { 
+  method, reason: 'invalid_token' 
+});
+```
+
+**Notification Logging** (`notificationLogger`):
+```typescript
+// Push notification events
+notificationLogger.info('Push token registered', { userId });
+notificationLogger.debug('Notification received', { 
+  title: notification.title,
+  data: notification.data 
+});
+```
+
+### Common Migration Patterns
+
+#### Replace Console Statements
+```typescript
+// ❌ Before: Basic console logging
+console.log('User authenticated');
+console.error('API call failed:', error);
+
+// ✅ After: Structured logging with context
+authLogger.info('User authenticated', { userId, method: 'google' });
+apiLogger.error('API call failed', { 
+  endpoint: '/api/videos',
+  error: error.message,
+  status: error.status 
+});
+```
+
+#### HTTP Client Migration
+```typescript
+// ❌ Before: Manual fetch with basic logging
+console.log('Calling API:', url);
+const response = await fetch(url, options);
+console.log('Response:', response.status);
+
+// ✅ After: Automatic HTTP logging
+const response = await httpClient.fetch(url, {
+  ...options,
+  logResponseBody: true  // Optional for detailed debugging
+});
+// Logs automatically: request details, timing, response status
+```
+
+### Performance Optimization
+
+**Log Level Filtering**:
+- Production: Only WARN and ERROR levels logged (performance optimized)
+- Development: All levels logged including DEBUG and INFO
+- Automatic filtering prevents performance impact in production
+
+**Storage Management**:
+- Daily log files with automatic cleanup (7-day retention)
+- Maximum 100 entries per day to prevent storage bloat
+- Async persistence doesn't block main thread
+
+**Memory Efficiency**:
+- Sensitive data masking prevents memory leaks of tokens
+- Timer cleanup for expired performance measurements
+- Correlation ID cleanup after request completion
+
+### Quick Reference
+
+**Essential Imports**:
+```typescript
+import { 
+  apiLogger, 
+  serviceLogger, 
+  authLogger 
+} from '@/utils/logger-enhanced';
+import { httpClient } from '@/utils/http-client';
+```
+
+**Most Common Patterns**:
+```typescript
+// API calls - use httpClient (auto-logs)
+const data = await httpClient.fetch('/api/endpoint');
+
+// Service operations - use serviceLogger  
+serviceLogger.info('Operation completed', { result, duration });
+
+// Authentication - use authLogger
+authLogger.info('Login successful', { userId, method });
+
+// Errors - provide rich context
+logger.error('Operation failed', { 
+  operation: 'functionName',
+  error: error.message,
+  context: { userId, operation: 'specific-action' }
+});
+
+// Performance timing
+const result = await serviceLogger.timeAsync('operation', asyncFunction);
+```
+
+This logging system provides comprehensive debugging capabilities while maintaining security and performance standards for production deployment.
