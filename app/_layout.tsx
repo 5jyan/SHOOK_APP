@@ -16,6 +16,8 @@ import { ChannelsProvider } from '@/contexts/ChannelsContext';
 import { GlobalUIDebugger } from '@/components/GlobalUIDebugger';
 import { FloatingDebugButton } from '@/components/FloatingDebugButton';
 import { configLogger } from '@/utils/logger-enhanced';
+import { videoCacheService } from '@/services/video-cache-enhanced';
+import { CacheTransaction } from '@/services/cache/CacheTransaction';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -27,21 +29,43 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    // Initialize enhanced logger system
-    configLogger.info('App initialization started', { 
-      loaded, 
-      colorScheme 
-    });
-    
-    // Restore persisted queries
-    restoreQueryClient();
+    // Initialize enhanced systems
+    const initializeApp = async () => {
+      configLogger.info('App initialization started', { 
+        loaded, 
+        colorScheme 
+      });
+      
+      // Initialize cache system with recovery
+      try {
+        configLogger.info('Initializing enhanced cache system');
+        
+        // Recover incomplete transactions from previous sessions
+        await CacheTransaction.recoverIncompleteTransactions();
+        
+        // Initialize enhanced cache service (includes auto-recovery)
+        await videoCacheService.getCacheStats(); // Triggers initialization
+        
+        configLogger.info('Cache system initialized successfully');
+      } catch (error) {
+        configLogger.error('Cache initialization failed', {
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+      
+      // Restore persisted queries
+      restoreQueryClient();
+      
+      if (loaded) {
+        SplashScreen.hideAsync();
+      }
+    };
     
     // Setup notification listeners
     const listeners = notificationService.addNotificationListeners();
     
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
+    // Initialize app systems
+    initializeApp();
 
     return () => {
       // Cleanup notification listeners on unmount

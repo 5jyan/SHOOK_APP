@@ -6,6 +6,7 @@ import React from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { uiLogger } from '@/utils/logger-enhanced';
+import { CacheManagementButton } from '@/components/CacheManagementButton';
 
 export default function SettingsScreen() {
   const { user } = useAuthStore();
@@ -173,6 +174,9 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
       </ScrollView>
+      
+      {/* Enhanced Cache Management Button (dev only) */}
+      <CacheManagementButton />
     </SafeAreaView>
   );
 }

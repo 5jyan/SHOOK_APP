@@ -1,4 +1,6 @@
-// Video Summary Cache Service with AsyncStorage
+// Legacy Video Summary Cache Service - DEPRECATED
+// Use video-cache-enhanced.ts for new features and better reliability
+import { videoCacheService as enhancedCacheService } from './video-cache-enhanced';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { VideoSummary } from './api';
 import { cacheLogger } from '@/utils/logger-enhanced';
@@ -362,5 +364,8 @@ export class VideoCacheService {
   }
 }
 
-// Export singleton instance
-export const videoCacheService = VideoCacheService.getInstance();
+// Export enhanced singleton instance (backward compatible)
+export const videoCacheService = enhancedCacheService;
+
+// Keep legacy class available for gradual migration
+const legacyVideoCacheService = VideoCacheService.getInstance();

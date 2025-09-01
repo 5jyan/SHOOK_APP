@@ -50,7 +50,16 @@
       "Bash(powershell:*)",
       "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server/**)",
       "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server/**)",
-      "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server/**)"
+      "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server/**)",
+      "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server/**)",
+      "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server\\server\\services/**)",
+      "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server\\server/**)",
+      "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server\\server\\repositories/**)",
+      "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server\\server\\repositories/**)",
+      "Read(\\c\\Users\\saulpark\\Documents\\workspace/**)",
+      "Bash(find:*)",
+      "Bash(rg:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
