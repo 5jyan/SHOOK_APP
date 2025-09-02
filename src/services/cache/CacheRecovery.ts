@@ -52,7 +52,7 @@ export class CacheRecovery {
     BACKUP_PREFIX: 'cache_backup_',
   };
 
-  private readonly CACHE_VERSION = '1.0.0';
+  private readonly CACHE_VERSION = '2.0.0';
   private readonly MAX_BACKUPS = 3;
 
   /**
@@ -299,33 +299,85 @@ export class CacheRecovery {
         return true;
       }
 
+      cacheLogger.info('Cache health check failed, attempting recovery');
+
       // Create recovery plan
       const plan = await this.createRecoveryPlan();
 
-      // Only auto-recover low-risk issues
-      if (plan.riskLevel === 'low' && !plan.dataLossRisk) {
+      // Only auto-recover low-risk issues, but also allow medium-risk without data loss
+      if ((plan.riskLevel === 'low') || (plan.riskLevel === 'medium' && !plan.dataLossRisk)) {
+        cacheLogger.info('Executing auto-recovery plan', {
+          strategy: plan.strategy,
+          riskLevel: plan.riskLevel,
+          actionCount: plan.actions.length
+        });
+
         const result = await this.executeRecovery(plan);
         
         if (result.success) {
-          cacheLogger.info('Automatic recovery successful');
+          cacheLogger.info('Automatic recovery successful', {
+            strategy: result.strategy,
+            recoveredEntries: result.recoveredEntries,
+            removedEntries: result.removedEntries
+          });
           return true;
         } else {
-          cacheLogger.warn('Automatic recovery failed, manual intervention may be needed');
-          return false;
+          cacheLogger.warn('Automatic recovery failed, clearing cache as fallback', {
+            errors: result.errors
+          });
+          
+          // Fallback: clear cache if recovery fails
+          try {
+            await this.clearCacheAsFallback();
+            cacheLogger.info('Cache cleared as fallback recovery');
+            return true;
+          } catch (clearError) {
+            cacheLogger.error('Fallback cache clear failed', {
+              error: clearError instanceof Error ? clearError.message : String(clearError)
+            });
+            return false;
+          }
         }
       } else {
         cacheLogger.warn('Cache issues require manual recovery due to risk level', {
           riskLevel: plan.riskLevel,
-          dataLossRisk: plan.dataLossRisk
+          dataLossRisk: plan.dataLossRisk,
+          actionCount: plan.actions.length
         });
+        
+        // For high-risk scenarios, try clearing cache as last resort
+        if (plan.riskLevel === 'high') {
+          try {
+            await this.clearCacheAsFallback();
+            cacheLogger.info('High-risk cache cleared as recovery fallback');
+            return true;
+          } catch (clearError) {
+            cacheLogger.error('High-risk cache clear failed', {
+              error: clearError instanceof Error ? clearError.message : String(clearError)
+            });
+          }
+        }
+        
         return false;
       }
 
     } catch (error) {
-      cacheLogger.error('Automatic recovery failed', {
-        error: error instanceof Error ? error.message : String(error)
+      cacheLogger.error('Automatic recovery failed with exception', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
       });
-      return false;
+      
+      // Last resort: try to clear cache
+      try {
+        await this.clearCacheAsFallback();
+        cacheLogger.info('Exception recovery: cache cleared');
+        return true;
+      } catch (clearError) {
+        cacheLogger.error('Exception recovery: cache clear failed', {
+          error: clearError instanceof Error ? clearError.message : String(clearError)
+        });
+        return false;
+      }
     }
   }
 
@@ -645,6 +697,31 @@ export class CacheRecovery {
       cacheLogger.warn('Failed to cleanup old backups', {
         error: error instanceof Error ? error.message : String(error)
       });
+    }
+  }
+
+  /**
+   * Clear cache as fallback recovery mechanism
+   */
+  private async clearCacheAsFallback(): Promise<void> {
+    cacheLogger.info('Clearing cache as fallback recovery');
+    
+    try {
+      // Use AsyncStorage.multiRemove for atomic operation
+      const keysToRemove = [
+        this.CACHE_KEYS.VIDEO_LIST,
+        this.CACHE_KEYS.METADATA,
+        this.CACHE_KEYS.CHANNEL_MAPPING
+      ];
+      
+      await AsyncStorage.multiRemove(keysToRemove);
+      
+      cacheLogger.info('Cache cleared successfully as fallback');
+    } catch (error) {
+      cacheLogger.error('Failed to clear cache as fallback', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
     }
   }
 

@@ -53,7 +53,7 @@ export class CacheValidator {
     CHANNEL_MAPPING: 'channel_names_cache',
   };
 
-  private readonly CACHE_VERSION = '1.0.0';
+  private readonly CACHE_VERSION = '2.0.0';
 
   /**
    * Validate complete cache consistency

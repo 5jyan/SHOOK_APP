@@ -59,7 +59,8 @@
       "Read(\\c\\Users\\saulpark\\Documents\\workspace/**)",
       "Bash(find:*)",
       "Bash(rg:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []
