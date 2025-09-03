@@ -54,6 +54,7 @@ export default function SettingsScreen() {
       description: '푸시 알림 및 알림 주기를 설정합니다',
       onPress: () => {
         // TODO: Navigate to notification settings
+        Alert.alert('알림 설정', '알림 설정 기능은 곧 추가될 예정입니다.');
       },
     },
     {
@@ -61,13 +62,32 @@ export default function SettingsScreen() {
       description: '계정 정보를 확인하고 수정합니다',
       onPress: () => {
         // TODO: Navigate to account settings
+        Alert.alert('계정 정보', '계정 정보 기능은 곧 추가될 예정입니다.');
+      },
+    },
+    {
+      title: '개인정보처리방침',
+      description: '개인정보 수집 및 이용에 관한 방침을 확인합니다',
+      onPress: () => {
+        router.push('/privacy-policy');
+      },
+    },
+    {
+      title: '서비스 이용약관',
+      description: '서비스 이용에 관한 약관을 확인합니다',
+      onPress: () => {
+        router.push('/terms-of-service');
       },
     },
     {
       title: '앱 정보',
-      description: '버전 정보 및 서비스 약관을 확인합니다',
+      description: '버전 정보 및 앱 개발자 정보를 확인합니다',
       onPress: () => {
-        // TODO: Navigate to app info
+        Alert.alert(
+          'Shook 앱 정보',
+          `버전: 1.0.0\n개발자: 박사울 (Saul Park)\n문의: support@shookapp.com\n\n© 2025 Shook. All rights reserved.`,
+          [{ text: '확인' }]
+        );
       },
     },
   ];

@@ -28,9 +28,25 @@ export default function AuthScreen() {
           <Text style={styles.buttonText}>Google로 계속하기</Text>
         </Pressable>
 
-        <Text style={styles.terms}>
-          로그인하면 이용약관과 개인정보처리방침에 동의한 것으로 간주됩니다
-        </Text>
+        <View style={styles.termsContainer}>
+          <Text style={styles.terms}>
+            로그인하면{' '}
+            <Text 
+              style={styles.termsLink}
+              onPress={() => router.push('/terms-of-service')}
+            >
+              이용약관
+            </Text>
+            과{' '}
+            <Text 
+              style={styles.termsLink}
+              onPress={() => router.push('/privacy-policy')}
+            >
+              개인정보처리방침
+            </Text>
+            에 동의한 것으로 간주됩니다
+          </Text>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -80,10 +96,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  termsContainer: {
+    alignItems: 'center',
+  },
   terms: {
     fontSize: 12,
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 18,
+  },
+  termsLink: {
+    fontSize: 12,
+    color: '#3b82f6',
+    textDecorationLine: 'underline',
+    fontWeight: '500',
   },
 });
