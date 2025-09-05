@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useNotificationStore } from '@/stores/notification-store';
-import { apiService, type PushTokenData } from './api';
+import { apiService, type PushTokenData, type PushTokenInfo } from './api';
 import { queryClient } from '@/lib/query-client';
 import { notificationLogger } from '@/utils/logger-enhanced';
 
@@ -40,11 +40,89 @@ export class NotificationService {
     return NotificationService.instance;
   }
 
+  // Check current registration status from DB and sync with local state
+  async syncWithBackendState(): Promise<void> {
+    const syncId = Math.random().toString(36).substr(2, 9);
+    notificationLogger.info(`🔄 Syncing notification state with backend [${syncId}]`);
+    
+    try {
+      const response = await apiService.getPushTokenStatus();
+      
+      notificationLogger.debug('Raw API response for token status', {
+        success: response.success,
+        data: response.data,
+        error: response.error,
+        dataType: typeof response.data,
+        isArray: Array.isArray(response.data)
+      });
+      
+      if (response.success && response.data && Array.isArray(response.data)) {
+        const tokens = response.data;
+        const deviceId = Constants.sessionId || 'unknown';
+        
+        // Find current device's token
+        const currentDeviceToken = tokens.find(token => token.deviceId === deviceId);
+        
+        const isRegisteredInDB = currentDeviceToken && currentDeviceToken.isActive;
+        
+        notificationLogger.info('Backend state sync results', {
+          totalTokens: tokens.length,
+          currentDeviceId: deviceId,
+          currentDeviceToken: currentDeviceToken ? {
+            deviceId: currentDeviceToken.deviceId,
+            isActive: currentDeviceToken.isActive,
+            platform: currentDeviceToken.platform,
+            createdAt: currentDeviceToken.createdAt
+          } : null,
+          isRegisteredInDB,
+          currentStoreState: {
+            isRegistered: useNotificationStore.getState().isRegistered,
+            isUIEnabled: useNotificationStore.getState().isUIEnabled,
+            permissionStatus: useNotificationStore.getState().permissionStatus
+          }
+        });
+        
+        // Update store with backend state
+        useNotificationStore.getState().setRegistered(!!isRegisteredInDB);
+        
+        // Also check system permissions to ensure UI state is correct
+        const permissions = await Notifications.getPermissionsAsync();
+        useNotificationStore.getState().setPermissionStatus(permissions.status);
+        
+      } else {
+        notificationLogger.warn('Failed to fetch backend token status or invalid data format', { 
+          success: response.success,
+          error: response.error,
+          dataType: typeof response.data,
+          isArray: Array.isArray(response.data),
+          data: response.data
+        });
+        // If we can't get backend state, assume not registered
+        useNotificationStore.getState().setRegistered(false);
+      }
+    } catch (error) {
+      notificationLogger.error('Error syncing with backend state', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      // On error, assume not registered for safety
+      useNotificationStore.getState().setRegistered(false);
+    } finally {
+      // Update last sync time regardless of success or failure
+      useNotificationStore.getState().setLastSyncTime(Date.now());
+      notificationLogger.info(`✅ Backend sync completed [${syncId}]`);
+    }
+  }
+
   // Initialize notification service - call this after user login
-  async initialize(): Promise<void> {
-    if (this.isInitialized) {
-      notificationLogger.debug('Already initialized');
+  async initialize(forceReinitialization: boolean = false): Promise<void> {
+    if (this.isInitialized && !forceReinitialization) {
+      notificationLogger.debug('Already initialized, skipping...');
       return;
+    }
+
+    if (forceReinitialization) {
+      notificationLogger.info('Force re-initialization requested');
+      this.isInitialized = false;
     }
 
     useNotificationStore.getState().setRegistering(true);
@@ -77,7 +155,7 @@ export class NotificationService {
         // Register with backend
         const success = await this.registerWithBackend();
         notificationLogger.debug('registerWithBackend completed', { success });
-        useNotificationStore.getState().setRegistered(success);
+        useNotificationStore.getState().setRegistered(success, success ? null : 'Registration failed');
 
       } else {
         useNotificationStore.getState().setRegistered(false, 'Could not get push token');
@@ -139,6 +217,19 @@ export class NotificationService {
                       Constants.easConfig?.projectId ??
                       Constants.expoConfig?.extra?.projectId ??
                       Constants.manifest2?.extra?.eas?.projectId;
+      
+      // Detailed logging for debugging
+      notificationLogger.debug('Project ID resolution debug', {
+        'Constants.expoConfig?.extra?.eas?.projectId': Constants.expoConfig?.extra?.eas?.projectId,
+        'Constants.easConfig?.projectId': Constants.easConfig?.projectId,
+        'Constants.expoConfig?.extra?.projectId': Constants.expoConfig?.extra?.projectId,
+        'Constants.manifest2?.extra?.eas?.projectId': Constants.manifest2?.extra?.eas?.projectId,
+        finalProjectId: projectId,
+        hasConstants: !!Constants,
+        hasExpoConfig: !!Constants.expoConfig,
+        hasExtra: !!Constants.expoConfig?.extra,
+        hasEas: !!Constants.expoConfig?.extra?.eas
+      });
       
       // For development, try to generate a token without project ID first
       if (!projectId) {
@@ -277,13 +368,60 @@ export class NotificationService {
         notificationLogger.info('Successfully unregistered push token from backend');
         // Clear registration status
         await AsyncStorage.removeItem('push_token_registered');
+        // Reset initialization state so user can re-enable later
+        this.isInitialized = false;
+        // Update store state
+        useNotificationStore.getState().setRegistered(false);
+        // Update last sync time since we just made an API call
+        useNotificationStore.getState().setLastSyncTime(Date.now());
         return true;
       } else {
         notificationLogger.error('Failed to unregister push token', { error: response.error });
+        // Update store with error
+        useNotificationStore.getState().setRegistered(true, response.error || 'Failed to unregister');
         return false;
       }
     } catch (error) {
-      notificationLogger.error('Error unregistering push token', { error: error instanceof Error ? error.message : String(error) });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      notificationLogger.error('Error unregistering push token', { error: errorMessage });
+      // Update store with error
+      useNotificationStore.getState().setRegistered(true, errorMessage);
+      return false;
+    }
+  }
+
+  // Force re-register with backend (useful for re-enabling notifications)
+  async forceRegister(): Promise<boolean> {
+    notificationLogger.info('Force registering push token with backend');
+    
+    try {
+      // Ensure we have a push token
+      if (!this.pushToken) {
+        const token = await this.getPushToken();
+        if (!token) {
+          notificationLogger.error('Could not get push token for force registration');
+          useNotificationStore.getState().setRegistered(false, 'Could not get push token');
+          return false;
+        }
+        this.pushToken = token;
+      }
+
+      // Register with backend regardless of current state
+      const success = await this.registerWithBackend();
+      
+      if (success) {
+        notificationLogger.info('Force registration successful');
+        useNotificationStore.getState().setRegistered(true);
+      } else {
+        notificationLogger.warn('Force registration failed');
+        useNotificationStore.getState().setRegistered(false, 'Force registration failed');
+      }
+      
+      return success;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      notificationLogger.error('Error in force registration', { error: errorMessage });
+      useNotificationStore.getState().setRegistered(false, errorMessage);
       return false;
     }
   }

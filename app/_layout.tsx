@@ -98,6 +98,7 @@ export default function RootLayout() {
             <Stack.Screen name="developer-tools" options={{ headerShown: false }} />
             <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
             <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
+            <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
             </Stack>
             <StatusBar style="dark" />
             <FloatingDebugButton />

@@ -53,8 +53,7 @@ export default function SettingsScreen() {
       title: '알림 설정',
       description: '푸시 알림 및 알림 주기를 설정합니다',
       onPress: () => {
-        // TODO: Navigate to notification settings
-        Alert.alert('알림 설정', '알림 설정 기능은 곧 추가될 예정입니다.');
+        router.push('/notification-settings');
       },
     },
     {

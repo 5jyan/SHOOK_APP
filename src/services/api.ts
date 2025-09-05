@@ -159,6 +159,15 @@ class ApiService {
         throw new Error(data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
+      // Handle backend responses that already have success/data structure
+      if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
+        return {
+          data: data.data,
+          success: data.success,
+          error: data.error,
+        };
+      }
+
       return {
         data,
         success: true,
@@ -315,9 +324,46 @@ class ApiService {
   async unregisterPushToken(deviceId: string): Promise<ApiResponse<RegisterPushTokenResponse>> {
     apiLogger.info('Unregistering push token', { deviceId });
     
-    return this.makeRequest<RegisterPushTokenResponse>(`/api/push-tokens/${deviceId}`, {
-      method: 'DELETE',
-    });
+    // Try multiple endpoints to ensure unregistration
+    const endpoints = [
+      `/api/push-tokens/${deviceId}`,
+      `/api/push/unregister`,
+    ];
+    
+    let lastResult: ApiResponse<RegisterPushTokenResponse> | null = null;
+    
+    for (const endpoint of endpoints) {
+      try {
+        const result = await this.makeRequest<RegisterPushTokenResponse>(endpoint, {
+          method: endpoint.includes('/unregister') ? 'POST' : 'DELETE',
+          ...(endpoint.includes('/unregister') ? {
+            body: JSON.stringify({ deviceId })
+          } : {})
+        });
+        
+        apiLogger.info(`Unregister attempt on ${endpoint}`, {
+          deviceId,
+          success: result.success,
+          status: result.status,
+          error: result.error,
+          data: result.data
+        });
+        
+        lastResult = result;
+        
+        if (result.success) {
+          apiLogger.info('Successfully unregistered via endpoint', { endpoint });
+          break;
+        }
+      } catch (error) {
+        apiLogger.warn(`Failed to unregister via ${endpoint}`, {
+          deviceId,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+    
+    return lastResult || { success: false, error: 'All unregister attempts failed' };
   }
 
   async updatePushToken(tokenData: PushTokenData): Promise<ApiResponse<RegisterPushTokenResponse>> {
@@ -338,6 +384,14 @@ class ApiService {
     
     return this.makeRequest<RegisterPushTokenResponse>('/api/push-tokens/test', {
       method: 'POST',
+    });
+  }
+
+  async getPushTokenStatus(): Promise<ApiResponse<PushTokenInfo[]>> {
+    apiLogger.info('Fetching user push token status from DB');
+    
+    return this.makeRequest<PushTokenInfo[]>('/api/push-tokens', {
+      method: 'GET',
     });
   }
 
@@ -373,5 +427,16 @@ interface RegisterPushTokenResponse {
   message?: string;
 }
 
+interface PushTokenInfo {
+  id: number;
+  deviceId: string;
+  platform: string;
+  appVersion: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  tokenPrefix: string;
+}
+
 // Export interfaces for use in other files
-export type { BackendUserChannel, UserChannel, VideoSummary, YoutubeChannel, PushTokenData, RegisterPushTokenResponse };
+export type { BackendUserChannel, UserChannel, VideoSummary, YoutubeChannel, PushTokenData, RegisterPushTokenResponse, PushTokenInfo };
