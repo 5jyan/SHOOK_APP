@@ -244,25 +244,11 @@ export class NotificationService {
           await AsyncStorage.setItem('expo_push_token', token);
           return token;
         } catch (devError) {
-          notificationLogger.error('Failed to get token without project ID', { error: devError instanceof Error ? devError.message : String(devError) });
+          const devErrorMessage = devError instanceof Error ? devError.message : String(devError);
+          notificationLogger.error('Failed to get token without project ID', { error: devErrorMessage });
           
-          // Check if we already have a cached mock token for this device
-          const cachedMockToken = await AsyncStorage.getItem('expo_push_token');
-          if (cachedMockToken && cachedMockToken.startsWith('ExponentPushToken[dev-')) {
-            notificationLogger.warn('Reusing existing mock token', { tokenPreview: cachedMockToken.substring(0, 20) + '...' });
-            return cachedMockToken;
-          }
-          
-          // Create a stable mock token for development based on device info
-          const deviceInfo = await Device.getDeviceTypeAsync();
-          const deviceId = Constants.sessionId || 'unknown';
-          const stableId = `dev-${deviceInfo}-${deviceId.slice(0, 8)}`;
-          const mockToken = `ExponentPushToken[${stableId}]`;
-          
-          notificationLogger.warn('Created stable mock token for development', { tokenPreview: mockToken.substring(0, 20) + '...' });
-          
-          await AsyncStorage.setItem('expo_push_token', mockToken);
-          return mockToken;
+          // Don't create mock tokens - throw error to be handled by caller
+          throw new Error(`프로젝트 ID 없이 토큰 생성 실패: ${devErrorMessage}`);
         }
       }
 
@@ -280,25 +266,15 @@ export class NotificationService {
       
       return token;
     } catch (error) {
-      notificationLogger.error('Error getting push token', { error: error instanceof Error ? error.message : String(error) });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      notificationLogger.error('Failed to generate push token', { 
+        error: errorMessage,
+        projectId,
+        hasProjectId: !!projectId 
+      });
       
-      // Check if we already have a cached fallback token
-      const cachedFallbackToken = await AsyncStorage.getItem('expo_push_token');
-      if (cachedFallbackToken && cachedFallbackToken.startsWith('ExponentPushToken[fallback-')) {
-        notificationLogger.warn('Reusing existing fallback token', { tokenPreview: cachedFallbackToken.substring(0, 20) + '...' });
-        return cachedFallbackToken;
-      }
-      
-      // Create a stable fallback token based on device info
-      const deviceInfo = await Device.getDeviceTypeAsync();
-      const deviceId = Constants.sessionId || 'unknown';
-      const stableId = `fallback-${deviceInfo}-${deviceId.slice(0, 8)}`;
-      const fallbackToken = `ExponentPushToken[${stableId}]`;
-      
-      notificationLogger.warn('Created stable fallback token', { tokenPreview: fallbackToken.substring(0, 20) + '...' });
-      
-      await AsyncStorage.setItem('expo_push_token', fallbackToken);
-      return fallbackToken;
+      // Don't create fallback tokens - throw error to be handled by caller
+      throw new Error(`푸시 알림 토큰 생성에 실패했습니다: ${errorMessage}`);
     }
   }
 

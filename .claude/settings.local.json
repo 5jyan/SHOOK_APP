@@ -77,7 +77,11 @@
       "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server\\server\\repositories/**)",
       "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server\\server\\repositories/**)",
       "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server\\server\\repositories/**)",
-      "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server\\server\\repositories/**)"
+      "Read(C:\\Users\\saulpark\\Documents\\workspace\\shook_server\\server\\repositories/**)",
+      "Read(//c/Users/saulpark/Documents/workspace/Shook/**)",
+      "Read(//c/Users/saulpark/Documents/workspace/**)",
+      "Bash(npm run dev:server:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []
