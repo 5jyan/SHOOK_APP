@@ -81,7 +81,8 @@
       "Read(//c/Users/saulpark/Documents/workspace/Shook/**)",
       "Read(//c/Users/saulpark/Documents/workspace/**)",
       "Bash(npm run dev:server:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []
