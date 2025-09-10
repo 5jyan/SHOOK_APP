@@ -77,7 +77,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
   };
 
   const formatSubscriberCount = (count?: string): string => {
-    if (!count) return '';
+    if (!count || typeof count !== 'string') return '';
     
     // 숫자만 추출
     const numbers = count.replace(/[^0-9]/g, '');

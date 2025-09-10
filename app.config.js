@@ -8,10 +8,10 @@ const getApiUrl = () => {
   if (IS_LOCAL) {
     // 로컬 개발시는 여러 주소를 시도할 수 있도록 객체로 반환
     return {
-      android: 'http://10.0.2.2:3000',        // Android 에뮬레이터
-      ios: 'http://192.168.0.156:3000',       // iOS 시뮬레이터 (실제 IP)
-      web: 'http://localhost:3000',           // 웹
-      default: 'http://192.168.0.156:3000'    // 기본값 (실제 IP)
+      android: 'https://shook.work',        // Android 에뮬레이터
+      ios: 'https://shook.work',       // iOS 시뮬레이터 (실제 IP)
+      web: 'https://shook.work',           // 웹
+      default: 'https://shook.work'    // 기본값 (실제 IP)
     };
   }
   if (IS_DEV) {
@@ -23,7 +23,7 @@ const getApiUrl = () => {
 export default {
   expo: {
     name: "Shook",
-    slug: "shook-app",
+    slug: "shook",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -34,6 +34,12 @@ export default {
       image: "./assets/images/splash.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff"
+    },
+    updates: {
+      url: "https://u.expo.dev/a8839540-39ec-431e-a346-bdfdff731ecd"
+    },
+    runtimeVersion: {
+      policy: "appVersion"
     },
     assetBundlePatterns: [
       "**/*"

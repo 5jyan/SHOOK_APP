@@ -510,8 +510,8 @@ export class NotificationService {
     responseListener: Notifications.Subscription;
   }) {
     notificationLogger.info('Removing notification listeners');
-    Notifications.removeNotificationSubscription(listeners.notificationListener);
-    Notifications.removeNotificationSubscription(listeners.responseListener);
+    listeners.notificationListener.remove();
+    listeners.responseListener.remove();
   }
 }
 

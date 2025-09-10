@@ -51,14 +51,28 @@ export const persistQueryClient = () => {
 export const restoreQueryClient = () => {
   try {
     const persistedQueries = storage.getString('persisted-queries');
-    if (persistedQueries) {
+    if (persistedQueries && persistedQueries.trim()) {
+      // Additional validation for JSON string
+      if (!persistedQueries.startsWith('[') && !persistedQueries.startsWith('{')) {
+        serviceLogger.warn('Invalid persisted queries format, clearing', { preview: persistedQueries.substring(0, 50) });
+        storage.delete('persisted-queries');
+        return;
+      }
+      
       const queries = JSON.parse(persistedQueries);
-      queries.forEach(({ queryKey, data, dataUpdatedAt }: any) => {
-        queryClient.setQueryData(queryKey, data);
-        queryClient.getQueryState(queryKey)!.dataUpdatedAt = dataUpdatedAt;
-      });
+      if (Array.isArray(queries)) {
+        queries.forEach(({ queryKey, data, dataUpdatedAt }: any) => {
+          queryClient.setQueryData(queryKey, data);
+          const queryState = queryClient.getQueryState(queryKey);
+          if (queryState) {
+            queryState.dataUpdatedAt = dataUpdatedAt;
+          }
+        });
+      }
     }
   } catch (error) {
     serviceLogger.warn('Failed to restore queries', { error: error instanceof Error ? error.message : String(error) });
+    // Clear corrupted data
+    storage.delete('persisted-queries');
   }
 };

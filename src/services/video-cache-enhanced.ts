@@ -574,9 +574,12 @@ export class EnhancedVideoCacheService {
       const cacheEntries: CacheEntry[] = JSON.parse(cachedData);
       const cacheSize = cachedData.length / 1024; // KB
       
-      const timestamps = cacheEntries.map(entry => entry.cachedAt);
-      const oldestEntry = Math.min(...timestamps);
-      const newestEntry = Math.max(...timestamps);
+      const timestamps = cacheEntries
+        .map(entry => entry.cachedAt)
+        .filter(timestamp => timestamp && timestamp > 0); // Filter out invalid timestamps
+      
+      const oldestEntry = timestamps.length > 0 ? Math.min(...timestamps) : 0;
+      const newestEntry = timestamps.length > 0 ? Math.max(...timestamps) : 0;
 
       // Determine validation status
       let validationStatus: 'healthy' | 'warning' | 'corrupted' = 'healthy';
@@ -601,9 +604,9 @@ export class EnhancedVideoCacheService {
         totalEntries: stats.totalEntries,
         cacheSizeKB: stats.cacheSize,
         validationStatus: stats.validationStatus,
-        oldestEntry: new Date(stats.oldestEntry).toISOString(),
-        newestEntry: new Date(stats.newestEntry).toISOString(),
-        lastSync: new Date(stats.lastSync).toISOString(),
+        oldestEntry: stats.oldestEntry > 0 ? new Date(stats.oldestEntry).toISOString() : 'N/A',
+        newestEntry: stats.newestEntry > 0 ? new Date(stats.newestEntry).toISOString() : 'N/A',
+        lastSync: stats.lastSync > 0 ? new Date(stats.lastSync).toISOString() : 'N/A',
       });
 
       return stats;
