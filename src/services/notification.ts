@@ -152,7 +152,7 @@ export class NotificationService {
         notificationLogger.info('Successfully initialized with token', { tokenPreview: token.substring(0, 20) + '...' });
         
         notificationLogger.debug('Calling registerWithBackend');
-        // Register with backend
+        // Register with backend (this will now handle duplicates properly)
         const success = await this.registerWithBackend();
         notificationLogger.debug('registerWithBackend completed', { success });
         useNotificationStore.getState().setRegistered(success, success ? null : 'Registration failed');
@@ -297,7 +297,7 @@ export class NotificationService {
     };
   }
 
-  // Register push token with backend
+  // Register push token with backend (simplified - let backend handle duplicates)
   async registerWithBackend(): Promise<boolean> {
     notificationLogger.info('Registering push token with backend');
     
@@ -314,6 +314,12 @@ export class NotificationService {
         platform: tokenInfo.platform,
         appVersion: tokenInfo.appVersion,
       };
+
+      notificationLogger.debug('Sending token to backend', {
+        tokenPreview: tokenInfo.token.substring(0, 20) + '...',
+        deviceId: tokenInfo.deviceId,
+        platform: tokenInfo.platform
+      });
 
       const response = await apiService.registerPushToken(tokenData);
       
