@@ -102,14 +102,10 @@ export default function ChannelSearchScreen() {
     }
   };
 
-  const formatSubscriberCount = (count: string | undefined): string => {
-    if (!count || typeof count !== 'string') return '';
+  const formatSubscriberCount = (count: number | undefined): string => {
+    if (!count || typeof count !== 'number') return '';
     
-    // 숫자만 추출
-    const numbers = count.replace(/[^0-9]/g, '');
-    if (!numbers) return '';
-    
-    const num = parseInt(numbers);
+    const num = count;
     if (num >= 1000000) {
       const millions = num / 1000000;
       return millions % 1 === 0 ? `${millions}M` : `${millions.toFixed(1)}M`;

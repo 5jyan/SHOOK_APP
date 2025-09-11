@@ -68,8 +68,8 @@ interface YoutubeChannel {
   title: string;
   description?: string;
   thumbnail?: string;
-  subscriberCount?: string;
-  videoCount?: string;
+  subscriberCount?: number;  // Fixed: should be number to match backend
+  videoCount?: number;      // Fixed: should be number to match backend
   isActive?: boolean;
   lastRssError?: string | null;
   lastRssErrorAt?: string | null;
