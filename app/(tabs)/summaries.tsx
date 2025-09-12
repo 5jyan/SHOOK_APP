@@ -69,8 +69,8 @@ export default function SummariesScreen() {
     }
     
     const transformed = filtered.map(video => transformVideoSummaryToCardData(video, channels));
-    // Sort by createdAt (when video was processed) which is more reliable for showing latest content
-    const sorted = transformed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Sort by publishedAt (when video was uploaded to YouTube) to match the displayed date
+    const sorted = transformed.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
     
     if (sorted.length > 0) {
       uiLogger.debug('[SummariesScreen] Sample videos after sorting', {
