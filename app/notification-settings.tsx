@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, Switch, ScrollView, Pressable, Alert, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { ModalHeader } from '@/components/AppHeader';
@@ -96,6 +96,41 @@ export default function NotificationSettingsScreen() {
     router.back();
   };
 
+  // Safe function to open system settings
+  const openSystemSettings = async () => {
+    try {
+      // Try the newer API first
+      if (Notifications.openNotificationSettingsAsync) {
+        await Notifications.openNotificationSettingsAsync();
+        return;
+      }
+      
+      // Fallback to older API
+      if (Notifications.openSettingsAsync) {
+        await Notifications.openSettingsAsync();
+        return;
+      }
+      
+      // Manual fallback using Linking
+      if (Platform.OS === 'ios') {
+        await Linking.openURL('app-settings:');
+      } else {
+        // Android: Open app-specific settings
+        await Linking.openSettings();
+      }
+    } catch (error) {
+      notificationLogger.error('Failed to open system settings', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      
+      // Show manual instruction as last resort
+      Alert.alert(
+        '설정 열기 실패',
+        '설정을 열 수 없습니다. 수동으로 설정 > 알림 > Shook에서 알림을 허용해주세요.'
+      );
+    }
+  };
+
   const handleToggleNotifications = async (value: boolean) => {
     notificationLogger.info('User toggling notifications', { 
       newValue: value, 
@@ -122,7 +157,7 @@ export default function NotificationSettingsScreen() {
               '새로운 영상 알림을 받으려면 알림 권한이 필요합니다. 설정에서 알림을 허용해주세요.',
               [
                 { text: '취소', style: 'cancel' },
-                { text: '설정으로 이동', onPress: () => Notifications.openSettingsAsync() }
+                { text: '설정으로 이동', onPress: openSystemSettings }
               ]
             );
             return;
@@ -193,7 +228,7 @@ export default function NotificationSettingsScreen() {
       '기기의 시스템 설정에서 알림을 관리할 수 있습니다.',
       [
         { text: '취소', style: 'cancel' },
-        { text: '설정 열기', onPress: () => Notifications.openSettingsAsync() }
+        { text: '설정 열기', onPress: openSystemSettings }
       ]
     );
   };
