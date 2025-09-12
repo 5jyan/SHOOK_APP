@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { ModalHeader } from '@/components/AppHeader';
 import { BackendTestButton } from '@/components/BackendTestButton';
 import { PushNotificationTestButton } from '@/components/PushNotificationTestButton';
 import { CacheStatsButton } from '@/components/CacheStatsButton';
@@ -9,24 +9,11 @@ import { ManualMonitoringButton } from '@/components/ManualMonitoringButton';
 import { UIDebuggerButton } from '@/components/UIDebuggerButton';
 import { AdvancedUIDebuggerButton } from '@/components/AdvancedUIDebuggerButton';
 import { GlobalDebuggerButton } from '@/components/GlobalDebuggerButton';
-import { TouchableOpacity } from 'react-native';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function DeveloperToolsScreen() {
-  const handleBackPress = () => {
-    router.back();
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <IconSymbol name="chevron.left" size={24} color="#374151" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>개발자 도구</Text>
-        <View style={styles.placeholder} />
-      </View>
+      <ModalHeader title="개발자 도구" />
 
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
@@ -63,27 +50,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  placeholder: {
-    width: 32, // Same width as back button for centering
   },
   scrollView: {
     flex: 1,

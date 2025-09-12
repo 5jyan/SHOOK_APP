@@ -1,36 +1,34 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useChannels } from '@/contexts/ChannelsContext';
+import { useChannelSearch } from '@/hooks/useChannelSearch';
+import { apiService, type YoutubeChannel } from '@/services/api';
+import { useAuthStore } from '@/stores/auth-store';
+import { serviceLogger } from '@/utils/logger-enhanced';
+import { formatChannelStats } from '@/utils/number-format';
 import { router } from 'expo-router';
 import React from 'react';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withRepeat, 
-  withTiming,
-  interpolate,
-  Easing
-} from 'react-native-reanimated';
 import {
-  Keyboard,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  FlatList,
-  Image,
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
+  View
 } from 'react-native';
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useChannelSearch } from '@/hooks/useChannelSearch';
-import { useChannels } from '@/contexts/ChannelsContext';
-import { apiService, type YoutubeChannel } from '@/services/api';
-import { useAuthStore } from '@/stores/auth-store';
-import { serviceLogger } from '@/utils/logger-enhanced';
-import { formatChannelStats } from '@/utils/number-format';
 
 export default function ChannelSearchScreen() {
   const searchInputRef = React.useRef<TextInput>(null);
@@ -295,7 +293,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f1f5f9',
   },
   backButton: {
-    padding: 4,
     marginRight: 12,
   },
   searchContainer: {

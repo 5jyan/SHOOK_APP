@@ -1,3 +1,4 @@
+import { TabHeader } from '@/components/AppHeader';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useGoogleAuth } from '@/hooks/useGoogleAuthTemp';
 import { useAuthStore } from '@/stores/auth-store';
@@ -100,10 +101,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>설정</Text>
-      </View>
+      <TabHeader title="설정" />
       
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(24, tabBarHeight * 0.7) }}>
         <View style={styles.content}>
@@ -204,21 +202,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
   },
   scrollView: {
     flex: 1,

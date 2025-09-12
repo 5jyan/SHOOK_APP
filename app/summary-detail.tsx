@@ -1,24 +1,22 @@
-import { EmptyState } from '@/components/EmptyState';
+import { ModalHeader } from '@/components/AppHeader';
 import { ShookLoadingScreen } from '@/components/ShookLoadingScreen';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useUserChannels } from '@/hooks/useUserChannels';
 import { transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
-import { uiLogger } from '../src/utils/logger-enhanced';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
-  ActivityIndicator,
   Image,
   Linking,
-  Pressable,
   ScrollView,
   Share,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { uiLogger } from '../src/utils/logger-enhanced';
 
 export default function SummaryDetailScreen() {
   const params = useLocalSearchParams();
@@ -143,18 +141,14 @@ export default function SummaryDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={handleBackPress} style={styles.backButton}>
-          <IconSymbol name="chevron.left" size={24} color="#374151" />
-        </Pressable>
-        
-        <Text style={styles.headerTitle}>상세 내용</Text>
-        
-        <Pressable onPress={handleSharePress} style={styles.shareButton}>
-          <IconSymbol name="square.and.arrow.up" size={24} color="#374151" />
-        </Pressable>
-      </View>
+      <ModalHeader 
+        title="상세 내용"
+        rightComponent={
+          <TouchableOpacity onPress={handleSharePress} style={styles.shareButton}>
+            <IconSymbol name="square.and.arrow.up" size={24} color="#374151" />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Video Info */}
@@ -208,32 +202,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  backButton: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
   shareButton: {
     width: 24,
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 4
   },
   content: {
     flex: 1,

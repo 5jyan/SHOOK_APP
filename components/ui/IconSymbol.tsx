@@ -23,6 +23,13 @@ const MAPPING = {
   'magnifyingglass': 'search',
   'square.and.pencil': 'edit',
   'grid': 'grid-on',
+  'play.rectangle.fill': 'play-arrow',
+  'doc.text.fill': 'description',
+  'gear': 'settings',
+  'heart': 'favorite-border',
+  'heart.fill': 'favorite',
+  'exclamationmark.triangle': 'warning',
+  'square.and.arrow.up': 'share',
 } as IconMapping;
 
 /**

@@ -1,15 +1,16 @@
 import { EmptyState } from '@/components/EmptyState';
 import { SummaryCard } from '@/components/SummaryCard';
+import { TabHeader } from '@/components/AppHeader';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useChannels } from '@/contexts/ChannelsContext';
 import { SummaryCardData, transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
 import { useAuthStore } from '@/stores/auth-store';
+import { uiLogger } from '@/utils/logger-enhanced';
 import { useIsFocused } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { uiLogger } from '@/utils/logger-enhanced';
 
 export default function SummariesScreen() {
   uiLogger.debug('[SummariesScreen] Component mounting/re-rendering');
@@ -160,10 +161,7 @@ export default function SummariesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>요약 리스트</Text>
-      </View>
+      <TabHeader title="요약 리스트" />
       
       <FlatList
         data={summaries}
@@ -183,21 +181,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
   },
   listContainer: {
     paddingTop: 0,

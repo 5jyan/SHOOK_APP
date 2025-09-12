@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
+import { ModalHeader } from '@/components/AppHeader';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useNotificationStore } from '@/stores/notification-store';
 import { notificationService } from '@/services/notification';
@@ -311,14 +312,7 @@ export default function NotificationSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={handleBackPress} style={styles.backButton}>
-          <IconSymbol name="chevron.left" size={24} color="#374151" />
-        </Pressable>
-        <Text style={styles.headerTitle}>알림 설정</Text>
-        <View style={styles.placeholder} />
-      </View>
+      <ModalHeader title="알림 설정" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Main Toggle */}
@@ -418,31 +412,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  backButton: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  placeholder: {
-    width: 24,
-    height: 24,
   },
   content: {
     flex: 1,

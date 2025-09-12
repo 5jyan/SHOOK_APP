@@ -1,25 +1,12 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { Pressable } from 'react-native';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { ModalHeader } from '@/components/AppHeader';
 
 export default function TermsOfServiceScreen() {
-  const handleBackPress = () => {
-    router.back();
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={handleBackPress} style={styles.backButton}>
-          <IconSymbol name="chevron.left" size={24} color="#374151" />
-        </Pressable>
-        <Text style={styles.headerTitle}>서비스 이용약관</Text>
-        <View style={styles.placeholder} />
-      </View>
+      <ModalHeader title="서비스 이용약관" />
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <Text style={styles.title}>서비스 이용약관</Text>
@@ -161,28 +148,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  placeholder: {
-    width: 24,
-    height: 24,
   },
   scrollView: {
     flex: 1,

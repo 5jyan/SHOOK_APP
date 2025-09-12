@@ -1,12 +1,13 @@
+import { TabHeader } from '@/components/AppHeader';
 import { ChannelList } from '@/components/ChannelList';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useChannels } from '@/contexts/ChannelsContext';
+import { uiLogger } from '@/utils/logger-enhanced';
 import { router } from 'expo-router';
 import React from 'react';
-import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { uiLogger } from '@/utils/logger-enhanced';
 
 export default function ChannelsScreen() {
   const { refreshChannels, channelCount, isLoading } = useChannels();
@@ -36,13 +37,14 @@ export default function ChannelsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>나의 채널</Text>
-        <TouchableOpacity onPress={handleSearchPress} style={styles.searchButton}>
-          <IconSymbol name="magnifyingglass" size={24} color="#374151" />
-        </TouchableOpacity>
-      </View>
+      <TabHeader 
+        title="나의 채널"
+        rightComponent={
+          <TouchableOpacity onPress={handleSearchPress} style={styles.searchButton}>
+            <IconSymbol name="magnifyingglass" size={24} color="#374151" />
+          </TouchableOpacity>
+        }
+      />
       {/* Channel List */}
       <ChannelList 
         onChannelDeleted={handleChannelDeleted} 
@@ -60,23 +62,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
   searchButton: {
     borderRadius: 8,
-    marginRight: 8
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
+    marginRight: 4
   },
 });

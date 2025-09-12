@@ -1,25 +1,12 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { Pressable } from 'react-native';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { ModalHeader } from '@/components/AppHeader';
 
 export default function PrivacyPolicyScreen() {
-  const handleBackPress = () => {
-    router.back();
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={handleBackPress} style={styles.backButton}>
-          <IconSymbol name="chevron.left" size={24} color="#374151" />
-        </Pressable>
-        <Text style={styles.headerTitle}>개인정보처리방침</Text>
-        <View style={styles.placeholder} />
-      </View>
+      <ModalHeader title="개인정보처리방침" />
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <Text style={styles.title}>개인정보처리방침</Text>
@@ -68,10 +55,10 @@ export default function PrivacyPolicyScreen() {
           <Text style={styles.sectionTitle}>3. 사용자의 권리 및 행사 방법</Text>
           
           <Text style={styles.categoryTitle}>앱 내에서 직접 관리</Text>
-          <Text style={styles.listItem}>계정 정보 확인: 설정 > 계정 정보</Text>
+          <Text style={styles.listItem}>계정 정보 확인: 설정 {'>'} 계정 정보</Text>
           <Text style={styles.listItem}>구독 채널 관리: 채널 탭에서 추가/삭제</Text>
-          <Text style={styles.listItem}>알림 설정 변경: 설정 > 알림 설정</Text>
-          <Text style={styles.listItem}>캐시 삭제: 설정 > 저장공간 관리</Text>
+          <Text style={styles.listItem}>알림 설정 변경: 설정 {'>'} 알림 설정</Text>
+          <Text style={styles.listItem}>캐시 삭제: 설정 {'>'} 저장공간 관리</Text>
           
           <Text style={styles.categoryTitle}>이메일을 통한 요청</Text>
           <Text style={styles.listItem}>개인정보 열람, 정정 및 삭제, 처리 정지, 계정 완전 삭제</Text>
@@ -118,28 +105,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  placeholder: {
-    width: 24,
-    height: 24,
   },
   scrollView: {
     flex: 1,
