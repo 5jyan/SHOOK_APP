@@ -28,6 +28,7 @@ import { useChannels } from '@/contexts/ChannelsContext';
 import { apiService, type YoutubeChannel } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { serviceLogger } from '@/utils/logger-enhanced';
+import { formatChannelStats } from '@/utils/number-format';
 
 export default function ChannelSearchScreen() {
   const searchInputRef = React.useRef<TextInput>(null);
@@ -102,19 +103,6 @@ export default function ChannelSearchScreen() {
     }
   };
 
-  const formatSubscriberCount = (count: number | undefined): string => {
-    if (!count || typeof count !== 'number') return '';
-    
-    const num = count;
-    if (num >= 1000000) {
-      const millions = num / 1000000;
-      return millions % 1 === 0 ? `${millions}M` : `${millions.toFixed(1)}M`;
-    } else if (num >= 1000) {
-      const thousands = num / 1000;
-      return thousands % 1 === 0 ? `${thousands}K` : `${thousands.toFixed(1)}K`;
-    }
-    return num.toString();
-  };
 
   // 애니메이션 하트 컴포넌트
   const AnimatedHeart = ({ isLoading }: { isLoading: boolean }) => {
@@ -165,11 +153,18 @@ export default function ChannelSearchScreen() {
         <Text style={styles.channelTitle} numberOfLines={1}>
           {channel.title}
         </Text>
-        {channel.subscriberCount && (
-          <Text style={styles.channelSubscribers}>
-            구독자 {formatSubscriberCount(channel.subscriberCount)}
-          </Text>
-        )}
+        <View style={styles.channelStats}>
+          {channel.subscriberCount && (
+            <Text style={styles.channelSubscribers}>
+              구독자 {formatChannelStats(channel.subscriberCount || 0, channel.videoCount || 0).subscribers}
+            </Text>
+          )}
+          {channel.videoCount && (
+            <Text style={styles.channelVideos}>
+              동영상 {formatChannelStats(channel.subscriberCount || 0, channel.videoCount || 0).videos}개
+            </Text>
+          )}
+        </View>
       </View>
       <TouchableOpacity
         style={styles.heartButton}
@@ -379,7 +374,16 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 2,
   },
+  channelStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   channelSubscribers: {
+    fontSize: 13,
+    color: '#9ca3af',
+  },
+  channelVideos: {
     fontSize: 13,
     color: '#9ca3af',
   },

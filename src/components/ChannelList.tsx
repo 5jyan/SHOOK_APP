@@ -3,6 +3,7 @@ import { type UserChannel } from '@/services/api';
 import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { uiLogger } from '@/utils/logger-enhanced';
+import { formatChannelStats } from '@/utils/number-format';
 import {
   ActivityIndicator,
   Alert,
@@ -76,19 +77,6 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
     );
   };
 
-  const formatSubscriberCount = (count?: number): string => {
-    if (!count || typeof count !== 'number') return '';
-    
-    const num = count;
-    if (num >= 1000000) {
-      const millions = num / 1000000;
-      return millions % 1 === 0 ? `${millions}M` : `${millions.toFixed(1)}M`;
-    } else if (num >= 1000) {
-      const thousands = num / 1000;
-      return thousands % 1 === 0 ? `${thousands}K` : `${thousands.toFixed(1)}K`;
-    }
-    return num.toString();
-  };
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -139,11 +127,20 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
               <Text style={styles.inactiveChannelText}>
                 비활성화된 채널입니다
               </Text>
-            ) : item.youtubeChannel.subscriberCount ? (
-              <Text style={styles.subscriberCount}>
-                구독자 {formatSubscriberCount(item.youtubeChannel.subscriberCount)}
-              </Text>
-            ) : null}
+            ) : (
+              <View style={styles.channelStats}>
+                {item.youtubeChannel.subscriberCount && (
+                  <Text style={styles.subscriberCount}>
+                    구독자 {formatChannelStats(item.youtubeChannel.subscriberCount || 0, item.youtubeChannel.videoCount || 0).subscribers}
+                  </Text>
+                )}
+                {item.youtubeChannel.videoCount && (
+                  <Text style={styles.videoCount}>
+                    동영상 {formatChannelStats(item.youtubeChannel.subscriberCount || 0, item.youtubeChannel.videoCount || 0).videos}개
+                  </Text>
+                )}
+              </View>
+            )}
             <Text style={styles.addedDate}>
               {item.createdAt ? formatDate(item.createdAt) : '날짜 없음'}에 추가됨
             </Text>
@@ -264,10 +261,19 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 4,
   },
+  channelStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
   subscriberCount: {
     fontSize: 13,
     color: '#9ca3af',
-    marginBottom: 2,
+  },
+  videoCount: {
+    fontSize: 13,
+    color: '#9ca3af',
   },
   inactiveChannelText: {
     fontSize: 13,

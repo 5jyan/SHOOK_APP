@@ -82,7 +82,8 @@
       "Read(//c/Users/saulpark/Documents/workspace/**)",
       "Bash(npm run dev:server:*)",
       "Bash(npm run:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(del test-number-format.js)"
     ],
     "deny": [],
     "ask": []
