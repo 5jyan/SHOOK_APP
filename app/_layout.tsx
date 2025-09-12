@@ -94,7 +94,14 @@ export default function RootLayout() {
             }} />
             <Stack.Screen name="+not-found" />
             <Stack.Screen name="summary-detail" options={{ headerShown: false }} />
-            <Stack.Screen name="channel-search" options={{ headerShown: false }} />
+            <Stack.Screen 
+              name="channel-search" 
+              options={{ 
+                headerShown: false,
+                animation: 'slide_from_right',
+                animationDuration: 300
+              }} 
+            />
             <Stack.Screen name="developer-tools" options={{ headerShown: false }} />
             <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
             <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />

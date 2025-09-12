@@ -21,6 +21,8 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChannelSearch } from '@/hooks/useChannelSearch';
@@ -51,11 +53,11 @@ export default function ChannelSearchScreen() {
   // manager 역할 사용자는 채널 제한이 없음
   const isChannelLimitReached = user?.role !== 'manager' && channelCount >= maxChannels;
 
-  // Auto-focus on search input when screen loads
+  // Auto-focus on search input after screen transition completes
   React.useEffect(() => {
     const timer = setTimeout(() => {
       searchInputRef.current?.focus();
-    }, 100);
+    }, 500); // Increased delay to allow screen transition to complete
     
     return () => clearTimeout(timer);
   }, []);
@@ -178,44 +180,49 @@ export default function ChannelSearchScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Search Header */}
-      <View style={[styles.header, ]}>
-        {/* Back Button */}
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <IconSymbol name="chevron.left" size={24} color="#374151" />
-        </TouchableOpacity>
-        
-        {/* Search Input Container */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInputWrapper}>
-            <IconSymbol name="magnifyingglass" size={18} color="#9ca3af" />
-            <TextInput
-              ref={searchInputRef}
-              style={styles.searchInput}
-              placeholder="채널 검색"
-              placeholderTextColor="#9ca3af"
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-              returnKeyType="search"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {searchTerm.length > 0 && (
-              <TouchableOpacity onPress={handleClearPress} style={styles.clearButton}>
-                <IconSymbol name="xmark" size={16} color="#6b7280" />
-              </TouchableOpacity>
-            )}
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <SafeAreaView style={styles.container}>
+        {/* Search Header */}
+        <View style={[styles.header, ]}>
+          {/* Back Button */}
+          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+            <IconSymbol name="chevron.left" size={24} color="#374151" />
+          </TouchableOpacity>
+          
+          {/* Search Input Container */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+              <IconSymbol name="magnifyingglass" size={18} color="#9ca3af" />
+              <TextInput
+                ref={searchInputRef}
+                style={styles.searchInput}
+                placeholder="채널 검색"
+                placeholderTextColor="#9ca3af"
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+                returnKeyType="search"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {searchTerm.length > 0 && (
+                <TouchableOpacity onPress={handleClearPress} style={styles.clearButton}>
+                  <IconSymbol name="xmark" size={16} color="#6b7280" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Search Content */}
-      <ScrollView 
-        style={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+        {/* Search Content */}
+        <ScrollView 
+          style={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         {searchTerm.length === 0 ? (
           <View style={styles.emptyState}>
             <IconSymbol name="magnifyingglass" size={48} color="#d1d5db" />
@@ -266,8 +273,9 @@ export default function ChannelSearchScreen() {
             )}
           </View>
         )}
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
