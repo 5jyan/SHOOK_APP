@@ -64,9 +64,10 @@ export class EnhancedVideoCacheService {
   };
 
   // Cache configuration
-  private readonly MAX_CACHE_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
-  private readonly MAX_ENTRIES = 500; // Maximum number of videos to cache
+  private readonly MAX_CACHE_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
+  private readonly MAX_ENTRIES = 1000; // Maximum number of videos to cache (increased for 30 days)
   private readonly VALIDATION_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+  private readonly CHANNEL_CHANGE_KEY = 'channel_list_changed'; // Key for tracking channel changes
   private readonly AUTO_RECOVERY_ENABLED = true; // RE-ENABLED: crypto issue fixed with expo-crypto
 
   private constructor() {
@@ -799,6 +800,161 @@ export class EnhancedVideoCacheService {
         });
       });
     }, 100);
+  }
+
+  /**
+   * Check if channel list has changed since last video sync
+   */
+  async hasChannelListChanged(): Promise<boolean> {
+    try {
+      const changeSignal = await AsyncStorage.getItem(this.CHANNEL_CHANGE_KEY);
+      if (!changeSignal) return false;
+
+      const changeTime = parseInt(changeSignal);
+      const lastVideoSync = await this.getLastSyncTimestamp();
+
+      const hasChanged = changeTime > lastVideoSync;
+
+      cacheLogger.debug('Channel change check', {
+        changeTime: new Date(changeTime).toISOString(),
+        lastVideoSync: new Date(lastVideoSync).toISOString(),
+        hasChanged
+      });
+
+      return hasChanged;
+    } catch (error) {
+      cacheLogger.error('Error checking channel changes', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return false; // Default to false to avoid unnecessary full syncs
+    }
+  }
+
+  /**
+   * Clear channel change notification after processing
+   */
+  async clearChannelChangeSignal(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(this.CHANNEL_CHANGE_KEY);
+      cacheLogger.debug('Channel change signal cleared');
+    } catch (error) {
+      cacheLogger.error('Error clearing channel change signal', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  /**
+   * Clean videos older than 30 days
+   */
+  async cleanOldVideos(): Promise<number> {
+    await this.ensureInitialized();
+    cacheLogger.debug('Cleaning videos older than 30 days');
+
+    try {
+      const cutoffDate = Date.now() - this.MAX_CACHE_AGE;
+      const cachedVideos = await this.getCachedVideos();
+
+      const recentVideos = cachedVideos.filter(video => {
+        const videoDate = new Date(video.createdAt).getTime();
+        return videoDate >= cutoffDate;
+      });
+
+      const deletedCount = cachedVideos.length - recentVideos.length;
+
+      if (deletedCount > 0) {
+        await this.saveVideosToCache(recentVideos);
+        cacheLogger.info('Cleaned old videos from cache', {
+          totalVideos: cachedVideos.length,
+          keptVideos: recentVideos.length,
+          deletedCount,
+          cutoffDate: new Date(cutoffDate).toISOString()
+        });
+      }
+
+      return deletedCount;
+    } catch (error) {
+      cacheLogger.error('Error cleaning old videos', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return 0;
+    }
+  }
+
+  /**
+   * Filter videos to only include those within 30 days
+   */
+  private filterRecentVideos(videos: VideoSummary[]): VideoSummary[] {
+    const cutoffDate = Date.now() - this.MAX_CACHE_AGE;
+
+    return videos.filter(video => {
+      const videoDate = new Date(video.createdAt).getTime();
+      return videoDate >= cutoffDate;
+    });
+  }
+
+  /**
+   * Override saveVideosToCache to apply 30-day filter
+   */
+  async saveVideosToCache(videos: VideoSummary[]): Promise<void> {
+    await this.ensureInitialized();
+    cacheLogger.debug('Saving videos to cache with 30-day filter', { videoCount: videos.length });
+
+    try {
+      // Apply 30-day filter before saving
+      const recentVideos = this.filterRecentVideos(videos);
+
+      if (recentVideos.length !== videos.length) {
+        cacheLogger.info('Filtered out old videos before caching', {
+          originalCount: videos.length,
+          filteredCount: recentVideos.length,
+          removedCount: videos.length - recentVideos.length
+        });
+      }
+
+      // Use transaction for atomic cache update
+      const transaction = new CacheTransaction('saveVideosToCache', recentVideos);
+      await transaction.execute(async () => {
+        const currentTime = Date.now();
+
+        // Create cache entries
+        const cacheEntries: CacheEntry[] = recentVideos.map(video => ({
+          videoId: video.videoId,
+          data: video,
+          cachedAt: currentTime,
+          channelId: video.channelId,
+        }));
+
+        // Update cache data
+        await AsyncStorage.setItem(this.CACHE_KEYS.VIDEO_LIST, JSON.stringify(cacheEntries));
+
+        // Update metadata
+        const metadata = await this.getCacheMetadata();
+        const updatedMetadata: CacheMetadata = {
+          ...metadata,
+          lastSyncTimestamp: currentTime,
+          totalVideos: recentVideos.length,
+          cacheVersion: this.CACHE_VERSION,
+          integrity: {
+            checksum: await cacheValidator.generateChecksum(cacheEntries),
+            lastValidated: currentTime,
+          },
+        };
+
+        await AsyncStorage.setItem(this.CACHE_KEYS.METADATA, JSON.stringify(updatedMetadata));
+
+        cacheLogger.info('Videos saved to cache successfully', {
+          videoCount: recentVideos.length,
+          cacheSize: Math.round((JSON.stringify(cacheEntries).length * 2) / 1024),
+          checksum: updatedMetadata.integrity?.checksum?.substring(0, 8) + '...',
+        });
+      });
+    } catch (error) {
+      cacheLogger.error('Error saving videos to cache', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
   }
 }
 

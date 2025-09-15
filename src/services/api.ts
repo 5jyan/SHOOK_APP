@@ -277,11 +277,17 @@ class ApiService {
 
   // Video summaries endpoint - GET /api/videos
   async getVideoSummaries(since?: number): Promise<ApiResponse<VideoSummary[]>> {
-    const endpoint = since ? `/api/videos?since=${since}` : '/api/videos';
+    // Apply 30-day filter to limit cache size and focus on recent content
+    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    const effectiveSince = since ? Math.max(since, thirtyDaysAgo) : thirtyDaysAgo;
+
+    const endpoint = `/api/videos?since=${effectiveSince}`;
     
     const syncType = since ? 'incremental' : 'full';
-    apiLogger.info(`Starting video summaries sync: ${syncType}`, {
-      since: since ? new Date(since).toISOString() : null,
+    apiLogger.info(`Starting video summaries sync: ${syncType} (30-day filtered)`, {
+      originalSince: since ? new Date(since).toISOString() : null,
+      effectiveSince: new Date(effectiveSince).toISOString(),
+      thirtyDayLimit: new Date(thirtyDaysAgo).toISOString(),
       endpoint,
       syncType
     });

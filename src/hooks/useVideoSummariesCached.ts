@@ -47,15 +47,18 @@ export const useVideoSummariesCached = () => {
         const lastSyncTimestamp = await videoCacheService.getLastSyncTimestamp();
         serviceLogger.debug('Last sync timestamp', { lastSync: new Date(lastSyncTimestamp).toISOString() });
 
-        // Step 3: Determine sync strategy
-        const cacheAge = Date.now() - lastSyncTimestamp;
-        const FULL_SYNC_THRESHOLD = 24 * 60 * 60 * 1000; // 24 hours
-        const shouldFullSync = cacheAge > FULL_SYNC_THRESHOLD || lastSyncTimestamp === 0;
+        // Step 3: Determine sync strategy based on channel changes
+        const channelListChanged = await videoCacheService.hasChannelListChanged();
+        const shouldFullSync = channelListChanged || lastSyncTimestamp === 0;
 
         if (shouldFullSync) {
-          serviceLogger.info('Full sync required', { cacheAgeHours: Math.round(cacheAge / (1000 * 60 * 60)) });
+          if (channelListChanged) {
+            serviceLogger.info('Full sync required - channel list changed');
+          } else {
+            serviceLogger.info('Full sync required - first time sync');
+          }
         } else {
-          serviceLogger.info('Incremental sync', { cacheAgeMinutes: Math.round(cacheAge / (1000 * 60)) });
+          serviceLogger.info('Incremental sync - no channel changes detected');
         }
 
         // Step 4: Fetch new/updated data from server
@@ -76,6 +79,13 @@ export const useVideoSummariesCached = () => {
           
           // Replace entire cache
           await videoCacheService.saveVideosToCache(finalVideos);
+
+          // Clear channel change signal after successful full sync
+          if (channelListChanged) {
+            await videoCacheService.clearChannelChangeSignal();
+            serviceLogger.info('Channel change signal cleared after full sync');
+          }
+
           serviceLogger.info('Full sync completed', { videosCached: finalVideos.length });
         } else {
           // Incremental sync - get only new videos
@@ -104,7 +114,13 @@ export const useVideoSummariesCached = () => {
           }
         }
 
-        // Step 5: Get updated cache stats
+        // Step 5: Clean old videos (30+ days) periodically
+        const cleanedCount = await videoCacheService.cleanOldVideos();
+        if (cleanedCount > 0) {
+          serviceLogger.info('Cleaned old videos during sync', { cleanedCount });
+        }
+
+        // Step 6: Get updated cache stats
         const updatedCacheStats = await videoCacheService.getCacheStats();
 
         const result: CacheAwareData = {

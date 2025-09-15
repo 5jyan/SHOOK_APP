@@ -48,6 +48,7 @@ export class ChannelCacheService {
   private readonly SYNC_INTERVAL = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
   private readonly MAX_CACHE_AGE = Number.MAX_SAFE_INTEGER; // Permanent storage
   private readonly MAX_CHANNELS = 1000; // Realistic upper limit
+  private readonly CHANNEL_CHANGE_KEY = 'channel_list_changed'; // Key for notifying video cache
 
   private constructor() {}
 
@@ -288,7 +289,10 @@ export class ChannelCacheService {
         JSON.stringify(updatedMetadata)
       );
 
-      cacheLogger.info('Forced sync - cache marked as stale');
+      // Notify video cache that channels may have changed
+      await this.notifyChannelChange();
+
+      cacheLogger.info('Forced sync - cache marked as stale and video cache notified');
     } catch (error) {
       cacheLogger.error('Error forcing sync', { error: error instanceof Error ? error.message : String(error) });
       throw error;
@@ -334,6 +338,80 @@ export class ChannelCacheService {
     } catch (error) {
       cacheLogger.error('Error comparing channels', { error: error instanceof Error ? error.message : String(error) });
       return true; // Default to different on error
+    }
+  }
+
+  /**
+   * Notify video cache that channel list has changed
+   */
+  async notifyChannelChange(): Promise<void> {
+    try {
+      await AsyncStorage.setItem(this.CHANNEL_CHANGE_KEY, Date.now().toString());
+      cacheLogger.info('Channel change notification sent to video cache');
+    } catch (error) {
+      cacheLogger.error('Error notifying channel change', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  /**
+   * Override saveChannelsToCache to notify video cache of changes
+   */
+  async saveChannelsToCache(channels: UserChannel[]): Promise<void> {
+    try {
+      const currentTime = Date.now();
+      const metadata = await this.getCacheMetadata();
+
+      // Check if this is actually a change (not just a sync timestamp update)
+      const existingChannels = await this.getCachedChannels();
+      const hasActualChanges = await this.compareChannels(existingChannels, channels);
+
+      // Create cache entries
+      const cacheEntries: ChannelCacheEntry[] = channels.map(channel => ({
+        channelId: channel.channelId,
+        data: channel,
+        cachedAt: currentTime,
+        userId: channel.userId,
+      }));
+
+      // Save channel data
+      await AsyncStorage.setItem(
+        this.CACHE_KEYS.CHANNEL_LIST,
+        JSON.stringify(cacheEntries)
+      );
+
+      // Update metadata
+      const updatedMetadata: ChannelCacheMetadata = {
+        ...metadata,
+        lastSyncTimestamp: currentTime,
+        totalChannels: channels.length,
+        userId: channels.length > 0 ? channels[0].userId : metadata.userId,
+        cacheVersion: this.CACHE_VERSION,
+      };
+
+      await AsyncStorage.setItem(
+        this.CACHE_KEYS.METADATA,
+        JSON.stringify(updatedMetadata)
+      );
+
+      // Notify video cache if channels actually changed
+      if (hasActualChanges) {
+        await this.notifyChannelChange();
+      }
+
+      cacheLogger.info('Channels saved to permanent cache', {
+        channelCount: channels.length,
+        cacheSize: this.calculateCacheSize(cacheEntries),
+        userId: updatedMetadata.userId,
+        hasChanges: hasActualChanges
+      });
+
+    } catch (error) {
+      cacheLogger.error('Error saving channels to cache', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
     }
   }
 
