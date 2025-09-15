@@ -1,7 +1,7 @@
 import { ModalHeader } from '@/components/AppHeader';
 import { ShookLoadingScreen } from '@/components/ShookLoadingScreen';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useUserChannels } from '@/hooks/useUserChannels';
+import { useUserChannelsCached } from '@/hooks/useUserChannelsCached';
 import { transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
@@ -23,7 +23,7 @@ export default function SummaryDetailScreen() {
   const videoId = params.summaryId as string;
   
   const { data: videoSummaries = [], isLoading, error, refetch } = useVideoSummariesCached();
-  const { channels } = useUserChannels();
+  const { channels } = useUserChannelsCached();
   
   // Find the specific video by ID and transform it to get channel info
   const videoSummary = React.useMemo(() => {
