@@ -305,7 +305,7 @@ export class EnhancedVideoCacheService {
   }
 
   /**
-   * Save videos to cache with atomic transaction
+   * Save videos to cache with atomic transaction and 30-day filtering
    */
   async saveVideosToCache(videos: VideoSummary[], isRetry: boolean = false): Promise<CacheOperationResult> {
     await this.ensureInitialized();
@@ -313,10 +313,21 @@ export class EnhancedVideoCacheService {
     const startTime = Date.now();
     const errors: string[] = [];
     let recoveryApplied = false;
-    
+
     try {
+      // Apply 30-day filter before saving
+      const recentVideos = this.filterRecentVideos(videos);
+
+      if (recentVideos.length !== videos.length) {
+        cacheLogger.info('Filtered out old videos before caching', {
+          originalCount: videos.length,
+          filteredCount: recentVideos.length,
+          removedCount: videos.length - recentVideos.length
+        });
+      }
+
       const currentTime = Date.now();
-      const cacheEntries: CacheEntry[] = videos.map(video => ({
+      const cacheEntries: CacheEntry[] = recentVideos.map(video => ({
         videoId: video.videoId,
         data: video,
         cachedAt: currentTime,
@@ -325,11 +336,11 @@ export class EnhancedVideoCacheService {
 
       // Limit cache size
       const limitedEntries = cacheEntries.slice(0, this.MAX_ENTRIES);
-      
+
       if (cacheEntries.length > this.MAX_ENTRIES) {
-        cacheLogger.info('Limited cache size', { 
-          maxEntries: this.MAX_ENTRIES, 
-          originalCount: cacheEntries.length 
+        cacheLogger.info('Limited cache size', {
+          maxEntries: this.MAX_ENTRIES,
+          originalCount: cacheEntries.length
         });
       }
 
@@ -354,9 +365,9 @@ export class EnhancedVideoCacheService {
 
         const saveTime = Date.now() - startTime;
         const cacheSize = JSON.stringify(limitedEntries).length / 1024; // KB
-        
-        cacheLogger.info('Cache saved successfully', { 
-          saveTimeMs: saveTime, 
+
+        cacheLogger.info('Cache saved successfully', {
+          saveTimeMs: saveTime,
           cacheSizeKB: cacheSize.toFixed(1),
           entriesProcessed: limitedEntries.length
         });
@@ -893,69 +904,6 @@ export class EnhancedVideoCacheService {
     });
   }
 
-  /**
-   * Override saveVideosToCache to apply 30-day filter
-   */
-  async saveVideosToCache(videos: VideoSummary[]): Promise<void> {
-    await this.ensureInitialized();
-    cacheLogger.debug('Saving videos to cache with 30-day filter', { videoCount: videos.length });
-
-    try {
-      // Apply 30-day filter before saving
-      const recentVideos = this.filterRecentVideos(videos);
-
-      if (recentVideos.length !== videos.length) {
-        cacheLogger.info('Filtered out old videos before caching', {
-          originalCount: videos.length,
-          filteredCount: recentVideos.length,
-          removedCount: videos.length - recentVideos.length
-        });
-      }
-
-      // Use transaction for atomic cache update
-      const transaction = new CacheTransaction('saveVideosToCache', recentVideos);
-      await transaction.execute(async () => {
-        const currentTime = Date.now();
-
-        // Create cache entries
-        const cacheEntries: CacheEntry[] = recentVideos.map(video => ({
-          videoId: video.videoId,
-          data: video,
-          cachedAt: currentTime,
-          channelId: video.channelId,
-        }));
-
-        // Update cache data
-        await AsyncStorage.setItem(this.CACHE_KEYS.VIDEO_LIST, JSON.stringify(cacheEntries));
-
-        // Update metadata
-        const metadata = await this.getCacheMetadata();
-        const updatedMetadata: CacheMetadata = {
-          ...metadata,
-          lastSyncTimestamp: currentTime,
-          totalVideos: recentVideos.length,
-          cacheVersion: this.CACHE_VERSION,
-          integrity: {
-            checksum: await cacheValidator.generateChecksum(cacheEntries),
-            lastValidated: currentTime,
-          },
-        };
-
-        await AsyncStorage.setItem(this.CACHE_KEYS.METADATA, JSON.stringify(updatedMetadata));
-
-        cacheLogger.info('Videos saved to cache successfully', {
-          videoCount: recentVideos.length,
-          cacheSize: Math.round((JSON.stringify(cacheEntries).length * 2) / 1024),
-          checksum: updatedMetadata.integrity?.checksum?.substring(0, 8) + '...',
-        });
-      });
-    } catch (error) {
-      cacheLogger.error('Error saving videos to cache', {
-        error: error instanceof Error ? error.message : String(error)
-      });
-      throw error;
-    }
-  }
 }
 
 // Export singleton instance
