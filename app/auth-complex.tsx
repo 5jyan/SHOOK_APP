@@ -1,4 +1,5 @@
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+import { KakaoSignInButton } from '@/components/KakaoSignInButton';
 import { authLogger } from '../src/utils/logger-enhanced';
 import { router } from 'expo-router';
 import React from 'react';
@@ -34,6 +35,11 @@ export default function AuthScreen() {
           </View>
 
           <View style={styles.authSection}>
+            <KakaoSignInButton
+              onSuccess={handleSuccess}
+              onError={handleError}
+            />
+
             <GoogleSignInButton
               onSuccess={handleSuccess}
               onError={handleError}
@@ -52,7 +58,7 @@ export default function AuthScreen() {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              안전하고 간편한 Google 로그인으로{'\n'}계정을 생성하거나 기존 계정에 로그인하세요
+              안전하고 간편한 소셜 로그인으로{'\n'}계정을 생성하거나 기존 계정에 로그인하세요
             </Text>
           </View>
         </View>

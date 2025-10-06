@@ -83,7 +83,8 @@
       "Bash(npm run dev:server:*)",
       "Bash(npm run:*)",
       "Bash(dir:*)",
-      "Bash(del test-number-format.js)"
+      "Bash(del test-number-format.js)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

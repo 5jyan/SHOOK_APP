@@ -202,6 +202,24 @@ class ApiService {
     });
   }
 
+  async verifyKakaoToken(accessToken: string): Promise<{ id: number; email: string | null; name: string }> {
+    apiLogger.info('Verifying Kakao token with backend');
+
+    const response = await this.makeRequest<{ user: { id: number; email: string | null; name: string } }>(
+      '/api/auth/kakao/verify',
+      {
+        method: 'POST',
+        body: JSON.stringify({ accessToken }),
+      }
+    );
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Kakao token verification failed');
+    }
+
+    return response.data.user;
+  }
+
   async logout(): Promise<ApiResponse<{ success: boolean }>> {
     return this.makeRequest<{ success: boolean }>('/api/logout', {
       method: 'POST',
