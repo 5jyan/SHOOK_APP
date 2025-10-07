@@ -69,15 +69,15 @@ export const useVideoSummariesCached = () => {
           // Full sync - get all videos
           serviceLogger.info('Performing full sync');
           serverResponse = await apiService.getVideoSummaries();
-          
+
           if (!serverResponse.success) {
             serviceLogger.error('Full sync failed', { error: serverResponse.error });
             throw new Error(serverResponse.error || 'Failed to fetch video summaries');
           }
 
           finalVideos = serverResponse.data;
-          
-          // Replace entire cache
+
+          // Replace entire cache with server timestamp
           await videoCacheService.saveVideosToCache(finalVideos);
 
           // Clear channel change signal after successful full sync
@@ -91,7 +91,7 @@ export const useVideoSummariesCached = () => {
           // Incremental sync - get only new videos
           serviceLogger.info('Performing incremental sync');
           serverResponse = await apiService.getVideoSummaries(lastSyncTimestamp);
-          
+
           if (!serverResponse.success) {
             serviceLogger.error('Incremental sync failed', { error: serverResponse.error });
             throw new Error(serverResponse.error || 'Failed to fetch new video summaries');
@@ -108,9 +108,10 @@ export const useVideoSummariesCached = () => {
             // No new videos, use cached data
             finalVideos = cachedVideos;
             serviceLogger.info('No new videos, using cached data');
-            
-            // Update last sync timestamp even if no new videos
-            await videoCacheService.updateCacheMetadata({ lastSyncTimestamp: Date.now() } as any);
+
+            // Update last sync timestamp using server time (current server time approximation)
+            // Since no new videos, keep the last sync timestamp as is to avoid clock skew issues
+            serviceLogger.debug('No timestamp update needed - no new videos received');
           }
         }
 

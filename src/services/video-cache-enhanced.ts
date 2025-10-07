@@ -355,10 +355,26 @@ export class EnhancedVideoCacheService {
           JSON.stringify(limitedEntries)
         );
 
+        // Calculate lastSyncTimestamp using server's latest video timestamp
+        // This avoids clock skew issues between client and server
+        let serverTimestamp = currentTime;
+        if (recentVideos.length > 0) {
+          // Use the most recent video's createdAt as the sync timestamp
+          const latestVideoTime = Math.max(
+            ...recentVideos.map(v => new Date(v.createdAt).getTime())
+          );
+          serverTimestamp = latestVideoTime;
+          cacheLogger.debug('Using server timestamp from latest video', {
+            serverTime: new Date(serverTimestamp).toISOString(),
+            clientTime: new Date(currentTime).toISOString(),
+            skewMs: serverTimestamp - currentTime
+          });
+        }
+
         // Update metadata
         await this.updateCacheMetadata({
           totalVideos: limitedEntries.length,
-          lastSyncTimestamp: currentTime,
+          lastSyncTimestamp: serverTimestamp,
         }, transaction);
 
         await transaction.commit();
@@ -369,7 +385,8 @@ export class EnhancedVideoCacheService {
         cacheLogger.info('Cache saved successfully', {
           saveTimeMs: saveTime,
           cacheSizeKB: cacheSize.toFixed(1),
-          entriesProcessed: limitedEntries.length
+          entriesProcessed: limitedEntries.length,
+          lastSyncTime: new Date(serverTimestamp).toISOString()
         });
 
         return {
@@ -507,10 +524,30 @@ export class EnhancedVideoCacheService {
   async getLastSyncTimestamp(): Promise<number> {
     await this.ensureInitialized();
     const metadata = await this.getCacheMetadata();
-    cacheLogger.debug('Retrieved last sync timestamp', { 
-      lastSync: new Date(metadata.lastSyncTimestamp).toISOString() 
+    const timestamp = metadata.lastSyncTimestamp;
+
+    // Validate timestamp: if it's in the future (clock skew), reset to 0
+    const now = Date.now();
+    const maxFutureSkew = 5 * 60 * 1000; // Allow 5 minutes future skew
+
+    if (timestamp > now + maxFutureSkew) {
+      cacheLogger.warn('Timestamp is in the future, resetting to 0', {
+        savedTimestamp: new Date(timestamp).toISOString(),
+        currentTime: new Date(now).toISOString(),
+        skewMs: timestamp - now,
+        skewHours: ((timestamp - now) / (1000 * 60 * 60)).toFixed(2)
+      });
+
+      // Reset to 0 to force full sync
+      await this.updateCacheMetadata({ lastSyncTimestamp: 0 } as any);
+      return 0;
+    }
+
+    cacheLogger.debug('Retrieved last sync timestamp', {
+      lastSync: new Date(timestamp).toISOString(),
+      isValid: true
     });
-    return metadata.lastSyncTimestamp;
+    return timestamp;
   }
 
   /**

@@ -171,7 +171,7 @@ export class VideoCacheService {
   async saveVideosToCache(videos: VideoSummary[]): Promise<void> {
     cacheLogger.debug('Saving videos to cache', { videoCount: videos.length });
     const startTime = Date.now();
-    
+
     try {
       const currentTime = Date.now();
       const cacheEntries: CacheEntry[] = videos.map(video => ({
@@ -183,7 +183,7 @@ export class VideoCacheService {
 
       // Limit cache size
       const limitedEntries = cacheEntries.slice(0, this.MAX_ENTRIES);
-      
+
       if (cacheEntries.length > this.MAX_ENTRIES) {
         cacheLogger.info('Limited cache size', { maxEntries: this.MAX_ENTRIES, originalCount: cacheEntries.length });
       }
@@ -193,16 +193,36 @@ export class VideoCacheService {
         JSON.stringify(limitedEntries)
       );
 
+      // Calculate lastSyncTimestamp using server's latest video timestamp
+      // This avoids clock skew issues between client and server
+      let serverTimestamp = currentTime;
+      if (videos.length > 0) {
+        // Use the most recent video's createdAt as the sync timestamp
+        const latestVideoTime = Math.max(
+          ...videos.map(v => new Date(v.createdAt).getTime())
+        );
+        serverTimestamp = latestVideoTime;
+        cacheLogger.debug('Using server timestamp from latest video', {
+          serverTime: new Date(serverTimestamp).toISOString(),
+          clientTime: new Date(currentTime).toISOString(),
+          skewMs: serverTimestamp - currentTime
+        });
+      }
+
       // Update metadata
       await this.updateCacheMetadata({
         totalVideos: limitedEntries.length,
-        lastSyncTimestamp: currentTime,
+        lastSyncTimestamp: serverTimestamp,
       });
 
       const saveTime = Date.now() - startTime;
       const cacheSize = JSON.stringify(limitedEntries).length / 1024; // KB
-      
-      cacheLogger.info('Cache saved successfully', { saveTimeMs: saveTime, cacheSizeKB: cacheSize.toFixed(1) });
+
+      cacheLogger.info('Cache saved successfully', {
+        saveTimeMs: saveTime,
+        cacheSizeKB: cacheSize.toFixed(1),
+        lastSyncTime: new Date(serverTimestamp).toISOString()
+      });
     } catch (error) {
       cacheLogger.error('Error saving to cache', { error: error instanceof Error ? error.message : String(error) });
     }
@@ -244,8 +264,30 @@ export class VideoCacheService {
   // Get last sync timestamp
   async getLastSyncTimestamp(): Promise<number> {
     const metadata = await this.getCacheMetadata();
-    cacheLogger.debug('Retrieved last sync timestamp', { lastSync: new Date(metadata.lastSyncTimestamp).toISOString() });
-    return metadata.lastSyncTimestamp;
+    const timestamp = metadata.lastSyncTimestamp;
+
+    // Validate timestamp: if it's in the future (clock skew), reset to 0
+    const now = Date.now();
+    const maxFutureSkew = 5 * 60 * 1000; // Allow 5 minutes future skew
+
+    if (timestamp > now + maxFutureSkew) {
+      cacheLogger.warn('Timestamp is in the future, resetting to 0', {
+        savedTimestamp: new Date(timestamp).toISOString(),
+        currentTime: new Date(now).toISOString(),
+        skewMs: timestamp - now,
+        skewHours: ((timestamp - now) / (1000 * 60 * 60)).toFixed(2)
+      });
+
+      // Reset to 0 to force full sync
+      await this.updateCacheMetadata({ lastSyncTimestamp: 0 });
+      return 0;
+    }
+
+    cacheLogger.debug('Retrieved last sync timestamp', {
+      lastSync: new Date(timestamp).toISOString(),
+      isValid: true
+    });
+    return timestamp;
   }
 
   // Clear cache (for logout or cache reset)

@@ -9,6 +9,7 @@ import { ManualMonitoringButton } from '@/components/ManualMonitoringButton';
 import { UIDebuggerButton } from '@/components/UIDebuggerButton';
 import { AdvancedUIDebuggerButton } from '@/components/AdvancedUIDebuggerButton';
 import { GlobalDebuggerButton } from '@/components/GlobalDebuggerButton';
+import { ForceCacheResetButton } from '@/components/ForceCacheResetButton';
 
 export default function DeveloperToolsScreen() {
   return (
@@ -27,18 +28,19 @@ export default function DeveloperToolsScreen() {
             <GlobalDebuggerButton />
             <UIDebuggerButton />
             <AdvancedUIDebuggerButton />
-            
+
             <Text style={styles.sectionTitle}>모니터링 도구</Text>
             <ManualMonitoringButton />
-            
+
             <Text style={styles.sectionTitle}>백엔드 연결</Text>
             <BackendTestButton />
-            
+
             <Text style={styles.sectionTitle}>푸시 알림</Text>
             <PushNotificationTestButton />
-            
+
             <Text style={styles.sectionTitle}>캐시 관리</Text>
             <CacheStatsButton />
+            <ForceCacheResetButton />
           </View>
         </View>
       </ScrollView>

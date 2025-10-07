@@ -126,9 +126,9 @@ export default function ChannelSearchScreen() {
             videoId: response.data.latestVideo.videoId
           });
         } else {
-          // New channel - video processing in background, signal full sync
-          serviceLogger.info('New channel added, signaling channel list change');
-          await videoCacheService.signalChannelListChanged();
+          // New channel - video processing in background
+          // Don't signal channel list change - let incremental sync handle it naturally
+          serviceLogger.info('New channel added, will sync via incremental updates');
         }
 
         Alert.alert('성공', `${channel.title} 채널이 추가되었습니다.`);

@@ -458,38 +458,47 @@ export class NotificationService {
     });
 
     // Listener for when user taps on notification
-    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+    const responseListener = Notifications.addNotificationResponseReceivedListener(async (response) => {
       notificationLogger.info('User tapped notification', { title: response.notification.request.content.title });
-      
+
       // Handle notification tap - navigate to specific summary or summaries tab
       const data = response.notification.request.content.data;
-      
+
       try {
-        // Trigger incremental sync before navigation to ensure fresh data
+        // Trigger full sync before navigation to ensure fresh data
         if (data?.type === 'new_video_summary') {
-          notificationLogger.debug('Triggering incremental sync before navigation');
-          
-          // Use refetch instead of invalidate to leverage incremental sync
-          queryClient.refetchQueries({
+          notificationLogger.info('Triggering FULL SYNC before navigation (to avoid timestamp issues)');
+
+          // Import cache service dynamically
+          const { videoCacheService } = await import('./video-cache-enhanced');
+
+          // Force full sync by signaling channel list change
+          await videoCacheService.signalChannelListChanged();
+          notificationLogger.info('Channel list change signaled, next sync will be full');
+
+          // IMPORTANT: Wait for refetch to complete before navigating
+          await queryClient.refetchQueries({
             queryKey: ['videoSummariesCached']
           });
-          
-          queryClient.refetchQueries({
+
+          await queryClient.refetchQueries({
             queryKey: ['videoSummaries']
           });
+
+          notificationLogger.info('Full sync completed, cache should now have new video');
         }
-        
+
         // If there's specific video data, navigate to detail screen
         if (data?.videoId) {
           notificationLogger.info('Navigating to summary detail for video', { videoId: data.videoId });
-          
+
           router.push({
             pathname: '/summary-detail',
             params: { summaryId: data.videoId }
           });
         } else {
           notificationLogger.info('No videoId, navigating to summaries tab');
-          
+
           // Fallback: Navigate to summaries tab when no specific video ID
           router.replace('/(tabs)/summaries');
         }
