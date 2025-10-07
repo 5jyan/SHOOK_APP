@@ -5,6 +5,7 @@ import { apiService, type YoutubeChannel } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { serviceLogger } from '@/utils/logger-enhanced';
 import { formatChannelStats } from '@/utils/number-format';
+import { videoCacheService } from '@/services/video-cache-enhanced';
 import { router } from 'expo-router';
 import React from 'react';
 import {
@@ -88,6 +89,11 @@ export default function ChannelSearchScreen() {
 
       if (response.success) {
         serviceLogger.info('Channel added successfully', { channelTitle: channel.title });
+
+        // Signal cache that channel list has changed (triggers full sync on next video fetch)
+        await videoCacheService.signalChannelListChanged();
+        serviceLogger.debug('Cache notified of channel list change');
+
         Alert.alert('성공', `${channel.title} 채널이 추가되었습니다.`);
         await refreshChannels();
         router.back(); // 성공 시 이전 화면으로 돌아가기

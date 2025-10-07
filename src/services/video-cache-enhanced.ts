@@ -855,6 +855,23 @@ export class EnhancedVideoCacheService {
   }
 
   /**
+   * Signal that channel list has changed (for add/delete operations)
+   */
+  async signalChannelListChanged(): Promise<void> {
+    try {
+      const changeTimestamp = Date.now();
+      await AsyncStorage.setItem(this.CHANNEL_CHANGE_KEY, changeTimestamp.toString());
+      cacheLogger.info('Channel list change signaled', {
+        timestamp: new Date(changeTimestamp).toISOString()
+      });
+    } catch (error) {
+      cacheLogger.error('Error signaling channel change', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  /**
    * Clear channel change notification after processing
    */
   async clearChannelChangeSignal(): Promise<void> {

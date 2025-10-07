@@ -248,30 +248,32 @@ export interface SummaryCardData {
 }
 
 export const transformVideoSummaryToCardData = (
-  video: VideoSummary, 
+  video: VideoSummary,
   channels: UserChannel[] = [],
   channelName?: string
 ): SummaryCardData => {
   // Find channel data from ChannelsContext first
   const channelData = channels.find(ch => ch.youtubeChannel.channelId === video.channelId);
-  
+
   // Priority order for channel info:
   // 1. ChannelsContext data (most reliable, includes thumbnail)
-  // 2. Video API response data 
+  // 2. Video API response data (channelThumbnail field from backend)
   // 3. Parameter fallback
-  // 4. Default
+  // 4. Default placeholder
   const finalChannelName = channelData?.youtubeChannel.title || video.channelTitle || channelName || 'Unknown Channel';
-  const finalChannelThumbnail = channelData?.youtubeChannel.thumbnail || 
+  const finalChannelThumbnail = channelData?.youtubeChannel.thumbnail ||
+    video.channelThumbnail || // USE BACKEND THUMBNAIL IF AVAILABLE
     `https://via.placeholder.com/60/4285f4/ffffff?text=${finalChannelName.charAt(0) || 'C'}`;
-  
+
   // Debug log to check thumbnail data sources
   serviceLogger.debug('transformVideoSummaryToCardData thumbnail debug', {
     videoTitle: video.title.substring(0, 30) + '...',
     channelId: video.channelId,
     channelFromContext: !!channelData,
     contextThumbnail: channelData?.youtubeChannel.thumbnail,
+    videoThumbnail: video.channelThumbnail, // LOG BACKEND THUMBNAIL
     finalThumbnail: finalChannelThumbnail,
-    isPlaceholder: !channelData?.youtubeChannel.thumbnail
+    isPlaceholder: !channelData?.youtubeChannel.thumbnail && !video.channelThumbnail
   });
   
   return {

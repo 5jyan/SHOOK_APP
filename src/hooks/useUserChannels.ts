@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiService, type YoutubeChannel, type UserChannel } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { serviceLogger } from '@/utils/logger-enhanced';
+import { videoCacheService } from '@/services/video-cache-enhanced';
 
 export function useUserChannels() {
   const { user } = useAuthStore();
@@ -58,9 +59,14 @@ export function useUserChannels() {
     try {
       serviceLogger.info('🗑️ Deleting channel', { channelId });
       const response = await apiService.deleteChannel(channelId);
-      
+
       if (response.success) {
         serviceLogger.info('✅ Channel deleted successfully', { channelId });
+
+        // Signal cache that channel list has changed (triggers full sync on next video fetch)
+        await videoCacheService.signalChannelListChanged();
+        serviceLogger.debug('Cache notified of channel deletion');
+
         setChannels(prev => prev.filter(ch => ch.youtubeChannel.channelId !== channelId));
         return true;
       } else {

@@ -102,6 +102,7 @@ interface VideoSummary {
   errorMessage: string | null;
   createdAt: string; // ISO 8601 date-time
   channelTitle: string; // Channel name from JOIN with youtube_channels table
+  channelThumbnail?: string; // Channel thumbnail URL from backend
 }
 
 class ApiService {

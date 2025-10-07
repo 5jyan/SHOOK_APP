@@ -33,7 +33,25 @@ export default function SummaryDetailScreen() {
   // Transform to get channel information using cached data (includes real thumbnails)
   const cardData = React.useMemo(() => {
     if (!videoSummary) return null;
-    return transformVideoSummaryToCardData(videoSummary, channels, videoSummary.channelTitle);
+
+    // Debug logging
+    uiLogger.debug('SummaryDetail - transforming video data', {
+      videoId: videoSummary.videoId,
+      channelId: videoSummary.channelId,
+      channelTitle: videoSummary.channelTitle,
+      channelsAvailable: channels.length,
+      channelIds: channels.map(ch => ch.youtubeChannel.channelId)
+    });
+
+    const result = transformVideoSummaryToCardData(videoSummary, channels, videoSummary.channelTitle);
+
+    uiLogger.debug('SummaryDetail - transform result', {
+      hasChannelThumbnail: !!result.channelThumbnail,
+      channelThumbnail: result.channelThumbnail,
+      channelName: result.channelName
+    });
+
+    return result;
   }, [videoSummary, channels]);
   
   if (isLoading) {
