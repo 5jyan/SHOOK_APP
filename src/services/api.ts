@@ -203,10 +203,24 @@ class ApiService {
     });
   }
 
-  async verifyKakaoToken(accessToken: string): Promise<{ id: number; email: string | null; name: string }> {
+  async verifyKakaoToken(accessToken: string): Promise<{
+    id: number;
+    email: string | null;
+    name: string;
+    username: string;
+    role: 'user' | 'tester' | 'manager';
+  }> {
     apiLogger.info('Verifying Kakao token with backend');
 
-    const response = await this.makeRequest<{ user: { id: number; email: string | null; name: string } }>(
+    const response = await this.makeRequest<{
+      user: {
+        id: number;
+        email: string | null;
+        name: string;
+        username: string;
+        role: 'user' | 'tester' | 'manager';
+      }
+    }>(
       '/api/auth/kakao/verify',
       {
         method: 'POST',

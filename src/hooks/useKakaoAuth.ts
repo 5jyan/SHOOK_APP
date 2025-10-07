@@ -36,9 +36,10 @@ export function useKakaoAuth() {
       // 3. 앱 상태에 사용자 정보 저장
       login({
         id: backendUser.id.toString(),
+        username: backendUser.username || backendUser.name || user.name,
         email: backendUser.email || user.email || '',
-        name: backendUser.name || user.name,
-        profileImage: user.profileImage,
+        role: backendUser.role, // Include role for channel limit logic
+        picture: user.profileImage,
       });
 
       // 4. 채널 변경 플래그 초기화 (첫 로그인) - 제거하거나 타임스탬프 0으로 설정
