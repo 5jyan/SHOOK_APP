@@ -3,8 +3,8 @@ import { kakaoAuthService } from '@/services/kakao-auth';
 import { apiService } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { authLogger } from '@/utils/logger-enhanced';
-import { AsyncStorage } from '@react-native-async-storage/async-storage';
-import { initializeNotifications } from '@/services/notification';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { notificationService } from '@/services/notification';
 
 export function useKakaoAuth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +46,7 @@ export function useKakaoAuth() {
 
       // 5. 푸시 알림 초기화
       try {
-        await initializeNotifications();
+        await notificationService.initialize();
         authLogger.info('Notifications initialized after Kakao login');
       } catch (notifError) {
         authLogger.error('Failed to initialize notifications', {

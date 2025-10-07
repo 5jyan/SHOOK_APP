@@ -1,6 +1,5 @@
-import { login, logout, getProfile } from '@react-native-kakao/user';
-import type { KakaoProfile } from '@react-native-kakao/user';
-import { secureStorage } from '@/lib/storage';
+import { login, logout } from '@react-native-kakao/user';
+import * as SecureStore from 'expo-secure-store';
 import { authLogger } from '../utils/logger-enhanced';
 
 interface KakaoUser {
@@ -23,32 +22,39 @@ class KakaoAuthService {
       // 카카오 로그인 (카카오톡 앱 우선, 없으면 웹뷰)
       const token = await login();
 
-      authLogger.info('Kakao login successful, fetching profile', {
+      authLogger.info('Kakao login successful', {
         hasAccessToken: !!token.accessToken,
         hasRefreshToken: !!token.refreshToken,
-      });
-
-      // 사용자 프로필 가져오기
-      const profile = await getProfile();
-
-      authLogger.info('Kakao profile fetched', {
-        userId: profile.id,
-        hasEmail: !!profile.email,
-        hasNickname: !!profile.nickname,
+        tokenKeys: Object.keys(token),
       });
 
       // 토큰 안전하게 저장
-      await this.storeTokens({
-        accessToken: token.accessToken,
-        refreshToken: token.refreshToken || null,
-        expiresAt: token.expiresAt ? new Date(token.expiresAt) : null,
+      try {
+        await this.storeTokens({
+          accessToken: token.accessToken,
+          refreshToken: token.refreshToken || null,
+          expiresAt: token.expiresAt ? new Date(token.expiresAt) : null,
+        });
+      } catch (storageError) {
+        authLogger.error('Failed to store Kakao tokens', {
+          error: storageError instanceof Error ? storageError.message : String(storageError),
+        });
+        // Continue anyway - storage is not critical for login
+      }
+
+      // 토큰에서 사용자 정보 추출 (카카오 API로 프로필 가져오기)
+      const userInfo = await this.getUserInfoFromToken(token.accessToken);
+
+      authLogger.info('Kakao user info fetched', {
+        userId: userInfo.id,
+        hasEmail: !!userInfo.email,
       });
 
       const user: KakaoUser = {
-        id: profile.id,
-        email: profile.email || null,
-        name: profile.nickname || '카카오 사용자',
-        profileImage: profile.profileImageUrl || profile.thumbnailImageUrl || null,
+        id: userInfo.id,
+        email: userInfo.email || null,
+        name: userInfo.name || '카카오 사용자',
+        profileImage: userInfo.profileImage || null,
       };
 
       return {
@@ -69,6 +75,40 @@ class KakaoAuthService {
     }
   }
 
+  private async getUserInfoFromToken(accessToken: string): Promise<{
+    id: string;
+    email: string | null;
+    name: string | null;
+    profileImage: string | null;
+  }> {
+    try {
+      const response = await fetch('https://kapi.kakao.com/v2/user/me', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user info from Kakao API');
+      }
+
+      const data = await response.json();
+
+      return {
+        id: data.id.toString(),
+        email: data.kakao_account?.email || null,
+        name: data.properties?.nickname || null,
+        profileImage: data.properties?.profile_image || data.properties?.thumbnail_image || null,
+      };
+    } catch (error) {
+      authLogger.error('Failed to fetch user info from Kakao API', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
   async signOut(): Promise<void> {
     try {
       authLogger.info('Starting Kakao logout');
@@ -78,9 +118,9 @@ class KakaoAuthService {
 
       // 저장된 토큰 삭제
       await Promise.all([
-        secureStorage.removeItem('kakao_access_token'),
-        secureStorage.removeItem('kakao_refresh_token'),
-        secureStorage.removeItem('kakao_expires_at'),
+        SecureStore.deleteItemAsync('kakao_access_token'),
+        SecureStore.deleteItemAsync('kakao_refresh_token'),
+        SecureStore.deleteItemAsync('kakao_expires_at'),
       ]);
 
       authLogger.info('Kakao logout successful');
@@ -94,25 +134,25 @@ class KakaoAuthService {
 
   async getCurrentUser(): Promise<KakaoUser | null> {
     try {
-      const accessToken = await secureStorage.getItem('kakao_access_token');
+      const accessToken = await SecureStore.getItemAsync('kakao_access_token');
 
       if (!accessToken) {
         authLogger.info('No Kakao access token found');
         return null;
       }
 
-      // 프로필 가져오기 (토큰이 유효하면 성공)
-      const profile = await getProfile();
+      // 토큰으로 프로필 가져오기
+      const userInfo = await this.getUserInfoFromToken(accessToken);
 
       authLogger.info('Kakao current user fetched', {
-        userId: profile.id,
+        userId: userInfo.id,
       });
 
       return {
-        id: profile.id,
-        email: profile.email || null,
-        name: profile.nickname || '카카오 사용자',
-        profileImage: profile.profileImageUrl || profile.thumbnailImageUrl || null,
+        id: userInfo.id,
+        email: userInfo.email || null,
+        name: userInfo.name || '카카오 사용자',
+        profileImage: userInfo.profileImage || null,
       };
     } catch (error) {
       authLogger.error('Failed to get current Kakao user', {
@@ -127,8 +167,8 @@ class KakaoAuthService {
 
   async getValidAccessToken(): Promise<string | null> {
     try {
-      const accessToken = await secureStorage.getItem('kakao_access_token');
-      const expiresAt = await secureStorage.getItem('kakao_expires_at');
+      const accessToken = await SecureStore.getItemAsync('kakao_access_token');
+      const expiresAt = await SecureStore.getItemAsync('kakao_expires_at');
 
       if (!accessToken) {
         return null;
@@ -156,18 +196,18 @@ class KakaoAuthService {
     expiresAt: Date | null;
   }): Promise<void> {
     const promises = [
-      secureStorage.setItem('kakao_access_token', tokens.accessToken),
+      SecureStore.setItemAsync('kakao_access_token', tokens.accessToken),
     ];
 
     if (tokens.refreshToken) {
       promises.push(
-        secureStorage.setItem('kakao_refresh_token', tokens.refreshToken)
+        SecureStore.setItemAsync('kakao_refresh_token', tokens.refreshToken)
       );
     }
 
     if (tokens.expiresAt) {
       promises.push(
-        secureStorage.setItem('kakao_expires_at', tokens.expiresAt.getTime().toString())
+        SecureStore.setItemAsync('kakao_expires_at', tokens.expiresAt.getTime().toString())
       );
     }
 

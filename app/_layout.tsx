@@ -8,6 +8,8 @@ import { useEffect } from 'react';
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import { initializeKakaoSDK } from '@react-native-kakao/core';
+import Constants from 'expo-constants';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { queryClient, restoreQueryClient } from '@/lib/query-client';
@@ -31,31 +33,49 @@ export default function RootLayout() {
   useEffect(() => {
     // Initialize enhanced systems
     const initializeApp = async () => {
-      configLogger.info('App initialization started', { 
-        loaded, 
-        colorScheme 
+      configLogger.info('App initialization started', {
+        loaded,
+        colorScheme
       });
-      
+
+      // Initialize Kakao SDK
+      try {
+        const kakaoNativeAppKey = Constants.expoConfig?.extra?.kakaoNativeAppKey;
+        if (kakaoNativeAppKey) {
+          configLogger.info('Initializing Kakao SDK', {
+            appKey: kakaoNativeAppKey.slice(0, 10) + '...'
+          });
+          await initializeKakaoSDK(kakaoNativeAppKey);
+          configLogger.info('Kakao SDK initialized successfully');
+        } else {
+          configLogger.warn('Kakao Native App Key not found in config');
+        }
+      } catch (error) {
+        configLogger.error('Kakao SDK initialization failed', {
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+
       // Initialize cache system with recovery
       try {
         configLogger.info('Initializing enhanced cache system');
-        
+
         // Recover incomplete transactions from previous sessions
         await CacheTransaction.recoverIncompleteTransactions();
-        
+
         // Initialize enhanced cache service (includes auto-recovery)
         await videoCacheService.getCacheStats(); // Triggers initialization
-        
+
         configLogger.info('Cache system initialized successfully');
       } catch (error) {
         configLogger.error('Cache initialization failed', {
           error: error instanceof Error ? error.message : String(error)
         });
       }
-      
+
       // Restore persisted queries
       restoreQueryClient();
-      
+
       if (loaded) {
         SplashScreen.hideAsync();
       }

@@ -84,7 +84,14 @@
       "Bash(npm run:*)",
       "Bash(dir:*)",
       "Bash(del test-number-format.js)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(eas build:list:*)",
+      "Bash(npx expo start:*)",
+      "Bash(ipconfig)",
+      "Bash(findstr:*)",
+      "Bash(netstat:*)"
     ],
     "deny": [],
     "ask": []
