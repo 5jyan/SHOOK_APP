@@ -826,9 +826,22 @@ export class EnhancedVideoCacheService {
 
       const hasChanged = changeTime > lastVideoSync;
 
+      // Safe date logging - check for valid timestamps first
+      const formatTimestamp = (ts: number): string => {
+        try {
+          // JavaScript Date can handle timestamps from -8,640,000,000,000,000 to 8,640,000,000,000,000 milliseconds
+          if (ts < -8640000000000000 || ts > 8640000000000000) {
+            return `Invalid timestamp: ${ts}`;
+          }
+          return new Date(ts).toISOString();
+        } catch {
+          return `Invalid date: ${ts}`;
+        }
+      };
+
       cacheLogger.debug('Channel change check', {
-        changeTime: new Date(changeTime).toISOString(),
-        lastVideoSync: new Date(lastVideoSync).toISOString(),
+        changeTime: formatTimestamp(changeTime),
+        lastVideoSync: formatTimestamp(lastVideoSync),
         hasChanged
       });
 
