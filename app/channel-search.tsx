@@ -7,6 +7,7 @@ import { serviceLogger } from '@/utils/logger-enhanced';
 import { formatChannelStats } from '@/utils/number-format';
 import { videoCacheService } from '@/services/video-cache-enhanced';
 import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -35,6 +36,7 @@ export default function ChannelSearchScreen() {
   const searchInputRef = React.useRef<TextInput>(null);
   const { user } = useAuthStore();
   const { channelCount, refreshChannels } = useChannels();
+  const queryClient = useQueryClient();
   const {
     searchTerm,
     setSearchTerm,
@@ -88,11 +90,46 @@ export default function ChannelSearchScreen() {
       const response = await apiService.addChannel(channel.channelId);
 
       if (response.success) {
-        serviceLogger.info('Channel added successfully', { channelTitle: channel.title });
+        serviceLogger.info('Channel added successfully', {
+          channelTitle: channel.title,
+          hasLatestVideo: !!response.data?.latestVideo,
+          videoId: response.data?.latestVideo?.videoId
+        });
 
-        // Signal cache that channel list has changed (triggers full sync on next video fetch)
-        await videoCacheService.signalChannelListChanged();
-        serviceLogger.debug('Cache notified of channel list change');
+        // Check if backend returned latest video (existing channel scenario)
+        if (response.data?.latestVideo) {
+          // Existing channel - add video to cache immediately
+          serviceLogger.info('Adding latest video to cache immediately', {
+            videoId: response.data.latestVideo.videoId,
+            channelTitle: channel.title
+          });
+
+          const currentCache = await videoCacheService.getCachedVideos();
+
+          // Log the video data we're about to add
+          serviceLogger.info('Video data received from backend', {
+            videoId: response.data.latestVideo.videoId,
+            title: response.data.latestVideo.title,
+            processed: response.data.latestVideo.processed,
+            hasSummary: !!response.data.latestVideo.summary,
+            summaryLength: response.data.latestVideo.summary?.length || 0,
+            processingStatus: response.data.latestVideo.processingStatus
+          });
+
+          const updatedCache = [response.data.latestVideo, ...currentCache];
+          await videoCacheService.saveVideosToCache(updatedCache);
+
+          // Invalidate TanStack Query cache to trigger re-render
+          queryClient.invalidateQueries({ queryKey: ['videoSummariesCached', user?.id] });
+
+          serviceLogger.info('Latest video added to cache and query invalidated', {
+            videoId: response.data.latestVideo.videoId
+          });
+        } else {
+          // New channel - video processing in background, signal full sync
+          serviceLogger.info('New channel added, signaling channel list change');
+          await videoCacheService.signalChannelListChanged();
+        }
 
         Alert.alert('성공', `${channel.title} 채널이 추가되었습니다.`);
         await refreshChannels();
@@ -148,40 +185,47 @@ export default function ChannelSearchScreen() {
     );
   };
 
-  const renderChannelItem = ({ item: channel }: { item: YoutubeChannel }) => (
-    <View style={styles.channelItem}>
-      <Image
-        source={{ uri: channel.thumbnail || 'https://via.placeholder.com/60/4285f4/ffffff?text=C' }}
-        style={styles.channelThumbnail}
-        resizeMode="cover"
-      />
-      <View style={styles.channelInfo}>
-        <Text style={styles.channelTitle} numberOfLines={1}>
-          {channel.title}
-        </Text>
-        <View style={styles.channelStats}>
-          {channel.subscriberCount && (
-            <Text style={styles.channelSubscribers}>
-              구독자 {formatChannelStats(channel.subscriberCount || 0, channel.videoCount || 0).subscribers}
-            </Text>
-          )}
-          {channel.videoCount && (
-            <Text style={styles.channelVideos}>
-              동영상 {formatChannelStats(channel.subscriberCount || 0, channel.videoCount || 0).videos}개
-            </Text>
-          )}
+  const renderChannelItem = ({ item: channel }: { item: YoutubeChannel }) => {
+    // Safety check for channel data
+    if (!channel || !channel.channelId) {
+      return null;
+    }
+
+    return (
+      <View style={styles.channelItem}>
+        <Image
+          source={{ uri: channel.thumbnail || 'https://via.placeholder.com/60/4285f4/ffffff?text=C' }}
+          style={styles.channelThumbnail}
+          resizeMode="cover"
+        />
+        <View style={styles.channelInfo}>
+          <Text style={styles.channelTitle} numberOfLines={1}>
+            {channel.title || 'Unknown Channel'}
+          </Text>
+          <View style={styles.channelStats}>
+            {channel.subscriberCount && (
+              <Text style={styles.channelSubscribers}>
+                구독자 {formatChannelStats(channel.subscriberCount || 0, channel.videoCount || 0).subscribers}
+              </Text>
+            )}
+            {channel.videoCount && (
+              <Text style={styles.channelVideos}>
+                동영상 {formatChannelStats(channel.subscriberCount || 0, channel.videoCount || 0).videos}개
+              </Text>
+            )}
+          </View>
         </View>
+        <TouchableOpacity
+          style={styles.heartButton}
+          onPress={() => handleAddChannel(channel)}
+          disabled={loadingChannelId !== null}
+          activeOpacity={0.6}
+        >
+          <AnimatedHeart isLoading={loadingChannelId === channel.channelId} />
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        style={styles.heartButton}
-        onPress={() => handleAddChannel(channel)}
-        disabled={loadingChannelId !== null}
-        activeOpacity={0.6}
-      >
-        <AnimatedHeart isLoading={loadingChannelId === channel.channelId} />
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <KeyboardAvoidingView 
