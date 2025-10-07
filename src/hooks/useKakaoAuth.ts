@@ -41,8 +41,8 @@ export function useKakaoAuth() {
         profileImage: user.profileImage,
       });
 
-      // 4. 채널 변경 플래그 초기화 (첫 로그인)
-      await AsyncStorage.setItem('channel_list_changed', 'false');
+      // 4. 채널 변경 플래그 초기화 (첫 로그인) - 제거하거나 타임스탬프 0으로 설정
+      await AsyncStorage.removeItem('channel_list_changed');
 
       // 5. 푸시 알림 초기화
       try {
