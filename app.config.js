@@ -8,10 +8,10 @@ const getApiUrl = () => {
   if (IS_LOCAL) {
     // 로컬 개발시는 여러 주소를 시도할 수 있도록 객체로 반환
     return {
-      android: 'http://10.0.2.2:3000',        // Android 에뮬레이터
-      ios: 'http://192.168.0.156:3000',       // iOS 시뮬레이터 (실제 IP)
-      web: 'http://localhost:3000',           // 웹
-      default: 'http://192.168.0.156:3000'    // 기본값 (실제 IP)
+      android: 'https://shook.work',        // Android 에뮬레이터
+      ios: 'https://shook.work',       // iOS 시뮬레이터 (실제 IP)
+      web: 'https://shook.work',           // 웹
+      default: 'https://shook.work'    // 기본값 (실제 IP)
     };
   }
   if (IS_DEV) {
@@ -80,12 +80,6 @@ export default {
         }
       ],
       [
-        "@react-native-google-signin/google-signin",
-        {
-          iosUrlScheme: "com.googleusercontent.apps.441727275663-eqkgdijbp2mfbnk8jfrqja6uo9ul0ecd"
-        }
-      ],
-      [
         "@react-native-kakao/core",
         {
           nativeAppKey: process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY,
@@ -101,9 +95,6 @@ export default {
     extra: {
       // 환경별 설정을 extra에 추가
       apiUrl: getApiUrl(),
-      googleClientIdIos: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
-      googleClientIdAndroid: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
-      googleClientIdWeb: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
       kakaoNativeAppKey: process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY,
       appScheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
       isLocal: IS_LOCAL,

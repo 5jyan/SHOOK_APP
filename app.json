@@ -20,14 +20,7 @@
       "statusBarStyle": "dark",
       "infoPlist": {
         "UIStatusBarStyle": "UIStatusBarStyleDarkContent",
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLName": "google",
-            "CFBundleURLSchemes": [
-              "com.shook.app"
-            ]
-          }
-        ]
+        "CFBundleURLTypes": []
       }
     },
     "android": {
@@ -84,12 +77,6 @@
         "expo-updates",
         {
           "username": "saulpark"
-        }
-      ],
-      [
-        "@react-native-google-signin/google-signin",
-        {
-          "iosUrlScheme": "com.googleusercontent.apps.441727275663-eqkgdijbp2mfbnk8jfrqja6uo9ul0ecd"
         }
       ]
     ],

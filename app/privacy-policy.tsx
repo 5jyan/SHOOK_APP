@@ -29,7 +29,7 @@ export default function PrivacyPolicyScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>2. 수집하는 개인정보</Text>
           <Text style={styles.text}>
-            Google 로그인을 통해 다음 정보를 수집합니다:
+            카카오 로그인을 통해 다음 정보를 수집합니다:
           </Text>
           <Text style={styles.subText}>
             • 이메일 주소{'\n'}
@@ -54,7 +54,7 @@ export default function PrivacyPolicyScreen() {
           <Text style={styles.subText}>
             • 이용자가 사전에 동의한 경우{'\n'}
             • 법령의 규정에 의한 경우{'\n'}
-            • 서비스 제공을 위해 필요한 경우 (Google, YouTube API)
+            • 서비스 제공을 위해 필요한 경우 (YouTube API)
           </Text>
         </View>
 
@@ -64,7 +64,7 @@ export default function PrivacyPolicyScreen() {
             서비스 운영을 위해 다음 업체에 개인정보 처리를 위탁합니다:
           </Text>
           <Text style={styles.subText}>
-            • Google (로그인 및 YouTube API){'\n'}
+            • 카카오 (소셜 로그인){'\n'}
             • 클라우드 서비스 제공업체 (데이터 저장)
           </Text>
         </View>

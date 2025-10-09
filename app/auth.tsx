@@ -25,7 +25,7 @@ export default function AuthScreen() {
         </View>
 
         <Pressable style={styles.button} onPress={handlePress}>
-          <Text style={styles.buttonText}>Google로 계속하기</Text>
+          <Text style={styles.buttonText}>카카오로 계속하기</Text>
         </Pressable>
 
         <View style={styles.termsContainer}>

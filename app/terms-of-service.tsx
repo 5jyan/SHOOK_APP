@@ -35,7 +35,7 @@ export default function TermsOfServiceScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>제3조 (회원가입)</Text>
           <Text style={styles.text}>
-            Google 계정을 통해 회원가입이 가능하며, 회원은 정확한 정보를 제공해야 합니다.
+            카카오 계정을 통해 회원가입이 가능하며, 회원은 정확한 정보를 제공해야 합니다.
           </Text>
         </View>
 

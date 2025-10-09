@@ -1,6 +1,5 @@
 import { TabHeader } from '@/components/AppHeader';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
-import { useGoogleAuth } from '@/hooks/useGoogleAuthTemp';
 import { useAuthStore } from '@/stores/auth-store';
 import { router } from 'expo-router';
 import React from 'react';
@@ -8,10 +7,11 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { uiLogger } from '@/utils/logger-enhanced';
 import { CacheManagementButton } from '@/components/CacheManagementButton';
+import { apiService } from '@/services/api';
 
 export default function SettingsScreen() {
-  const { user } = useAuthStore();
-  const { signOut, isLoading } = useGoogleAuth();
+  const { user, logout } = useAuthStore();
+  const [isLoading, setIsLoading] = React.useState(false);
   const tabBarHeight = useBottomTabOverflow();
 
   const handleLogout = () => {
@@ -24,8 +24,16 @@ export default function SettingsScreen() {
           text: '로그아웃',
           style: 'destructive',
           onPress: async () => {
-            await signOut();
-            router.replace('/auth-complex');
+            try {
+              setIsLoading(true);
+              await apiService.logout();
+              logout();
+              router.replace('/auth-complex');
+            } catch (error) {
+              console.error('Logout error:', error);
+            } finally {
+              setIsLoading(false);
+            }
           },
         },
       ]
@@ -127,7 +135,7 @@ export default function SettingsScreen() {
                 )}
                 <View style={styles.badgeContainer}>
                   <Text style={styles.badge}>
-                    Google 계정으로 로그인됨
+                    카카오 계정으로 로그인됨
                   </Text>
                   {user?.verified && (
                     <Text style={[styles.badge, styles.verifiedBadge]}>
@@ -136,8 +144,8 @@ export default function SettingsScreen() {
                   )}
                   {user?.role && (
                     <Text style={[styles.badge, styles.roleBadge]}>
-                      {user.role === 'user' ? '사용자' : 
-                       user.role === 'tester' ? '테스터' : 
+                      {user.role === 'user' ? '사용자' :
+                       user.role === 'tester' ? '테스터' :
                        user.role === 'manager' ? '관리자' : user.role}
                     </Text>
                   )}

@@ -43,21 +43,14 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-interface GoogleVerifyRequest {
-  token: string; // Google ID token
-}
-
-interface GoogleVerifyResponse {
+interface KakaoVerifyResponse {
   user: {
     id: number;
     username: string;
-    email: string;
-    googleId: string;
+    email: string | null;
+    kakaoId: string;
     authProvider: string;
     role: 'user' | 'tester' | 'manager';
-    slackUserId?: string;
-    slackChannelId?: string;
-    slackEmail?: string;
     createdAt: string;
   };
 }
@@ -188,21 +181,6 @@ class ApiService {
     }
   }
 
-  async verifyGoogleToken(token: string): Promise<ApiResponse<GoogleVerifyResponse>> {
-    return this.makeRequest<GoogleVerifyResponse>('/api/auth/google/verify', {
-      method: 'POST',
-      body: JSON.stringify({ token }),
-    });
-  }
-
-  // Temporary mobile login endpoint
-  async mobileLogin(email: string, username: string): Promise<ApiResponse<GoogleVerifyResponse>> {
-    return this.makeRequest<GoogleVerifyResponse>('/api/auth/google/mobile/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, username }),
-    });
-  }
-
   async verifyKakaoToken(accessToken: string): Promise<{
     id: number;
     email: string | null;
@@ -241,8 +219,8 @@ class ApiService {
     });
   }
 
-  async getCurrentUser(): Promise<ApiResponse<GoogleVerifyResponse['user']>> {
-    return this.makeRequest<GoogleVerifyResponse['user']>('/api/user');
+  async getCurrentUser(): Promise<ApiResponse<KakaoVerifyResponse['user']>> {
+    return this.makeRequest<KakaoVerifyResponse['user']>('/api/user');
   }
 
   // Get user's subscribed channels

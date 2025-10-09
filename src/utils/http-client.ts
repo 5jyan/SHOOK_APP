@@ -386,15 +386,8 @@ class HttpClient {
   }
 }
 
-// 싱글톤 인스턴스들
+// 싱글톤 인스턴스
 export const httpClient = new HttpClient();
-
-// Google API 전용 클라이언트 (더 상세한 로깅)
-export const googleApiClient = new HttpClient({
-  defaultHeaders: {
-    'Accept': 'application/json',
-  },
-});
 
 // 기본 내보내기
 export default httpClient;
