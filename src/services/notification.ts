@@ -465,37 +465,36 @@ export class NotificationService {
       const data = response.notification.request.content.data;
 
       try {
-        // Trigger full sync before navigation to ensure fresh data
-        if (data?.type === 'new_video_summary') {
-          notificationLogger.info('Triggering FULL SYNC before navigation (to avoid timestamp issues)');
-
-          // Import cache service dynamically
-          const { videoCacheService } = await import('./video-cache-enhanced');
-
-          // Force full sync by signaling channel list change
-          await videoCacheService.signalChannelListChanged();
-          notificationLogger.info('Channel list change signaled, next sync will be full');
-
-          // IMPORTANT: Wait for refetch to complete before navigating
-          await queryClient.refetchQueries({
-            queryKey: ['videoSummariesCached']
-          });
-
-          await queryClient.refetchQueries({
-            queryKey: ['videoSummaries']
-          });
-
-          notificationLogger.info('Full sync completed, cache should now have new video');
-        }
-
-        // If there's specific video data, navigate to detail screen
+        // Navigate immediately for instant user feedback
         if (data?.videoId) {
           notificationLogger.info('Navigating to summary detail for video', { videoId: data.videoId });
 
+          // Navigate first for instant feedback (don't block on data loading)
           router.push({
             pathname: '/summary-detail',
             params: { summaryId: data.videoId }
           });
+
+          // Then trigger incremental sync in background (no await - don't block navigation)
+          if (data?.type === 'new_video_summary') {
+            notificationLogger.info('Triggering background incremental sync after navigation');
+
+            // Background sync - no await, so navigation happens immediately
+            queryClient.refetchQueries({
+              queryKey: ['videoSummariesCached']
+            }).then(() => {
+              notificationLogger.info('Background sync completed - UI will auto-update');
+            }).catch((error) => {
+              notificationLogger.error('Background sync failed', {
+                error: error instanceof Error ? error.message : String(error)
+              });
+            });
+
+            // Also refetch regular cache for compatibility
+            queryClient.refetchQueries({
+              queryKey: ['videoSummaries']
+            });
+          }
         } else {
           notificationLogger.info('No videoId, navigating to summaries tab');
 
@@ -503,12 +502,16 @@ export class NotificationService {
           router.replace('/(tabs)/summaries');
         }
       } catch (error) {
-        notificationLogger.error('Error navigating to summary detail', { error: error instanceof Error ? error.message : String(error) });
+        notificationLogger.error('Error navigating to summary detail', {
+          error: error instanceof Error ? error.message : String(error)
+        });
         // Fallback: try to navigate to summaries tab
         try {
           router.replace('/(tabs)/summaries');
         } catch (fallbackError) {
-          notificationLogger.error('Fallback navigation also failed', { error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError) });
+          notificationLogger.error('Fallback navigation also failed', {
+            error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+          });
         }
       }
     });
