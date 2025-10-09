@@ -91,7 +91,8 @@
       "Bash(npx expo start:*)",
       "Bash(ipconfig)",
       "Bash(findstr:*)",
-      "Bash(netstat:*)"
+      "Bash(netstat:*)",
+      "Bash(eas:*)"
     ],
     "deny": [],
     "ask": []
