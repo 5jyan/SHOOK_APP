@@ -3,7 +3,7 @@
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
-const tintColorLight = '#0a7ea4';
+const tintColorLight = '#374151'; // 찐한 그레이 (Tailwind gray-700)
 const tintColorDark = '#fff';
 
 export const Colors = {
@@ -12,7 +12,7 @@ export const Colors = {
     background: '#fff',
     tint: tintColorLight,
     icon: '#687076',
-    tabIconDefault: '#687076',
+    tabIconDefault: '#9ca3af', // 비활성 탭 (Tailwind gray-400)
     tabIconSelected: tintColorLight,
   },
   dark: {

@@ -23,8 +23,24 @@ export default function TabLayout() {
             tabBarStyle: Platform.select({
               ios: {
                 position: 'absolute',
+                paddingBottom: 8,
+                height: 70,
+                borderTopWidth: 1,
+                borderTopColor: '#e5e7eb',
               },
-              default: {},
+              android: {
+                paddingBottom: 8,
+                height: 65,
+                paddingTop: 8,
+                borderTopWidth: 1,
+                borderTopColor: '#e5e7eb',
+              },
+              default: {
+                paddingBottom: 8,
+                height: 65,
+                borderTopWidth: 1,
+                borderTopColor: '#e5e7eb',
+              },
             }),
           }}>
           <Tabs.Screen
