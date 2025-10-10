@@ -87,9 +87,9 @@ const styles = StyleSheet.create({
     // Selected state handled by thumbnail border
   },
   thumbnailContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     borderWidth: 2,
     borderColor: 'transparent',
     overflow: 'hidden',
@@ -100,13 +100,13 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: '100%',
     height: '100%',
-    borderRadius: 28,
+    borderRadius: 25,
   },
   channelName: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: 11,
     color: '#6b7280',
-    maxWidth: 60,
+    maxWidth: 54,
     textAlign: 'center',
   },
   channelNameSelected: {
