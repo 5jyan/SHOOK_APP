@@ -14,7 +14,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     if (!isLoading) {
       if (!isAuthenticated) {
         uiLogger.info('User not authenticated, redirecting to auth');
-        router.replace('/auth-complex');
+        router.replace('/auth');
       } else {
         uiLogger.info('User authenticated, staying on protected route');
       }

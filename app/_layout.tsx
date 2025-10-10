@@ -104,13 +104,9 @@ export default function RootLayout() {
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
-            <Stack.Screen name="auth" options={{ 
+            <Stack.Screen name="auth" options={{
               headerShown: false,
-              presentation: 'modal' 
-            }} />
-            <Stack.Screen name="auth-complex" options={{ 
-              headerShown: false,
-              presentation: 'modal' 
+              presentation: 'modal'
             }} />
             <Stack.Screen name="+not-found" />
             <Stack.Screen name="summary-detail" options={{ headerShown: false }} />

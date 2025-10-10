@@ -28,7 +28,7 @@ export default function SettingsScreen() {
               setIsLoading(true);
               await apiService.logout();
               logout();
-              router.replace('/auth-complex');
+              router.replace('/auth');
             } catch (error) {
               console.error('Logout error:', error);
             } finally {
