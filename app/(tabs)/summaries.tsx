@@ -159,17 +159,8 @@ export default function SummariesScreen() {
     );
   }
 
-  if (summaries.length === 0) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <EmptyState
-          title="요약된 콘텐츠가 없습니다"
-          description="구독한 채널의 새 영상이 업로드되면 AI가 자동으로 요약해서 여기에 표시됩니다."
-          icon="doc.text"
-        />
-      </SafeAreaView>
-    );
-  }
+  // 전체 영상이 없는 경우 (채널 구독 전)
+  const hasNoVideosAtAll = videoSummaries.filter(video => video.processed && video.summary).length === 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -180,16 +171,30 @@ export default function SummariesScreen() {
         onChannelSelect={setSelectedChannelId}
       />
 
-      <FlatList
-        data={summaries}
-        renderItem={renderSummaryCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.listContainer, { paddingBottom: Math.max(16, tabBarHeight * 0.7) }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-      />
+      {summaries.length === 0 ? (
+        <View style={styles.emptyStateContainer}>
+          <EmptyState
+            title={hasNoVideosAtAll ? "요약된 콘텐츠가 없습니다" : "이 채널의 요약이 없습니다"}
+            description={
+              hasNoVideosAtAll
+                ? "구독한 채널의 새 영상이 업로드되면 AI가 자동으로 요약해서 여기에 표시됩니다."
+                : "선택한 채널에 아직 요약된 영상이 없습니다."
+            }
+            icon="doc.text"
+          />
+        </View>
+      ) : (
+        <FlatList
+          data={summaries}
+          renderItem={renderSummaryCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[styles.listContainer, { paddingBottom: Math.max(16, tabBarHeight * 0.7) }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -201,6 +206,11 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingTop: 0,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingContainer: {
     flex: 1,
