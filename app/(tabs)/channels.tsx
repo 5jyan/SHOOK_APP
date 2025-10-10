@@ -41,7 +41,7 @@ export default function ChannelsScreen() {
         title="나의 채널"
         rightComponent={
           <TouchableOpacity onPress={handleSearchPress} style={styles.addButton}>
-            <IconSymbol name="plus.circle.fill" size={28} color="#374151" />
+            <IconSymbol name="plus.circle.fill" size={24} color="#374151" />
           </TouchableOpacity>
         }
       />

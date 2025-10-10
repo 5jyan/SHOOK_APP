@@ -1,13 +1,13 @@
 import { TabHeader } from '@/components/AppHeader';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
+import { apiService } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
+import { uiLogger } from '@/utils/logger-enhanced';
 import { router } from 'expo-router';
 import React from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { uiLogger } from '@/utils/logger-enhanced';
-import { CacheManagementButton } from '@/components/CacheManagementButton';
-import { apiService } from '@/services/api';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuthStore();
@@ -45,8 +45,7 @@ export default function SettingsScreen() {
   };
 
   // Check if user has developer access (manager or tester)
-  // Temporarily allow all users to see developer tools for debugging
-  const hasDeveloperAccess = true; // user?.role === 'manager' || user?.role === 'tester';
+  const hasDeveloperAccess = user?.role === 'manager' || user?.role === 'tester';
   
   // Debug logging
   uiLogger.debug('[SettingsScreen] User debug info', {
@@ -63,14 +62,6 @@ export default function SettingsScreen() {
       description: '푸시 알림 및 알림 주기를 설정합니다',
       onPress: () => {
         router.push('/notification-settings');
-      },
-    },
-    {
-      title: '계정 정보',
-      description: '계정 정보를 확인하고 수정합니다',
-      onPress: () => {
-        // TODO: Navigate to account settings
-        Alert.alert('계정 정보', '계정 정보 기능은 곧 추가될 예정입니다.');
       },
     },
     {
@@ -93,7 +84,7 @@ export default function SettingsScreen() {
       onPress: () => {
         Alert.alert(
           'Shook 앱 정보',
-          `버전: 1.0.0\n개발자: 박사울 (Saul Park)\n문의: support@shookapp.com\n\n© 2025 Shook. All rights reserved.`,
+          `버전: 1.0.0\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2025 Shook. All rights reserved.`,
           [{ text: '확인' }]
         );
       },
@@ -109,51 +100,17 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TabHeader title="설정" />
-      
+      <TabHeader
+        title="설정"
+        rightComponent={
+          <TouchableOpacity onPress={handleLogout} disabled={isLoading} style={styles.logoutButton}>
+            <IconSymbol name="rectangle.portrait.and.arrow.right" size={24} color="#374151" />
+          </TouchableOpacity>
+        }
+      />
+
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(24, tabBarHeight * 0.7) }}>
         <View style={styles.content}>
-
-          {/* User Info */}
-          <View style={styles.userCard}>
-            <View style={styles.userInfo}>
-              {user?.picture && (
-                <Image 
-                  source={{ uri: user.picture }}
-                  style={styles.avatar}
-                  resizeMode="cover"
-                />
-              )}
-              <View style={styles.userDetails}>
-                <Text style={styles.username}>
-                  {user?.username || 'Unknown User'}
-                </Text>
-                {user?.email && (
-                  <Text style={styles.email}>
-                    {user.email}
-                  </Text>
-                )}
-                <View style={styles.badgeContainer}>
-                  <Text style={styles.badge}>
-                    카카오 계정으로 로그인됨
-                  </Text>
-                  {user?.verified && (
-                    <Text style={[styles.badge, styles.verifiedBadge]}>
-                      인증됨
-                    </Text>
-                  )}
-                  {user?.role && (
-                    <Text style={[styles.badge, styles.roleBadge]}>
-                      {user.role === 'user' ? '사용자' :
-                       user.role === 'tester' ? '테스터' :
-                       user.role === 'manager' ? '관리자' : user.role}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            </View>
-          </View>
-
           {/* Settings Items */}
           <View style={styles.settingsContainer}>
             {settingsItems.map((item, index) => (
@@ -186,22 +143,8 @@ export default function SettingsScreen() {
               </Pressable>
             )}
           </View>
-
-          {/* Logout Button */}
-          <Pressable
-            onPress={handleLogout}
-            disabled={isLoading}
-            style={[styles.logoutButton, isLoading && styles.disabledButton]}
-          >
-            <Text style={styles.logoutText}>
-              {isLoading ? '로그아웃 중...' : '로그아웃'}
-            </Text>
-          </Pressable>
         </View>
       </ScrollView>
-      
-      {/* Enhanced Cache Management Button (dev only) */}
-      <CacheManagementButton />
     </SafeAreaView>
   );
 }
@@ -217,59 +160,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingVertical: 24,
-  },
-  userCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginBottom: 24,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginRight: 16,
-  },
-  userDetails: {
-    flex: 1,
-  },
-  username: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  email: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
-  },
-  badgeContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  badge: {
-    fontSize: 12,
-    color: '#059669',
-    backgroundColor: '#d1fae5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  verifiedBadge: {
-    color: '#2563eb',
-    backgroundColor: '#dbeafe',
-  },
-  roleBadge: {
-    color: '#7c3aed',
-    backgroundColor: '#e9d5ff',
   },
   settingsContainer: {
     marginBottom: 24,
@@ -302,19 +192,5 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#f59e0b',
     backgroundColor: '#fffbeb',
-  },
-  logoutButton: {
-    backgroundColor: '#ef4444',
-    borderRadius: 12,
-    padding: 16,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  logoutText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
+  }
 });
