@@ -37,11 +37,11 @@ export default function ChannelsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TabHeader 
+      <TabHeader
         title="나의 채널"
         rightComponent={
-          <TouchableOpacity onPress={handleSearchPress} style={styles.searchButton}>
-            <IconSymbol name="magnifyingglass" size={24} color="#374151" />
+          <TouchableOpacity onPress={handleSearchPress} style={styles.addButton}>
+            <IconSymbol name="plus.circle.fill" size={28} color="#374151" />
           </TouchableOpacity>
         }
       />
@@ -62,8 +62,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  searchButton: {
+  addButton: {
     borderRadius: 8,
-    marginRight: 4
+    marginRight: 4,
   },
 });
