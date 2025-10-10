@@ -457,14 +457,18 @@ export class EnhancedVideoCacheService {
         if (!existing) {
           actuallyNewVideos.push(newVideo);
         } else {
-          // Check if the new version is more recent
-          const newCreated = new Date(newVideo.createdAt).getTime();
-          const existingCreated = new Date(existing.createdAt).getTime();
-          
-          if (newCreated > existingCreated) {
-            updatedVideos.push(newVideo);
-            cachedVideoMap.set(newVideo.videoId, newVideo); // Update in map
-          }
+          // Always update existing video - summary or other fields may have changed
+          updatedVideos.push(newVideo);
+          cachedVideoMap.set(newVideo.videoId, newVideo); // Update in map
+
+          cacheLogger.debug('Updating existing video', {
+            videoId: newVideo.videoId,
+            title: newVideo.title.substring(0, 30) + '...',
+            oldProcessed: existing.processed,
+            newProcessed: newVideo.processed,
+            oldHasSummary: !!existing.summary,
+            newHasSummary: !!newVideo.summary
+          });
         }
       }
       
