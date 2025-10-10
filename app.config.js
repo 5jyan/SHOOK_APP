@@ -26,12 +26,12 @@ export default {
     slug: "shook",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/icon.png",
+    icon: "./assets/images/Shook.png",
     scheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
     userInterfaceStyle: "light",
     newArchEnabled: true,
     splash: {
-      image: "./assets/images/splash.png",
+      image: "./assets/images/Shook.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
@@ -47,6 +47,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.shook.app",
+      usesNonExemptEncryption: false,
       infoPlist: {
         LSApplicationQueriesSchemes: ["kakaokompassauth", "kakaolink"],
         CFBundleURLTypes: [
@@ -59,7 +60,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/images/adaptive-icon.png",
+        foregroundImage: "./assets/images/Shook.png",
         backgroundColor: "#ffffff"
       },
       package: "com.shook.app"
