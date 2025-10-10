@@ -8,15 +8,16 @@ import { SummaryCardData, transformVideoSummaryToCardData, useVideoSummariesCach
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
 import { useIsFocused } from '@react-navigation/native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SummariesScreen() {
   uiLogger.debug('[SummariesScreen] Component mounting/re-rendering');
-  
+
   const isFocused = useIsFocused();
+  const params = useLocalSearchParams();
   const { user } = useAuthStore();
   const { channels } = useChannels(); // Get channel data from context
   const tabBarHeight = useBottomTabOverflow();
@@ -47,7 +48,17 @@ export default function SummariesScreen() {
 
   const [refreshing, setRefreshing] = React.useState(false);
   const [selectedChannelId, setSelectedChannelId] = React.useState<string | null>(null);
-  
+
+  // Set selected channel from navigation params
+  React.useEffect(() => {
+    if (params.channelId && typeof params.channelId === 'string') {
+      uiLogger.info('[SummariesScreen] Setting selected channel from params', {
+        channelId: params.channelId
+      });
+      setSelectedChannelId(params.channelId);
+    }
+  }, [params.channelId]);
+
   // Refetch when tab is focused
   React.useEffect(() => {
     if (isFocused) {

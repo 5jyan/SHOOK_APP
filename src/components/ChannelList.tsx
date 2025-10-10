@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { router } from 'expo-router';
 
 interface ChannelListProps {
   onChannelDeleted?: (channelId: string) => void;
@@ -87,6 +88,19 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
     });
   };
 
+  const handleChannelPress = (channel: UserChannel) => {
+    uiLogger.info('Channel card pressed, navigating to summaries tab', {
+      channelId: channel.youtubeChannel.channelId,
+      channelTitle: channel.youtubeChannel.title
+    });
+
+    // Navigate to summaries tab with channelId parameter
+    router.push({
+      pathname: '/(tabs)/summaries',
+      params: { channelId: channel.youtubeChannel.channelId }
+    });
+  };
+
   const renderChannelItem = ({ item }: { item: UserChannel }) => {
     // Safety check for item and required properties
     if (!item || !item.youtubeChannel) {
@@ -95,11 +109,22 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
     }
 
     return (
-      <View style={styles.channelItem}>
+      <Pressable
+        style={({ pressed }) => [
+          styles.channelItem,
+          pressed && styles.channelItemPressed
+        ]}
+        onPress={() => handleChannelPress(item)}
+        android_ripple={{ color: '#e5e7eb', borderless: false }}
+      >
         {/* 우측 상단 하트 버튼 */}
         <TouchableOpacity
           style={styles.heartButton}
-          onPress={() => handleUnsubscribeChannel(item)}
+          onPress={(e) => {
+            // Prevent parent Pressable from firing
+            e.stopPropagation();
+            handleUnsubscribeChannel(item);
+          }}
           disabled={deletingChannelId === item.youtubeChannel.channelId}
           activeOpacity={0.6}
         >
@@ -146,7 +171,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
             </Text>
           </View>
         </View>
-      </View>
+      </Pressable>
     );
   };
 
@@ -231,6 +256,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+  },
+  channelItemPressed: {
+    backgroundColor: '#f9fafb',
+    transform: [{ scale: 0.98 }],
+    opacity: 0.8,
   },
   channelContent: {
     flexDirection: 'row',
