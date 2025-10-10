@@ -1,6 +1,7 @@
 import { EmptyState } from '@/components/EmptyState';
 import { SummaryCard } from '@/components/SummaryCard';
 import { TabHeader } from '@/components/AppHeader';
+import { ChannelFilterBar } from '@/components/ChannelFilterBar';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useChannels } from '@/contexts/ChannelsContext';
 import { SummaryCardData, transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
@@ -43,8 +44,9 @@ export default function SummariesScreen() {
   
   // Log cache performance details
   uiLogger.debug('[SummariesScreen] Cache performance', queryState);
-  
+
   const [refreshing, setRefreshing] = React.useState(false);
+  const [selectedChannelId, setSelectedChannelId] = React.useState<string | null>(null);
   
   // Refetch when tab is focused
   React.useEffect(() => {
@@ -56,9 +58,19 @@ export default function SummariesScreen() {
   
   // Transform API data to match component interface
   const summaries: SummaryCardData[] = React.useMemo(() => {
-    const filtered = videoSummaries.filter(video => video.processed && video.summary);
+    let filtered = videoSummaries.filter(video => video.processed && video.summary);
+
+    // Filter by selected channel if one is selected
+    if (selectedChannelId) {
+      filtered = filtered.filter(video => video.channelId === selectedChannelId);
+      uiLogger.debug('[SummariesScreen] Filtered by channel', {
+        selectedChannelId,
+        filteredCount: filtered.length
+      });
+    }
+
     uiLogger.debug('[SummariesScreen] Filtered videos', { filteredCount: filtered.length });
-    
+
     if (filtered.length > 0) {
       uiLogger.debug('[SummariesScreen] Sample videos before sorting', {
         samples: filtered.slice(0, 3).map(v => ({
@@ -68,11 +80,11 @@ export default function SummariesScreen() {
         }))
       });
     }
-    
+
     const transformed = filtered.map(video => transformVideoSummaryToCardData(video, channels));
     // Sort by publishedAt (when video was uploaded to YouTube) to match the displayed date
     const sorted = transformed.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-    
+
     if (sorted.length > 0) {
       uiLogger.debug('[SummariesScreen] Sample videos after sorting', {
         samples: sorted.slice(0, 3).map(v => ({
@@ -82,9 +94,9 @@ export default function SummariesScreen() {
         }))
       });
     }
-    
+
     return sorted;
-  }, [videoSummaries, channels]);
+  }, [videoSummaries, channels, selectedChannelId]);
 
   const handleRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -162,7 +174,12 @@ export default function SummariesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <TabHeader title="요약 리스트" />
-      
+
+      <ChannelFilterBar
+        selectedChannelId={selectedChannelId}
+        onChannelSelect={setSelectedChannelId}
+      />
+
       <FlatList
         data={summaries}
         renderItem={renderSummaryCard}
