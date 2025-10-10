@@ -2,7 +2,7 @@ import { KakaoSignInButton } from '@/components/KakaoSignInButton';
 import { authLogger } from '../src/utils/logger-enhanced';
 import { router } from 'expo-router';
 import React from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View, Image } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View, Image, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AuthScreen() {
@@ -44,8 +44,12 @@ export default function AuthScreen() {
                 로그인하면 다음 약관에 동의한 것으로 간주됩니다
               </Text>
               <View style={styles.termsLinks}>
-                <Text style={styles.linkText}>이용약관</Text>
-                <Text style={styles.linkText}>개인정보처리방침</Text>
+                <Pressable onPress={() => router.push('/terms-of-service')}>
+                  <Text style={styles.linkText}>이용약관</Text>
+                </Pressable>
+                <Pressable onPress={() => router.push('/privacy-policy')}>
+                  <Text style={styles.linkText}>개인정보처리방침</Text>
+                </Pressable>
               </View>
             </View>
           </View>

@@ -1,7 +1,7 @@
+import { ModalHeader } from '@/components/AppHeader';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ModalHeader } from '@/components/AppHeader';
 
 export default function PrivacyPolicyScreen() {
   return (
@@ -10,7 +10,7 @@ export default function PrivacyPolicyScreen() {
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <View style={styles.metaInfo}>
-          <Text style={styles.metaText}>시행일: 2025년 1월 3일</Text>
+          <Text style={styles.metaText}>시행일: 2025년 10월 12일</Text>
         </View>
 
         <View style={styles.section}>
@@ -100,15 +100,31 @@ export default function PrivacyPolicyScreen() {
             개인정보 처리에 관한 업무를 총괄해서 책임지고, 개인정보 처리와 관련한 정보주체의 불만처리를 담당합니다.
           </Text>
           <Text style={styles.subText}>
-            연락처: 앱 내 설정 메뉴
+            • 서비스명: Shook{'\n'}
+            • 개발자: Saul Park{'\n'}
+            • 이메일: saulpark12@gmail.com{'\n'}
+            • 문의: 앱 내 설정 메뉴
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>9. 개인정보 침해 구제방법</Text>
+          <Text style={styles.text}>
+            개인정보 침해에 대한 신고나 상담이 필요하신 경우 아래 기관에 문의하실 수 있습니다:
+          </Text>
+          <Text style={styles.subText}>
+            • 개인정보 침해신고센터: (국번없이) 118{'\n'}
+            • 개인정보분쟁조정위원회: 1833-6972{'\n'}
+            • 대검찰청 사이버범죄수사단: 02-3480-3573{'\n'}
+            • 경찰청 사이버안전국: (국번없이) 182
           </Text>
         </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            개인정보 침해신고는 개인정보보호위원회(privacy.go.kr) 또는 개인정보 침해신고센터(privacy.go.kr/kor/nation/report)로 신고하실 수 있습니다.
+            본 개인정보처리방침은 2025년 1월 3일부터 적용됩니다.
           </Text>
-          <Text style={styles.copyright}>© 2025 Shook. All rights reserved.</Text>
+          <Text style={styles.copyright}>© 2025 Shook by Saul Park. All rights reserved.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
