@@ -465,36 +465,39 @@ export class NotificationService {
       const data = response.notification.request.content.data;
 
       try {
-        // Navigate immediately for instant user feedback
         if (data?.videoId) {
-          notificationLogger.info('Navigating to summary detail for video', { videoId: data.videoId });
+          notificationLogger.info('Handling notification tap for video', { videoId: data.videoId });
 
-          // Navigate first for instant feedback (don't block on data loading)
+          // For new video summaries, sync FIRST before navigation to ensure data is ready
+          if (data?.type === 'new_video_summary') {
+            notificationLogger.info('New video summary - syncing data before navigation');
+
+            try {
+              // Wait for incremental sync to complete before navigation
+              await queryClient.refetchQueries({
+                queryKey: ['videoSummariesCached']
+              });
+
+              // Also refetch regular cache for compatibility
+              await queryClient.refetchQueries({
+                queryKey: ['videoSummaries']
+              });
+
+              notificationLogger.info('Data sync completed successfully - now navigating');
+            } catch (syncError) {
+              notificationLogger.error('Data sync failed, but continuing to navigate', {
+                error: syncError instanceof Error ? syncError.message : String(syncError)
+              });
+              // Continue to navigate even if sync fails - page will show loading state
+            }
+          }
+
+          // Now navigate with data ready
+          notificationLogger.info('Navigating to summary detail', { videoId: data.videoId });
           router.push({
             pathname: '/summary-detail',
             params: { summaryId: data.videoId }
           });
-
-          // Then trigger incremental sync in background (no await - don't block navigation)
-          if (data?.type === 'new_video_summary') {
-            notificationLogger.info('Triggering background incremental sync after navigation');
-
-            // Background sync - no await, so navigation happens immediately
-            queryClient.refetchQueries({
-              queryKey: ['videoSummariesCached']
-            }).then(() => {
-              notificationLogger.info('Background sync completed - UI will auto-update');
-            }).catch((error) => {
-              notificationLogger.error('Background sync failed', {
-                error: error instanceof Error ? error.message : String(error)
-              });
-            });
-
-            // Also refetch regular cache for compatibility
-            queryClient.refetchQueries({
-              queryKey: ['videoSummaries']
-            });
-          }
         } else {
           notificationLogger.info('No videoId, navigating to summaries tab');
 
