@@ -92,7 +92,8 @@
       "Bash(ipconfig)",
       "Bash(findstr:*)",
       "Bash(netstat:*)",
-      "Bash(eas:*)"
+      "Bash(eas:*)",
+      "WebFetch(domain:developers.kakao.com)"
     ],
     "deny": [],
     "ask": []

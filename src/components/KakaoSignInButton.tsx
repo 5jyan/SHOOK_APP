@@ -39,18 +39,21 @@ export function KakaoSignInButton({
       <Pressable
         onPress={handleSignIn}
         disabled={isLoading}
-        style={[styles.button, isLoading && styles.buttonDisabled]}
+        style={({ pressed }) => [
+          styles.button,
+          isLoading && styles.buttonDisabled,
+          pressed && styles.buttonPressed
+        ]}
       >
-        <View style={styles.buttonContent}>
-          {!isLoading && (
-            <View style={styles.kakaoIcon}>
-              <Text style={styles.kakaoIconText}>K</Text>
-            </View>
-          )}
-          <Text style={styles.buttonText}>
-            {isLoading ? '로그인 중...' : '카카오로 계속하기'}
-          </Text>
-        </View>
+        {isLoading ? (
+          <Text style={styles.loadingText}>로그인 중...</Text>
+        ) : (
+          <Image
+            source={require('@/assets/images/kakao_login_medium_wide.png')}
+            style={styles.buttonImage}
+            resizeMode="contain"
+          />
+        )}
       </Pressable>
 
       {error && (
@@ -68,37 +71,29 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
-    backgroundColor: '#FEE500',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    height: 48, // 카카오 가이드: medium 버튼 높이
+    borderRadius: 12, // 카카오 가이드: 12px
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonDisabled: {
     opacity: 0.6,
   },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  buttonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
-  kakaoIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#3C1E1E',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+  buttonImage: {
+    width: '100%',
+    height: '100%',
   },
-  kakaoIconText: {
-    color: '#FEE500',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  buttonText: {
-    color: '#3C1E1E',
+  loadingText: {
+    color: '#000000',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
+    opacity: 0.85,
   },
   errorText: {
     color: '#ef4444',
