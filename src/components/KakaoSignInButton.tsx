@@ -49,7 +49,7 @@ export function KakaoSignInButton({
           <Text style={styles.loadingText}>로그인 중...</Text>
         ) : (
           <Image
-            source={require('@/assets/images/kakao_login_medium_wide.png')}
+            source={require('@/assets/images/kakao_login_high_resolution.png')}
             style={styles.buttonImage}
             resizeMode="contain"
           />
