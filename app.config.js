@@ -31,7 +31,7 @@ export default {
     userInterfaceStyle: "light",
     newArchEnabled: true,
     splash: {
-      image: "./assets/images/Shook.png",
+      image: "./assets/images/shook_256.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
@@ -48,6 +48,12 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.shook.app",
       usesNonExemptEncryption: false,
+      splash: {
+        image: "./assets/images/shook_256.png",
+        resizeMode: "contain",
+        backgroundColor: "#ffffff",
+        tabletImage: "./assets/images/shook_256.png"
+      },
       infoPlist: {
         LSApplicationQueriesSchemes: ["kakaokompassauth", "kakaolink"],
         CFBundleURLTypes: [
@@ -61,6 +67,11 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/images/Shook.png",
+        backgroundColor: "#ffffff"
+      },
+      splash: {
+        image: "./assets/images/shook_256.png",
+        resizeMode: "contain",
         backgroundColor: "#ffffff"
       },
       package: "com.shook.app"
