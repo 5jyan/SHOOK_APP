@@ -255,6 +255,13 @@ class ApiService {
     });
   }
 
+  async deleteAccount(): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    apiLogger.info('Deleting user account');
+    return this.makeRequest<{ success: boolean; message: string }>('/api/auth/account', {
+      method: 'DELETE',
+    });
+  }
+
   async getCurrentUser(): Promise<ApiResponse<KakaoVerifyResponse['user']>> {
     return this.makeRequest<KakaoVerifyResponse['user']>('/api/user');
   }

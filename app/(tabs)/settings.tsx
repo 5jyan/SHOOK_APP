@@ -44,6 +44,59 @@ export default function SettingsScreen() {
     router.push('/developer-tools');
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      '회원 탈퇴',
+      '정말 회원 탈퇴하시겠습니까?\n\n모든 데이터가 영구적으로 삭제되며, 복구할 수 없습니다.',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '탈퇴',
+          style: 'destructive',
+          onPress: () => {
+            // 2차 확인
+            Alert.alert(
+              '최종 확인',
+              '정말로 회원 탈퇴를 진행하시겠습니까?',
+              [
+                { text: '취소', style: 'cancel' },
+                {
+                  text: '확인',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      setIsLoading(true);
+                      const response = await apiService.deleteAccount();
+
+                      if (response.success) {
+                        Alert.alert('회원 탈퇴 완료', '회원 탈퇴가 완료되었습니다.', [
+                          {
+                            text: '확인',
+                            onPress: () => {
+                              logout();
+                              router.replace('/auth');
+                            },
+                          },
+                        ]);
+                      } else {
+                        Alert.alert('오류', response.error || '회원 탈퇴에 실패했습니다.');
+                      }
+                    } catch (error) {
+                      console.error('Account deletion error:', error);
+                      Alert.alert('오류', '회원 탈퇴 중 오류가 발생했습니다.');
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   // Check if user has developer access (manager or tester)
   const hasDeveloperAccess = user?.role === 'manager' || user?.role === 'tester';
   
@@ -142,6 +195,18 @@ export default function SettingsScreen() {
                 </Text>
               </Pressable>
             )}
+
+            {/* Account Deletion Button */}
+            <Pressable
+              onPress={handleDeleteAccount}
+              disabled={isLoading}
+              style={styles.settingItem}
+            >
+              <Text style={styles.settingTitle}>회원 탈퇴</Text>
+              <Text style={styles.settingDescription}>
+                모든 데이터가 영구적으로 삭제됩니다
+              </Text>
+            </Pressable>
           </View>
         </View>
       </ScrollView>
@@ -192,5 +257,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#f59e0b',
     backgroundColor: '#fffbeb',
-  }
+  },
+  logoutButton: {
+    padding: 4,
+  },
 });
