@@ -167,12 +167,18 @@ class ApiService {
         success: true,
       };
     } catch (error) {
-      apiLogger.error('API Request failed', {
-        endpoint,
-        method: options.method || 'GET',
-        error: error instanceof Error ? error.message : String(error),
-      });
-      
+      // 로그인 실패 같은 예상 가능한 에러는 로그를 출력하지 않음 (프로덕션에서 사용자에게 노출되면 안됨)
+      const isAuthError = endpoint.includes('/auth/') || endpoint.includes('/login');
+
+      if (!isAuthError) {
+        // 인증 관련이 아닌 예상치 못한 에러만 로그 출력
+        apiLogger.error('API Request failed', {
+          endpoint,
+          method: options.method || 'GET',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+
       return {
         data: {} as T,
         success: false,
@@ -208,6 +214,36 @@ class ApiService {
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Kakao token verification failed');
+    }
+
+    return response.data.user;
+  }
+
+  async loginWithEmail(username: string, password: string): Promise<{
+    id: number;
+    email: string | null;
+    username: string;
+    role: 'user' | 'tester' | 'manager';
+  }> {
+    apiLogger.info('Logging in with username/password');
+
+    const response = await this.makeRequest<{
+      user: {
+        id: number;
+        email: string | null;
+        username: string;
+        role: 'user' | 'tester' | 'manager';
+      }
+    }>(
+      '/api/auth/email/login',
+      {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      }
+    );
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || '로그인에 실패했습니다.');
     }
 
     return response.data.user;

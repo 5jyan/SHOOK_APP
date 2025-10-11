@@ -51,7 +51,7 @@ export function KakaoSignInButton({
           <Image
             source={require('@/assets/images/kakao_login_high_resolution.png')}
             style={styles.buttonImage}
-            resizeMode="contain"
+            resizeMode="cover"
           />
         )}
       </Pressable>
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   buttonImage: {
     width: '100%',
-    height: '100%',
+    height: 48, // 명시적으로 높이 고정
   },
   loadingText: {
     color: '#000000',

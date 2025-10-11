@@ -1,17 +1,46 @@
 import { KakaoSignInButton } from '@/components/KakaoSignInButton';
-import { authLogger } from '../src/utils/logger-enhanced';
+import { apiService } from '@/services/api';
+import { useAuthStore } from '@/stores/auth-store';
 import { router } from 'expo-router';
 import React from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View, Image, Pressable } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { authLogger } from '../src/utils/logger-enhanced';
 
 export default function AuthScreen() {
+  const [showEmailLogin, setShowEmailLogin] = React.useState(false);
+  const [username, setUsername] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const { login } = useAuthStore();
+
   const handleSuccess = () => {
     router.replace('/');
   };
 
   const handleError = (error: string) => {
     authLogger.error('Authentication error occurred', { error });
+  };
+
+  const handleEmailLogin = async () => {
+    if (!username || !password) {
+      Alert.alert('입력 오류', 'ID와 비밀번호를 입력해주세요.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const user = await apiService.loginWithEmail(username, password);
+      login(user);
+      router.replace('/');
+    } catch (error) {
+      Alert.alert(
+        '로그인 실패',
+        error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -34,10 +63,62 @@ export default function AuthScreen() {
           </View>
 
           <View style={styles.authSection}>
-            <KakaoSignInButton
-              onSuccess={handleSuccess}
-              onError={handleError}
-            />
+            {!showEmailLogin ? (
+              <>
+                <KakaoSignInButton
+                  onSuccess={handleSuccess}
+                  onError={handleError}
+                />
+
+                <Pressable
+                  style={styles.emailLoginButton}
+                  onPress={() => setShowEmailLogin(true)}
+                >
+                  <Text style={styles.emailLoginButtonText}>
+                    ID/PW로 로그인
+                  </Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <View style={styles.emailForm}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="ID"
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    autoComplete="username"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="비밀번호"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    autoComplete="password"
+                  />
+                  <Pressable
+                    style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                    onPress={handleEmailLogin}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <ActivityIndicator color="#ffffff" />
+                    ) : (
+                      <Text style={styles.loginButtonText}>로그인</Text>
+                    )}
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.backButton}
+                    onPress={() => setShowEmailLogin(false)}
+                  >
+                    <Text style={styles.backButtonText}>뒤로 가기</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
 
             <View style={styles.termsSection}>
               <Text style={styles.termsText}>
@@ -102,6 +183,61 @@ const styles = StyleSheet.create({
   },
   authSection: {
     gap: 24,
+  },
+  emailLoginButton: {
+    width: '100%',
+    height: 48, // 카카오 버튼과 동일한 높이
+    backgroundColor: '#ffffff',
+    borderRadius: 12, // 카카오 버튼과 동일한 radius
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  emailLoginButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  emailForm: {
+    gap: 12,
+  },
+  input: {
+    width: '100%',
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    backgroundColor: '#ffffff',
+  },
+  loginButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#3b82f6',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  loginButtonDisabled: {
+    opacity: 0.6,
+  },
+  loginButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  backButton: {
+    width: '100%',
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    fontSize: 14,
+    color: '#6b7280',
   },
   termsSection: {
     gap: 8,
