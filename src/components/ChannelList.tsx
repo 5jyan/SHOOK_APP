@@ -94,10 +94,13 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
       channelTitle: channel.youtubeChannel.title
     });
 
-    // Navigate to summaries tab with channelId parameter
+    // Navigate to summaries tab with channelId parameter and timestamp to force re-render
     router.push({
       pathname: '/(tabs)/summaries',
-      params: { channelId: channel.youtubeChannel.channelId }
+      params: {
+        channelId: channel.youtubeChannel.channelId,
+        _t: Date.now().toString() // Force navigation even if already on summaries tab
+      }
     });
   };
 

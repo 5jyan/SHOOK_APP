@@ -53,11 +53,12 @@ export default function SummariesScreen() {
   React.useEffect(() => {
     if (params.channelId && typeof params.channelId === 'string') {
       uiLogger.info('[SummariesScreen] Setting selected channel from params', {
-        channelId: params.channelId
+        channelId: params.channelId,
+        timestamp: params._t
       });
       setSelectedChannelId(params.channelId);
     }
-  }, [params.channelId]);
+  }, [params.channelId, params._t]);
 
   // Refetch when tab is focused
   React.useEffect(() => {
