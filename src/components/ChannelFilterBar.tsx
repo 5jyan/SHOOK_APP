@@ -10,6 +10,8 @@ interface ChannelFilterBarProps {
 
 export function ChannelFilterBar({ selectedChannelId, onChannelSelect }: ChannelFilterBarProps) {
   const { channels } = useChannels();
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const channelRefs = React.useRef<{ [key: string]: View | null }>({});
 
   const handleChannelPress = (channelId: string) => {
     // 이미 선택된 채널을 다시 클릭하면 선택 해제 (전체 보기)
@@ -20,6 +22,23 @@ export function ChannelFilterBar({ selectedChannelId, onChannelSelect }: Channel
     }
   };
 
+  // 선택된 채널이 변경되면 자동으로 스크롤
+  React.useEffect(() => {
+    if (selectedChannelId && channelRefs.current[selectedChannelId]) {
+      channelRefs.current[selectedChannelId]?.measureLayout(
+        scrollViewRef.current as any,
+        (x: number) => {
+          // 선택된 채널을 화면 중앙에 위치시키기
+          scrollViewRef.current?.scrollTo({
+            x: x - 100, // 왼쪽 여백을 두고 스크롤
+            animated: true,
+          });
+        },
+        () => {}
+      );
+    }
+  }, [selectedChannelId]);
+
   if (channels.length === 0) {
     return null;
   }
@@ -27,6 +46,7 @@ export function ChannelFilterBar({ selectedChannelId, onChannelSelect }: Channel
   return (
     <View style={styles.container}>
       <ScrollView
+        ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -36,31 +56,38 @@ export function ChannelFilterBar({ selectedChannelId, onChannelSelect }: Channel
           const isSelected = selectedChannelId === channel.youtubeChannel.channelId;
 
           return (
-            <TouchableOpacity
+            <View
               key={channel.youtubeChannel.channelId}
-              style={[
-                styles.channelButton,
-                isSelected && styles.channelButtonSelected
-              ]}
-              onPress={() => handleChannelPress(channel.youtubeChannel.channelId)}
+              ref={(ref) => {
+                channelRefs.current[channel.youtubeChannel.channelId] = ref;
+              }}
+              collapsable={false}
             >
-              <View style={[styles.thumbnailContainer, isSelected && styles.thumbnailSelected]}>
-                <Image
-                  source={{ uri: channel.youtubeChannel.thumbnail }}
-                  style={styles.thumbnail}
-                  contentFit="cover"
-                />
-              </View>
-              <Text
+              <TouchableOpacity
                 style={[
-                  styles.channelName,
-                  isSelected && styles.channelNameSelected
+                  styles.channelButton,
+                  isSelected && styles.channelButtonSelected
                 ]}
-                numberOfLines={1}
+                onPress={() => handleChannelPress(channel.youtubeChannel.channelId)}
               >
-                {channel.youtubeChannel.title}
-              </Text>
-            </TouchableOpacity>
+                <View style={[styles.thumbnailContainer, isSelected && styles.thumbnailSelected]}>
+                  <Image
+                    source={{ uri: channel.youtubeChannel.thumbnail }}
+                    style={styles.thumbnail}
+                    contentFit="cover"
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.channelName,
+                    isSelected && styles.channelNameSelected
+                  ]}
+                  numberOfLines={1}
+                >
+                  {channel.youtubeChannel.title}
+                </Text>
+              </TouchableOpacity>
+            </View>
           );
         })}
       </ScrollView>
