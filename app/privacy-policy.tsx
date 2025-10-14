@@ -10,7 +10,7 @@ export default function PrivacyPolicyScreen() {
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <View style={styles.metaInfo}>
-          <Text style={styles.metaText}>시행일: 2025년 10월 12일</Text>
+          <Text style={styles.metaText}>시행일: 2025년 10월 20일</Text>
         </View>
 
         <View style={styles.section}>

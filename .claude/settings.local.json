@@ -94,7 +94,9 @@
       "Bash(netstat:*)",
       "Bash(eas:*)",
       "WebFetch(domain:developers.kakao.com)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(curl http://localhost:3000/privacy-policy.html)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

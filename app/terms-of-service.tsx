@@ -10,7 +10,7 @@ export default function TermsOfServiceScreen() {
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <View style={styles.metaInfo}>
-          <Text style={styles.metaText}>시행일: 2025년 10월 12일</Text>
+          <Text style={styles.metaText}>시행일: 2025년 10월 20일</Text>
           <Text style={styles.metaText}>서비스 제공자: Saul Park</Text>
           <Text style={styles.metaText}>연락처: saulpark12@gmail.com</Text>
         </View>
