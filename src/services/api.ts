@@ -219,6 +219,34 @@ class ApiService {
     return response.data.user;
   }
 
+  async signup(username: string, password: string): Promise<{
+    id: number;
+    email: string | null;
+    username: string;
+    role: 'user' | 'tester' | 'manager';
+  }> {
+    apiLogger.info('Signing up new user', { username });
+
+    const response = await this.makeRequest<{
+      id: number;
+      email: string | null;
+      username: string;
+      role: 'user' | 'tester' | 'manager';
+    }>(
+      '/api/register',
+      {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      }
+    );
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || '회원가입에 실패했습니다.');
+    }
+
+    return response.data;
+  }
+
   async loginWithEmail(username: string, password: string): Promise<{
     id: number;
     email: string | null;

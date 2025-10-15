@@ -1,40 +1,60 @@
 import { apiService } from '@/services/api';
-import { useAuthStore } from '@/stores/auth-store';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authLogger } from '../src/utils/logger-enhanced';
 
-export default function AuthScreen() {
+export default function SignupScreen() {
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [passwordConfirm, setPasswordConfirm] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
-  const { login } = useAuthStore();
 
-  const handleSuccess = () => {
-    router.replace('/');
-  };
+  const handleSignup = async () => {
+    // 입력 검증
+    if (!username || !password || !passwordConfirm) {
+      Alert.alert('입력 오류', '모든 필드를 입력해주세요.');
+      return;
+    }
 
-  const handleError = (error: string) => {
-    authLogger.error('Authentication error occurred', { error });
-  };
+    if (username.length < 4) {
+      Alert.alert('입력 오류', 'ID는 4자 이상이어야 합니다.');
+      return;
+    }
 
-  const handleEmailLogin = async () => {
-    if (!username || !password) {
-      Alert.alert('입력 오류', 'ID와 비밀번호를 입력해주세요.');
+    if (password.length < 8) {
+      Alert.alert('입력 오류', '비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      Alert.alert('입력 오류', '비밀번호가 일치하지 않습니다.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const user = await apiService.loginWithEmail(username, password);
-      login(user);
-      router.replace('/');
-    } catch (error) {
+      authLogger.info('Starting signup process', { username });
+      const user = await apiService.signup(username, password);
+      authLogger.info('Signup successful', { userId: user.id });
+
+      // 회원가입 성공 시 로그인 화면으로 돌아가기
       Alert.alert(
-        '로그인 실패',
-        error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.'
+        '회원가입 완료',
+        '회원가입이 완료되었습니다. 로그인해주세요.',
+        [
+          {
+            text: '확인',
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    } catch (error) {
+      authLogger.error('Signup failed', { error: error instanceof Error ? error.message : String(error) });
+      Alert.alert(
+        '회원가입 실패',
+        error instanceof Error ? error.message : '회원가입 중 오류가 발생했습니다.'
       );
     } finally {
       setIsLoading(false);
@@ -42,11 +62,13 @@ export default function AuthScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
+    <>
+      <Stack.Screen options={{ title: '회원가입' }} />
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
         <View style={styles.content}>
           <View style={styles.header}>
             <Image
@@ -54,53 +76,66 @@ export default function AuthScreen() {
               style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={styles.title}>Shook</Text>
+            <Text style={styles.title}>회원가입</Text>
             <Text style={styles.subtitle}>
-              YouTube 채널을 모니터링하고{'\n'}새 영상을 알림으로 받아보세요
+              새 계정을 만들어 Shook을 시작하세요
             </Text>
           </View>
 
-          <View style={styles.authSection}>
-            <View style={styles.emailForm}>
+          <View style={styles.formSection}>
+            <View style={styles.form}>
               <TextInput
                 style={styles.input}
-                placeholder="ID"
+                placeholder="ID (4자 이상)"
                 value={username}
                 onChangeText={setUsername}
                 autoCapitalize="none"
                 autoComplete="username"
+                editable={!isLoading}
               />
               <TextInput
                 style={styles.input}
-                placeholder="비밀번호"
+                placeholder="비밀번호 (8자 이상)"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
-                autoComplete="password"
+                autoComplete="password-new"
+                editable={!isLoading}
               />
+              <TextInput
+                style={styles.input}
+                placeholder="비밀번호 확인"
+                value={passwordConfirm}
+                onChangeText={setPasswordConfirm}
+                secureTextEntry
+                autoComplete="password-new"
+                editable={!isLoading}
+              />
+
               <Pressable
-                style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-                onPress={handleEmailLogin}
+                style={[styles.signupButton, isLoading && styles.signupButtonDisabled]}
+                onPress={handleSignup}
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text style={styles.loginButtonText}>로그인</Text>
+                  <Text style={styles.signupButtonText}>회원가입</Text>
                 )}
               </Pressable>
 
               <Pressable
-                style={styles.signupButton}
-                onPress={() => router.push('/signup')}
+                style={styles.backButton}
+                onPress={() => router.back()}
+                disabled={isLoading}
               >
-                <Text style={styles.signupButtonText}>회원가입</Text>
+                <Text style={styles.backButtonText}>로그인으로 돌아가기</Text>
               </Pressable>
             </View>
 
             <View style={styles.termsSection}>
               <Text style={styles.termsText}>
-                로그인하면 다음 약관에 동의한 것으로 간주됩니다
+                회원가입하면 다음 약관에 동의한 것으로 간주됩니다
               </Text>
               <View style={styles.termsLinks}>
                 <Pressable onPress={() => router.push('/terms-of-service')}>
@@ -112,15 +147,10 @@ export default function AuthScreen() {
               </View>
             </View>
           </View>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              계정이 없으신가요? 회원가입 버튼을 눌러 새 계정을 만드세요
-            </Text>
-          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </>
   );
 }
 
@@ -159,25 +189,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
-  authSection: {
+  formSection: {
     gap: 24,
   },
-  signupButton: {
-    width: '100%',
-    height: 48,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#3b82f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  signupButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#3b82f6',
-  },
-  emailForm: {
+  form: {
     gap: 12,
   },
   input: {
@@ -190,7 +205,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#ffffff',
   },
-  loginButton: {
+  signupButton: {
     width: '100%',
     height: 48,
     backgroundColor: '#3b82f6',
@@ -199,13 +214,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
-  loginButtonDisabled: {
+  signupButtonDisabled: {
     opacity: 0.6,
   },
-  loginButtonText: {
+  signupButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#ffffff',
+  },
+  backButton: {
+    width: '100%',
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    fontSize: 14,
+    color: '#6b7280',
   },
   termsSection: {
     gap: 8,
@@ -224,13 +249,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#3b82f6',
     textDecorationLine: 'underline',
-  },
-  footer: {
-    marginTop: 48,
-  },
-  footerText: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: '#6b7280',
   },
 });
