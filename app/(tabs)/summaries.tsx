@@ -200,7 +200,10 @@ export default function SummariesScreen() {
           data={summaries}
           renderItem={renderSummaryCard}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.listContainer, { paddingBottom: Math.max(16, tabBarHeight * 0.7) }]}
+          contentContainerStyle={[
+            styles.listContainer,
+            { paddingBottom: Math.max(16, tabBarHeight * 0.7), flexGrow: 1 }
+          ]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
