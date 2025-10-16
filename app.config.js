@@ -45,7 +45,7 @@ export default {
       "**/*"
     ],
     ios: {
-      supportsTablet: true,
+      supportsTablet: false,
       bundleIdentifier: "com.shook.app",
       usesNonExemptEncryption: false,
       splash: {
