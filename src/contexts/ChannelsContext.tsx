@@ -45,12 +45,20 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
       }
       
       const response = await apiService.getUserChannels(userId);
-      
+
       if (response.success) {
         serviceLogger.info('[ChannelsContext] User channels fetched successfully', { channelCount: response.data?.length || 0 });
         serviceLogger.debug('[ChannelsContext] Channel data structure', { channels: response.data });
-        setChannels(response.data || []);
-        serviceLogger.debug('[ChannelsContext] Channels set to state', { count: response.data?.length || 0 });
+
+        // Sort channels by subscription date (oldest first)
+        const sortedChannels = (response.data || []).sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateA - dateB;
+        });
+
+        setChannels(sortedChannels);
+        serviceLogger.debug('[ChannelsContext] Channels sorted and set to state', { count: sortedChannels.length });
       } else {
         serviceLogger.error('[ChannelsContext] Failed to fetch user channels', { error: response.error });
         setError(response.error || 'Failed to fetch channels');
