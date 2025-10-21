@@ -8,11 +8,78 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+// TODO: 카카오 로그인 기능 추가 시 활성화
+// import { authLogger } from '@/utils/logger-enhanced';
+// import { ActivityIndicator } from 'react-native';
+// import { kakaoAuthService } from '@/services/kakao-auth';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuthStore();
   const [isLoading, setIsLoading] = React.useState(false);
   const tabBarHeight = useBottomTabOverflow();
+
+  // TODO: 카카오 로그인 기능 추가 시 활성화
+  // const { login } = useAuthStore();
+  // const [isConverting, setIsConverting] = React.useState(false);
+
+  // const handleConvertToKakao = async () => {
+  //   Alert.alert(
+  //     '카카오 계정으로 전환',
+  //     '게스트 계정을 카카오 계정으로 전환하시겠습니까?\n\n모든 구독 채널과 데이터가 유지됩니다.',
+  //     [
+  //       { text: '취소', style: 'cancel' },
+  //       {
+  //         text: '전환하기',
+  //         onPress: async () => {
+  //           try {
+  //             setIsConverting(true);
+  //             authLogger.info('Starting guest to Kakao conversion');
+
+  //             // Kakao login
+  //             const kakaoResult = await kakaoAuthService.signIn();
+  //             authLogger.info('Kakao login successful, converting account');
+
+  //             // Verify with backend and convert account
+  //             const backendUser = await apiService.verifyKakaoToken(
+  //               kakaoResult.accessToken,
+  //               true // convertGuestAccount = true
+  //             );
+
+  //             authLogger.info('Account conversion successful', {
+  //               userId: backendUser.id,
+  //               isGuest: backendUser.isGuest
+  //             });
+
+  //             // Update local auth state
+  //             login({
+  //               id: backendUser.id.toString(),
+  //               username: backendUser.username,
+  //               email: backendUser.email || undefined,
+  //               role: backendUser.role,
+  //               isGuest: backendUser.isGuest,
+  //             });
+
+  //             Alert.alert(
+  //               '전환 완료',
+  //               '카카오 계정으로 전환되었습니다!\n이제 카카오 계정으로 로그인할 수 있습니다.',
+  //               [{ text: '확인' }]
+  //             );
+  //           } catch (error) {
+  //             authLogger.error('Failed to convert guest account', {
+  //               error: error instanceof Error ? error.message : String(error)
+  //             });
+  //             Alert.alert(
+  //               '전환 실패',
+  //               '계정 전환 중 오류가 발생했습니다.\n다시 시도해주세요.'
+  //             );
+  //           } finally {
+  //             setIsConverting(false);
+  //           }
+  //         },
+  //       },
+  //     ]
+  //   );
+  // };
 
   const handleLogout = () => {
     Alert.alert(
@@ -156,14 +223,43 @@ export default function SettingsScreen() {
       <TabHeader
         title="설정"
         rightComponent={
-          <TouchableOpacity onPress={handleLogout} disabled={isLoading} style={styles.logoutButton}>
-            <IconSymbol name="rectangle.portrait.and.arrow.right" size={24} color="#374151" />
-          </TouchableOpacity>
+          // TODO: 카카오 로그인 기능 추가 시 활성화 (카카오 계정 사용자만 로그아웃 가능)
+          // {!user?.isGuest && (
+          //   <TouchableOpacity onPress={handleLogout} disabled={isLoading} style={styles.logoutButton}>
+          //     <IconSymbol name="rectangle.portrait.and.arrow.right" size={24} color="#374151" />
+          //   </TouchableOpacity>
+          // )}
+          undefined
         }
       />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(24, tabBarHeight * 0.7) }}>
         <View style={styles.content}>
+          {/* Guest Account Conversion (only for guest users) */}
+          {/* TODO: 카카오 로그인 기능 추가 시 활성화 */}
+          {/* {user?.isGuest && (
+            <View style={styles.guestBanner}>
+              <Text style={styles.guestBannerTitle}>게스트로 사용 중입니다</Text>
+              <Text style={styles.guestBannerText}>
+                카카오 계정으로 전환하면 다른 기기에서도 데이터를 동기화할 수 있습니다.
+              </Text>
+              <Pressable
+                onPress={handleConvertToKakao}
+                disabled={isConverting}
+                style={[styles.convertButton, isConverting && styles.convertButtonDisabled]}
+              >
+                {isConverting ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <>
+                    <IconSymbol name="person.fill" size={20} color="#ffffff" />
+                    <Text style={styles.convertButtonText}>카카오 계정으로 전환</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          )} */}
+
           {/* Settings Items */}
           <View style={styles.settingsContainer}>
             {settingsItems.map((item, index) => (
@@ -196,17 +292,20 @@ export default function SettingsScreen() {
               </Pressable>
             )}
 
-            {/* Account Deletion Button */}
-            <Pressable
-              onPress={handleDeleteAccount}
-              disabled={isLoading}
-              style={styles.settingItem}
-            >
-              <Text style={styles.settingTitle}>회원 탈퇴</Text>
-              <Text style={styles.settingDescription}>
-                모든 데이터가 영구적으로 삭제됩니다
-              </Text>
-            </Pressable>
+            {/* Account Deletion Button (only for non-guest users) */}
+            {/* TODO: 카카오 로그인 기능 추가 시 활성화 (카카오 계정 사용자만 회원탈퇴 가능) */}
+            {!user?.isGuest && (
+              <Pressable
+                onPress={handleDeleteAccount}
+                disabled={isLoading}
+                style={styles.settingItem}
+              >
+                <Text style={styles.settingTitle}>회원 탈퇴</Text>
+                <Text style={styles.settingDescription}>
+                  모든 데이터가 영구적으로 삭제됩니다
+                </Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -260,5 +359,43 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     padding: 4,
+  },
+  guestBanner: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#3b82f6',
+    padding: 16,
+    marginBottom: 24,
+  },
+  guestBannerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e40af',
+    marginBottom: 8,
+  },
+  guestBannerText: {
+    fontSize: 14,
+    color: '#3b82f6',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  convertButton: {
+    backgroundColor: '#3b82f6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  convertButtonDisabled: {
+    opacity: 0.6,
+  },
+  convertButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

@@ -187,14 +187,47 @@ class ApiService {
     }
   }
 
-  async verifyKakaoToken(accessToken: string): Promise<{
+  async createGuestAccount(deviceId: string): Promise<{
+    id: number;
+    email: string | null;
+    username: string;
+    role: 'user' | 'tester' | 'manager';
+    isGuest: boolean;
+  }> {
+    apiLogger.info('Creating guest account', { deviceId: deviceId.substring(0, 8) + '...' });
+
+    const response = await this.makeRequest<{
+      user: {
+        id: number;
+        email: string | null;
+        username: string;
+        role: 'user' | 'tester' | 'manager';
+        isGuest: boolean;
+      }
+    }>(
+      '/api/auth/guest',
+      {
+        method: 'POST',
+        body: JSON.stringify({ deviceId }),
+      }
+    );
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Guest account creation failed');
+    }
+
+    return response.data.user;
+  }
+
+  async verifyKakaoToken(accessToken: string, convertGuestAccount: boolean = false): Promise<{
     id: number;
     email: string | null;
     name: string;
     username: string;
     role: 'user' | 'tester' | 'manager';
+    isGuest: boolean;
   }> {
-    apiLogger.info('Verifying Kakao token with backend');
+    apiLogger.info('Verifying Kakao token with backend', { convertGuestAccount });
 
     const response = await this.makeRequest<{
       user: {
@@ -203,12 +236,13 @@ class ApiService {
         name: string;
         username: string;
         role: 'user' | 'tester' | 'manager';
+        isGuest: boolean;
       }
     }>(
       '/api/auth/kakao/verify',
       {
         method: 'POST',
-        body: JSON.stringify({ accessToken }),
+        body: JSON.stringify({ accessToken, convertGuestAccount }),
       }
     );
 

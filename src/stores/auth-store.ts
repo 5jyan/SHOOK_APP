@@ -14,6 +14,7 @@ interface User {
   givenName?: string;
   familyName?: string;
   verified?: boolean;
+  isGuest?: boolean;
 }
 
 interface AuthState {
