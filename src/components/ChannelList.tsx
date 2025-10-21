@@ -1,9 +1,11 @@
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useChannels } from '@/contexts/ChannelsContext';
 import { type UserChannel } from '@/services/api';
-import { useQueryClient } from '@tanstack/react-query';
-import React from 'react';
 import { uiLogger } from '@/utils/logger-enhanced';
 import { formatChannelStats } from '@/utils/number-format';
+import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import React from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,8 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { router } from 'expo-router';
 
 interface ChannelListProps {
   onChannelDeleted?: (channelId: string) => void;
@@ -203,7 +203,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyTitle}>구독 중인 채널이 없습니다</Text>
         <Text style={styles.emptyDescription}>
-          위의 검색 기능을 사용하여 YouTube 채널을 추가해보세요.
+          우측 상단의 추가 버튼을 사용하여 YouTube 채널을 추가해보세요.
         </Text>
       </View>
     );

@@ -1,7 +1,7 @@
-import { EmptyState } from '@/components/EmptyState';
-import { SummaryCard } from '@/components/SummaryCard';
 import { TabHeader } from '@/components/AppHeader';
 import { ChannelFilterBar } from '@/components/ChannelFilterBar';
+import { EmptyState } from '@/components/EmptyState';
+import { SummaryCard } from '@/components/SummaryCard';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useChannels } from '@/contexts/ChannelsContext';
 import { SummaryCardData, transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
@@ -189,7 +189,7 @@ export default function SummariesScreen() {
             title={hasNoVideosAtAll ? "요약된 콘텐츠가 없습니다" : "이 채널의 요약이 없습니다"}
             description={
               hasNoVideosAtAll
-                ? "구독한 채널의 새 영상이 업로드되면 AI가 자동으로 요약해서 여기에 표시됩니다."
+                ? "구독한 채널의 새 영상이 업로드되면 자동으로 요약해서 여기에 표시됩니다."
                 : "선택한 채널에 아직 요약된 영상이 없습니다."
             }
             icon="doc.text"
