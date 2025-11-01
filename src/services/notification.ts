@@ -468,35 +468,24 @@ export class NotificationService {
         if (data?.videoId) {
           notificationLogger.info('Handling notification tap for video', { videoId: data.videoId });
 
-          // For new video summaries, sync FIRST before navigation to ensure data is ready
-          if (data?.type === 'new_video_summary') {
-            notificationLogger.info('New video summary - syncing data before navigation');
+          // Trigger background refetch immediately
+          notificationLogger.info('Triggering background refetch for new video');
+          queryClient.refetchQueries({
+            queryKey: ['videoSummariesCached']
+          }).catch((error) => {
+            notificationLogger.error('Background refetch failed', {
+              error: error instanceof Error ? error.message : String(error)
+            });
+          });
 
-            try {
-              // Wait for incremental sync to complete before navigation
-              await queryClient.refetchQueries({
-                queryKey: ['videoSummariesCached']
-              });
-
-              // Also refetch regular cache for compatibility
-              await queryClient.refetchQueries({
-                queryKey: ['videoSummaries']
-              });
-
-              notificationLogger.info('Data sync completed successfully - now navigating');
-            } catch (syncError) {
-              notificationLogger.error('Data sync failed, but continuing to navigate', {
-                error: syncError instanceof Error ? syncError.message : String(syncError)
-              });
-              // Continue to navigate even if sync fails - page will show loading state
-            }
-          }
-
-          // Now navigate with data ready
+          // Navigate to detail page (will show loading screen until refetch completes)
           notificationLogger.info('Navigating to summary detail', { videoId: data.videoId });
           router.push({
             pathname: '/summary-detail',
-            params: { summaryId: data.videoId }
+            params: {
+              summaryId: data.videoId,
+              fromNotification: 'true'  // Flag to trigger polling
+            }
           });
         } else {
           notificationLogger.info('No videoId, navigating to summaries tab');

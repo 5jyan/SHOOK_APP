@@ -21,14 +21,48 @@ import { uiLogger } from '../src/utils/logger-enhanced';
 export default function SummaryDetailScreen() {
   const params = useLocalSearchParams();
   const videoId = params.summaryId as string;
-  
+  const fromNotification = params.fromNotification === 'true';
+
   const { data: videoSummaries = [], isLoading, error, refetch } = useVideoSummariesCached();
   const { channels } = useUserChannelsCached();
-  
+
   // Find the specific video by ID and transform it to get channel info
   const videoSummary = React.useMemo(() => {
     return videoSummaries.find(video => video.videoId === videoId);
   }, [videoSummaries, videoId]);
+
+  // Auto-refetch polling when from notification and summary not ready
+  React.useEffect(() => {
+    if (!fromNotification) return;
+    if (videoSummary?.summary && videoSummary?.processed) return;
+
+    uiLogger.info('Starting polling for video summary', { videoId });
+
+    // Poll every 2 seconds, max 15 times (30 seconds total)
+    let pollCount = 0;
+    const maxPolls = 15;
+
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+      uiLogger.debug('Polling for summary', { videoId, pollCount, maxPolls });
+
+      await refetch();
+
+      // Check if we got the summary
+      const updatedVideo = videoSummaries.find(v => v.videoId === videoId);
+      if (updatedVideo?.summary && updatedVideo?.processed) {
+        uiLogger.info('Summary loaded successfully', { videoId, pollCount });
+        clearInterval(pollInterval);
+      } else if (pollCount >= maxPolls) {
+        uiLogger.warn('Polling timeout - summary not ready', { videoId, pollCount });
+        clearInterval(pollInterval);
+      }
+    }, 2000);
+
+    return () => {
+      clearInterval(pollInterval);
+    };
+  }, [fromNotification, videoId, videoSummary?.summary, videoSummary?.processed, refetch, videoSummaries]);
   
   // Transform to get channel information using cached data (includes real thumbnails)
   const cardData = React.useMemo(() => {
@@ -71,8 +105,8 @@ export default function SummaryDetailScreen() {
     );
   }
 
-  // Show loading screen if no video summary found (data might still be loading)
-  if (!videoSummary) {
+  // Show loading screen if no video summary found or summary not ready yet
+  if (!videoSummary || !videoSummary.summary || !videoSummary.processed) {
     return (
       <SafeAreaView style={styles.container}>
         <ShookLoadingScreen message="요약을 불러오는 중..." />
