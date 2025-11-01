@@ -4,12 +4,14 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { initializeKakaoSDK } from '@react-native-kakao/core';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
+import { AppState, AppStateStatus } from 'react-native';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { queryClient, restoreQueryClient } from '@/lib/query-client';
@@ -29,6 +31,42 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+  const appState = useRef<AppStateStatus>(AppState.currentState);
+
+  // Auto-update on app foreground (background -> active)
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      try {
+        // Only check in production builds
+        if (!__DEV__) {
+          const update = await Updates.checkForUpdateAsync();
+          if (update.isAvailable) {
+            configLogger.info('Update available, downloading...');
+            await Updates.fetchUpdateAsync();
+            configLogger.info('Update downloaded, reloading app...');
+            await Updates.reloadAsync();
+          }
+        }
+      } catch (error) {
+        configLogger.error('Update check failed', {
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      // App moved from background to foreground
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        configLogger.info('App foregrounded, checking for updates');
+        checkForUpdates();
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     // Initialize enhanced systems
