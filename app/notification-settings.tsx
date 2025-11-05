@@ -60,9 +60,12 @@ export default function NotificationSettingsScreen() {
 
   const handleToggleNotifications = async (value: boolean) => {
     if (isLoading) return;
-    
+
+    // Optimistic UI: 즉시 상태 변경
+    const previousValue = isEnabled;
+    setIsEnabled(value);
     setIsLoading(true);
-    
+
     try {
       if (value) {
         // Enable notifications
@@ -75,6 +78,8 @@ export default function NotificationSettingsScreen() {
         }
 
         if (finalStatus !== 'granted') {
+          // 권한 거부 시 원복
+          setIsEnabled(false);
           Alert.alert(
             '알림 권한 필요',
             '새로운 영상 알림을 받으려면 알림 권한이 필요합니다.',
@@ -88,23 +93,26 @@ export default function NotificationSettingsScreen() {
 
         await notificationService.initialize();
         const success = await notificationService.forceRegister();
-        
+
         if (success) {
-          setIsEnabled(true);
           setPermissionStatus('granted');
         } else {
+          // 실패 시 원복
+          setIsEnabled(previousValue);
           Alert.alert('오류', '알림 설정에 실패했습니다.');
         }
       } else {
         // Disable notifications
-        const success = await notificationService.unregister();
-        if (success) {
-          setIsEnabled(false);
-        } else {
+        const success = await notificationService.unregisterWithBackend();
+        if (!success) {
+          // 실패 시 원복
+          setIsEnabled(previousValue);
           Alert.alert('오류', '알림 해제에 실패했습니다.');
         }
       }
     } catch (error) {
+      // 에러 시 원복
+      setIsEnabled(previousValue);
       notificationLogger.error('Toggle notifications error', {
         error: error instanceof Error ? error.message : String(error)
       });
