@@ -213,67 +213,44 @@ export class NotificationService {
       }
 
       // Get project ID from Constants (try different sources)
-      let projectId = Constants.expoConfig?.extra?.eas?.projectId ?? 
-                      Constants.easConfig?.projectId ??
-                      Constants.expoConfig?.extra?.projectId ??
-                      Constants.manifest2?.extra?.eas?.projectId;
-      
-      // Detailed logging for debugging
-      notificationLogger.debug('Project ID resolution debug', {
-        'Constants.expoConfig?.extra?.eas?.projectId': Constants.expoConfig?.extra?.eas?.projectId,
-        'Constants.easConfig?.projectId': Constants.easConfig?.projectId,
-        'Constants.expoConfig?.extra?.projectId': Constants.expoConfig?.extra?.projectId,
-        'Constants.manifest2?.extra?.eas?.projectId': Constants.manifest2?.extra?.eas?.projectId,
-        finalProjectId: projectId,
-        hasConstants: !!Constants,
-        hasExpoConfig: !!Constants.expoConfig,
-        hasExtra: !!Constants.expoConfig?.extra,
-        hasEas: !!Constants.expoConfig?.extra?.eas
-      });
-      
-      // For development, try to generate a token without project ID first
-      if (!projectId) {
-        notificationLogger.warn('No project ID found, trying without project ID for development');
-        
-        try {
-          // Try to get token without project ID (works in development)
-          const token = (await Notifications.getExpoPushTokenAsync()).data;
-          notificationLogger.info('Generated token without project ID', { tokenPreview: token.substring(0, 20) + '...' });
-          
-          // Cache the token
-          await AsyncStorage.setItem('expo_push_token', token);
-          return token;
-        } catch (devError) {
-          const devErrorMessage = devError instanceof Error ? devError.message : String(devError);
-          notificationLogger.error('Failed to get token without project ID', { error: devErrorMessage });
-          
-          // Don't create mock tokens - throw error to be handled by caller
-          throw new Error(`프로젝트 ID 없이 토큰 생성 실패: ${devErrorMessage}`);
-        }
-      }
+      // Fallback to hardcoded project ID for bare workflow (Android/iOS native builds)
+      const HARDCODED_PROJECT_ID = 'a8839540-39ec-431e-a346-bdfdff731ecd';
 
-      notificationLogger.info('Using project ID', { projectId });
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId ??
+                        Constants.easConfig?.projectId ??
+                        Constants.expoConfig?.extra?.projectId ??
+                        Constants.manifest2?.extra?.eas?.projectId ??
+                        HARDCODED_PROJECT_ID;
+
+      const usedFallback = projectId === HARDCODED_PROJECT_ID;
+
+      notificationLogger.info('Project ID resolved', {
+        projectId,
+        usedFallback,
+        platform: Platform.OS
+      });
 
       // Get the token with project ID
       const token = (await Notifications.getExpoPushTokenAsync({
         projectId,
       })).data;
 
-      notificationLogger.info('Generated new token', { tokenPreview: token.substring(0, 20) + '...' });
+      notificationLogger.info('Successfully generated push token', {
+        tokenPreview: token.substring(0, 20) + '...',
+        usedFallback
+      });
 
       // Cache the token
       await AsyncStorage.setItem('expo_push_token', token);
-      
+
       return token;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      notificationLogger.error('Failed to generate push token', { 
+      notificationLogger.error('Failed to generate push token', {
         error: errorMessage,
-        projectId,
-        hasProjectId: !!projectId 
+        platform: Platform.OS
       });
-      
-      // Don't create fallback tokens - throw error to be handled by caller
+
       throw new Error(`푸시 알림 토큰 생성에 실패했습니다: ${errorMessage}`);
     }
   }

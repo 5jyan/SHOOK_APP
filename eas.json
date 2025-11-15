@@ -8,7 +8,8 @@
       "developmentClient": true,
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
       },
       "channel": "development"
     },
@@ -23,6 +24,7 @@
       "android": {
         "buildType": "app-bundle"
       },
+      "autoIncrement": true,
       "channel": "production"
     }
   },

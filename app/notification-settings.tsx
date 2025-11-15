@@ -35,22 +35,31 @@ export default function NotificationSettingsScreen() {
   // Safe function to open system settings
   const openSystemSettings = async () => {
     try {
-      if (Notifications.openNotificationSettingsAsync) {
-        await Notifications.openNotificationSettingsAsync();
-        return;
-      }
-      
-      if (Notifications.openSettingsAsync) {
-        await Notifications.openSettingsAsync();
-        return;
-      }
-      
-      if (Platform.OS === 'ios') {
-        await Linking.openURL('app-settings:');
-      } else {
+      // Android: Use Linking.openSettings() directly
+      if (Platform.OS === 'android') {
         await Linking.openSettings();
+        return;
+      }
+
+      // iOS: Try Expo functions first, then fallback to Linking
+      if (Platform.OS === 'ios') {
+        // Try modern expo-notifications API (if available)
+        if (typeof Notifications.openNotificationSettingsAsync === 'function') {
+          try {
+            await Notifications.openNotificationSettingsAsync();
+            return;
+          } catch (iosError) {
+            notificationLogger.warn('openNotificationSettingsAsync failed, trying fallback');
+          }
+        }
+
+        // Fallback to app-settings URL scheme
+        await Linking.openURL('app-settings:');
       }
     } catch (error) {
+      notificationLogger.error('Failed to open system settings', {
+        error: error instanceof Error ? error.message : String(error)
+      });
       Alert.alert(
         '설정 열기 실패',
         '설정 > 알림 > Shook에서 알림을 허용해주세요.'

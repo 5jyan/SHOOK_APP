@@ -30,6 +30,7 @@ const MAPPING = {
   'heart.fill': 'favorite',
   'exclamationmark.triangle': 'warning',
   'square.and.arrow.up': 'share',
+  'plus.circle.fill': 'add-circle',
 } as IconMapping;
 
 /**

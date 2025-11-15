@@ -38,9 +38,7 @@ export default {
     updates: {
       url: "https://u.expo.dev/a8839540-39ec-431e-a346-bdfdff731ecd"
     },
-    runtimeVersion: {
-      policy: "appVersion"
-    },
+    runtimeVersion: "1.0.3",
     assetBundlePatterns: [
       "**/*"
     ],
