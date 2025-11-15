@@ -97,7 +97,8 @@ export default {
             handleKakaoOpenUrl: true
           }
         }
-      ]
+      ],
+      "./app.plugin.js"
     ],
     experiments: {
       typedRoutes: true
