@@ -25,7 +25,8 @@
         "buildType": "app-bundle"
       },
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "prebuildCommand": "npx expo prebuild --clean"
     }
   },
   "submit": {
