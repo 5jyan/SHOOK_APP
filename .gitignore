@@ -40,3 +40,6 @@ app-example
 
 # Local Netlify folder
 .netlify
+# Native folders (EAS will generate)
+android/
+ios/
