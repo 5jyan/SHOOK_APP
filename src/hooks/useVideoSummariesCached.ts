@@ -27,7 +27,7 @@ export const useVideoSummariesCached = () => {
     queryFn: async (): Promise<CacheAwareData> => {
       const timerId = serviceLogger.startTimer('hybrid-cache-strategy');
       serviceLogger.info('queryFn executing - hybrid cache strategy starting');
-      
+
       try {
         if (!user) {
           throw new Error('User not authenticated');
@@ -40,7 +40,7 @@ export const useVideoSummariesCached = () => {
         serviceLogger.debug('Step 1: Loading cached data');
         const cachedVideos = await videoCacheService.getCachedVideos();
         const cacheStats = await videoCacheService.getCacheStats();
-        
+
         serviceLogger.info('Cached data loaded', { videoCount: cachedVideos.length });
 
         // Step 2: Get last sync timestamp for incremental sync
@@ -148,14 +148,14 @@ export const useVideoSummariesCached = () => {
       } catch (error) {
         serviceLogger.endTimer(timerId, 'Hybrid sync failed');
         serviceLogger.error('Hybrid sync error', { error: error instanceof Error ? error.message : String(error) });
-        
+
         // Fallback: try to return cached data on error
         try {
           const fallbackVideos = await videoCacheService.getCachedVideos();
           const fallbackStats = await videoCacheService.getCacheStats();
-          
+
           serviceLogger.info('Using cached fallback', { videoCount: fallbackVideos.length });
-          
+
           return {
             videos: fallbackVideos,
             fromCache: true,
@@ -175,7 +175,7 @@ export const useVideoSummariesCached = () => {
     staleTime: 2 * 60 * 1000, // 2 minutes (reduced since we have local cache)
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: (query) => query.state.data === undefined, // Only refetch if no cached data exists
     retry: 2, // Reduced retries since we have fallback
     enabled: !!user,
   });

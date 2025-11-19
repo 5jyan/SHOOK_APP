@@ -59,14 +59,6 @@ export default function SummariesScreen() {
       setSelectedChannelId(params.channelId);
     }
   }, [params.channelId, params._t]);
-
-  // Refetch when tab is focused
-  React.useEffect(() => {
-    if (isFocused) {
-      uiLogger.info('[SummariesScreen] Tab focused - checking for new data');
-      refetch();
-    }
-  }, [isFocused, refetch]);
   
   // Transform API data to match component interface
   const summaries: SummaryCardData[] = React.useMemo(() => {
@@ -139,8 +131,8 @@ export default function SummariesScreen() {
     />
   );
 
-  // Show loading state
-  if (isLoading) {
+  // Show loading state only when there's no data at all (first load)
+  if (isLoading && videoSummaries.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
