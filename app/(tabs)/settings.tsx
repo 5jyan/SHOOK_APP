@@ -1,12 +1,11 @@
 import { TabHeader } from '@/components/AppHeader';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { apiService } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
 import { router } from 'expo-router';
 import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 // TODO: 카카오 로그인 기능 추가 시 활성화
 // import { authLogger } from '@/utils/logger-enhanced';
@@ -204,7 +203,7 @@ export default function SettingsScreen() {
       onPress: () => {
         Alert.alert(
           'Shook 앱 정보',
-          `버전: 1.0.0\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2025 Shook. All rights reserved.`,
+          `버전: 1.0.3\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2025 Shook. All rights reserved.`,
           [{ text: '확인' }]
         );
       },
