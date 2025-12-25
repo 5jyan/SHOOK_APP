@@ -1,15 +1,15 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+﻿import { AdvancedUIDebuggerButton } from '@/components/AdvancedUIDebuggerButton';
 import { ModalHeader } from '@/components/AppHeader';
 import { BackendTestButton } from '@/components/BackendTestButton';
-import { PushNotificationTestButton } from '@/components/PushNotificationTestButton';
 import { CacheStatsButton } from '@/components/CacheStatsButton';
-import { ManualMonitoringButton } from '@/components/ManualMonitoringButton';
-import { UIDebuggerButton } from '@/components/UIDebuggerButton';
-import { AdvancedUIDebuggerButton } from '@/components/AdvancedUIDebuggerButton';
-import { GlobalDebuggerButton } from '@/components/GlobalDebuggerButton';
 import { ForceCacheResetButton } from '@/components/ForceCacheResetButton';
+import { GlobalDebuggerButton } from '@/components/GlobalDebuggerButton';
+import { ManualMonitoringButton } from '@/components/ManualMonitoringButton';
+import { PushNotificationTestButton } from '@/components/PushNotificationTestButton';
+import { UIDebuggerButton } from '@/components/UIDebuggerButton';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DeveloperToolsScreen() {
   return (
@@ -19,7 +19,7 @@ export default function DeveloperToolsScreen() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <Text style={styles.description}>
-            개발 및 테스트를 위한 도구들입니다. 이 기능들은 앱의 내부 동작을 확인하고 디버깅하는 데 사용됩니다.
+            개발 및 테스트를 위한 도구들입니다. 이 기능들은 앱의 내부 동작을 확인하고 디버깅하는 데 사용됩니다.(v1.0.4)
           </Text>
 
           {/* Developer Tools Section */}
