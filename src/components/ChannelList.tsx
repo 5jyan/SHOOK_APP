@@ -151,12 +151,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
             <Text style={styles.channelTitle} numberOfLines={2}>
               {item.youtubeChannel.title || '제목 없음'}
             </Text>
-            {item.youtubeChannel.isActive === false ? (
-              <Text style={styles.inactiveChannelText}>
-                비활성화된 채널입니다
-              </Text>
-            ) : (
-              <View style={styles.channelStats}>
+            <View style={styles.channelStats}>
                 {item.youtubeChannel.subscriberCount && (
                   <Text style={styles.subscriberCount}>
                     구독자 {formatChannelStats(item.youtubeChannel.subscriberCount || 0, item.youtubeChannel.videoCount || 0).subscribers}
@@ -168,7 +163,6 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
                   </Text>
                 )}
               </View>
-            )}
             <Text style={styles.addedDate}>
               {item.createdAt ? formatDate(item.createdAt) : '날짜 없음'}에 추가됨
             </Text>
@@ -307,12 +301,6 @@ const styles = StyleSheet.create({
   videoCount: {
     fontSize: 13,
     color: '#9ca3af',
-  },
-  inactiveChannelText: {
-    fontSize: 13,
-    color: '#ef4444', // 빨간색
-    fontWeight: '600',
-    marginBottom: 2,
   },
   addedDate: {
     fontSize: 11,
