@@ -108,18 +108,12 @@ shook_app/
    
    `.env` 파일에 다음 값들을 설정:
    ```env
-   # Google OAuth 설정
-   EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS=your-ios-client-id.apps.googleusercontent.com
-   EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID=your-android-client-id.apps.googleusercontent.com
-   EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB=your-web-client-id.apps.googleusercontent.com
-   
-   # API 서버 URL
-   EXPO_PUBLIC_API_URL=http://192.168.0.156:3000
-   EXPO_PUBLIC_API_URL_PRODUCTION=https://your-api-domain.com
-   
-   # 앱 스키마
-   EXPO_PUBLIC_APP_SCHEME=com.shook.app
-   ```
+
+EXPO_PUBLIC_API_URL_PRODUCTION=https://your-api-domain.com
+
+# Kakao OAuth Configuration
+EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY=your-kakao-native-app-key
+```
 
 ### 개발 서버 실행
 

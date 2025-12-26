@@ -1,23 +1,18 @@
 import 'dotenv/config';
 
-const IS_DEV = process.env.NODE_ENV === 'development';
 const IS_LOCAL = process.env.EXPO_LOCAL === 'true';
 
-// 환경별 API URL 설정
+// API URL config
 const getApiUrl = () => {
   if (IS_LOCAL) {
-    // 로컬 개발시는 여러 주소를 시도할 수 있도록 객체로 반환
     return {
-      android: 'https://shook.work',        // Android 에뮬레이터
-      ios: 'https://shook.work',       // iOS 시뮬레이터 (실제 IP)
-      web: 'https://shook.work',           // 웹
-      default: 'https://shook.work'    // 기본값 (실제 IP)
+      android: 'http://10.0.2.2:3000',
+      ios: 'http://localhost:3000',
+      web: 'http://localhost:3000',
+      default: 'http://localhost:3000'
     };
   }
-  if (IS_DEV) {
-    return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-  }
-  return process.env.EXPO_PUBLIC_API_URL_PRODUCTION || 'http://ec2-54-180-95-35.ap-northeast-2.compute.amazonaws.com:3000';
+  return process.env.EXPO_PUBLIC_API_URL_PRODUCTION;
 };
 
 export default {
@@ -104,12 +99,10 @@ export default {
       typedRoutes: true
     },
     extra: {
-      // 환경별 설정을 extra에 추가
       apiUrl: getApiUrl(),
       kakaoNativeAppKey: process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY,
       appScheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
       isLocal: IS_LOCAL,
-      isDev: IS_DEV,
       eas: {
         projectId: "a8839540-39ec-431e-a346-bdfdff731ecd"
       }
