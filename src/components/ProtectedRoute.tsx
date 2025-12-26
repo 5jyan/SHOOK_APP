@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger, authLogger } from '@/utils/logger-enhanced';
 import { apiService } from '@/services/api';
@@ -55,8 +54,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           authLogger.error('Failed to create guest account', {
             error: error instanceof Error ? error.message : String(error)
           });
-          // Fallback: redirect to auth screen
-          router.replace('/auth');
         } finally {
           setIsInitializing(false);
         }

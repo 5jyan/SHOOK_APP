@@ -141,25 +141,21 @@ export default function RootLayout() {
         <ChannelsProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
-            <Stack.Screen name="auth" options={{
-              headerShown: false,
-              presentation: 'modal'
-            }} />
-            <Stack.Screen name="+not-found" />
-            <Stack.Screen name="summary-detail" options={{ headerShown: false }} />
-            <Stack.Screen 
-              name="channel-search" 
-              options={{ 
-                headerShown: false,
-                animation: 'slide_from_right',
-                animationDuration: 300
-              }} 
-            />
-            <Stack.Screen name="developer-tools" options={{ headerShown: false }} />
-            <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
-            <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
-            <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
+              <Stack.Screen name="+not-found" />
+              <Stack.Screen name="summary-detail" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="channel-search" 
+                options={{ 
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                  animationDuration: 300
+                }} 
+              />
+              <Stack.Screen name="developer-tools" options={{ headerShown: false }} />
+              <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
+              <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
+              <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
             </Stack>
             <StatusBar style="dark" />
             <FloatingDebugButton />

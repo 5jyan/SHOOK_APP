@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiService, type UserChannel } from '@/services/api';
+import { channelCacheService } from '@/services/channel-cache';
 import { useAuthStore } from '@/stores/auth-store';
 import { videoCacheService } from '@/services/video-cache';
 import { serviceLogger } from '@/utils/logger-enhanced';
@@ -25,12 +26,33 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
   const [channels, setChannels] = useState<UserChannel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadCachedChannels = useCallback(async (reason: string) => {
+    try {
+      const cachedChannels = await channelCacheService.getCachedChannels();
+      if (cachedChannels.length > 0) {
+        serviceLogger.info('[ChannelsContext] Using cached channels', {
+          reason,
+          channelCount: cachedChannels.length
+        });
+        setChannels(cachedChannels);
+        setError(null);
+        return true;
+      }
+
+      serviceLogger.warn('[ChannelsContext] No cached channels available', { reason });
+    } catch (cacheError) {
+      serviceLogger.error('[ChannelsContext] Failed to load cached channels', {
+        reason,
+        error: cacheError instanceof Error ? cacheError.message : String(cacheError)
+      });
+    }
+    return false;
+  }, []);
 
   const fetchChannels = useCallback(async () => {
     if (!user || !user.id) {
-      serviceLogger.info('No user or user ID available, skipping channel fetch');
-      setChannels([]);
-      setError(null);
+      serviceLogger.info('No user or user ID available, loading cached channels');
+      await loadCachedChannels('no-user');
       return;
     }
 
@@ -43,7 +65,9 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
       if (isNaN(userId)) {
         throw new Error('Invalid user ID format');
       }
-      
+
+      await channelCacheService.checkUserChanged(userId);
+
       const response = await apiService.getUserChannels(userId);
 
       if (response.success) {
@@ -59,19 +83,35 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
 
         setChannels(sortedChannels);
         serviceLogger.debug('[ChannelsContext] Channels sorted and set to state', { count: sortedChannels.length });
+
+        try {
+          await channelCacheService.saveChannelsToCache(sortedChannels);
+          serviceLogger.info('[ChannelsContext] Cached channels updated', { count: sortedChannels.length });
+        } catch (cacheError) {
+          serviceLogger.error('[ChannelsContext] Failed to update channel cache', {
+            error: cacheError instanceof Error ? cacheError.message : String(cacheError)
+          });
+        }
       } else {
         serviceLogger.error('[ChannelsContext] Failed to fetch user channels', { error: response.error });
-        setError(response.error || 'Failed to fetch channels');
-        setChannels([]);
+        const usedCache = await loadCachedChannels('fetch-failed');
+        if (!usedCache) {
+          setError(response.error || 'Failed to fetch channels');
+          setChannels([]);
+        }
       }
     } catch (err) {
       serviceLogger.error('[ChannelsContext] User channels fetch error', { error: err });
-      setError(err instanceof Error ? err.message : 'An error occurred while fetching channels');
-      setChannels([]);
+      const usedCache = await loadCachedChannels('fetch-error');
+      if (!usedCache) {
+        setError(err instanceof Error ? err.message : 'An error occurred while fetching channels');
+        setChannels([]);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [loadCachedChannels, user]);
+
 
   const refreshChannels = useCallback(async () => {
     serviceLogger.info('[ChannelsContext] Refreshing channels');

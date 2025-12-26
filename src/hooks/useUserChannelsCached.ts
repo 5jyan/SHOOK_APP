@@ -28,10 +28,14 @@ export function useUserChannelsCached() {
 
       try {
         if (!user) {
-          throw new Error('User not authenticated');
+          serviceLogger.warn('No authenticated user, using cached channels only');
+          const cachedChannels = await channelCacheService.getCachedChannels();
+          serviceLogger.endTimer(timerId, 'Channel cache strategy completed (no user)');
+          return cachedChannels;
         }
 
         const userId = parseInt(user.id);
+
         if (isNaN(userId)) {
           throw new Error('Invalid user ID format');
         }
@@ -149,7 +153,7 @@ export function useUserChannelsCached() {
     refetchOnReconnect: false,            // Don't refetch when reconnecting to internet
     retry: 1,                             // Only retry once on failure
     retryDelay: 1000,                     // Wait 1 second before retry
-    enabled: !!user,                      // Only run when user is authenticated
+    enabled: true,                      // Allow cached-only mode when user is missing
 
     // Enable background refetching for better UX
     refetchInterval: false,               // No automatic polling

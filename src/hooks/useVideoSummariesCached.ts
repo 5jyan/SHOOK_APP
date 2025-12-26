@@ -30,7 +30,22 @@ export const useVideoSummariesCached = () => {
 
       try {
         if (!user) {
-          throw new Error('User not authenticated');
+          serviceLogger.warn('No authenticated user, using cached video summaries only');
+          const cachedVideos = await videoCacheService.getCachedVideos();
+          const cacheStats = await videoCacheService.getCacheStats();
+
+          serviceLogger.endTimer(timerId, 'Hybrid sync completed (no user)');
+
+          return {
+            videos: cachedVideos,
+            fromCache: true,
+            lastSync: cacheStats.lastSync,
+            cacheStats: {
+              totalEntries: cacheStats.totalEntries,
+              cacheSize: cacheStats.cacheSize,
+              lastSync: cacheStats.lastSync,
+            }
+          };
         }
 
         // Check if user changed (clear cache if needed)
@@ -177,7 +192,7 @@ export const useVideoSummariesCached = () => {
     refetchOnWindowFocus: false,
     refetchOnMount: (query) => query.state.data === undefined, // Only refetch if no cached data exists
     retry: 2, // Reduced retries since we have fallback
-    enabled: !!user,
+    enabled: true,
   });
 
   // Update local state when query data changes

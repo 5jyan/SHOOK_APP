@@ -94,7 +94,7 @@ export default function SettingsScreen() {
               setIsLoading(true);
               await apiService.logout();
               logout();
-              router.replace('/auth');
+              router.replace('/');
             } catch (error) {
               console.error('Logout error:', error);
             } finally {
@@ -140,7 +140,7 @@ export default function SettingsScreen() {
                             text: '확인',
                             onPress: () => {
                               logout();
-                              router.replace('/auth');
+                              router.replace('/');
                             },
                           },
                         ]);
@@ -203,7 +203,7 @@ export default function SettingsScreen() {
       onPress: () => {
         Alert.alert(
           'Shook 앱 정보',
-          `버전: 1.0.4\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2025 Shook. All rights reserved.`,
+          `버전: 1.0.3\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2025 Shook. All rights reserved.`,
           [{ text: '확인' }]
         );
       },
