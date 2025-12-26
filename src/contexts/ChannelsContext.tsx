@@ -56,6 +56,7 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
       return;
     }
 
+    const hadCache = await loadCachedChannels('stale-while-revalidate');
     setIsLoading(true);
     setError(null);
 
@@ -94,16 +95,14 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
         }
       } else {
         serviceLogger.error('[ChannelsContext] Failed to fetch user channels', { error: response.error });
-        const usedCache = await loadCachedChannels('fetch-failed');
-        if (!usedCache) {
+        if (!hadCache) {
           setError(response.error || 'Failed to fetch channels');
           setChannels([]);
         }
       }
     } catch (err) {
       serviceLogger.error('[ChannelsContext] User channels fetch error', { error: err });
-      const usedCache = await loadCachedChannels('fetch-error');
-      if (!usedCache) {
+      if (!hadCache) {
         setError(err instanceof Error ? err.message : 'An error occurred while fetching channels');
         setChannels([]);
       }
@@ -126,8 +125,16 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
       if (response.success) {
         serviceLogger.info('[ChannelsContext] Channel deleted successfully');
         
-        // Update local state immediately
-        setChannels(prev => prev.filter(ch => ch.youtubeChannel.channelId !== channelId));
+        // Update local state immediately and keep cache in sync
+        setChannels(prev => {
+          const updated = prev.filter(ch => ch.youtubeChannel.channelId !== channelId);
+          channelCacheService.saveChannelsToCache(updated).catch((cacheError) => {
+            serviceLogger.error('[ChannelsContext] Failed to update channel cache after deletion', {
+              error: cacheError instanceof Error ? cacheError.message : String(cacheError)
+            });
+          });
+          return updated;
+        });
         
         // Remove related video summaries from cache
         serviceLogger.info('[ChannelsContext] Removing related video summaries from cache', { channelId });
@@ -139,6 +146,11 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
           // Don't fail the channel deletion if cache cleanup fails
         }
         
+        refreshChannels().catch((refreshError) => {
+          serviceLogger.error('[ChannelsContext] Failed to refresh channels after deletion', {
+            error: refreshError instanceof Error ? refreshError.message : String(refreshError)
+          });
+        });
         return true;
       } else {
         serviceLogger.error('[ChannelsContext] Failed to delete channel', { channelId, error: response.error });
