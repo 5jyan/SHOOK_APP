@@ -30,6 +30,7 @@ export default function SummariesScreen() {
     error, 
     refetch,
     cacheData,
+    cachePrimed,
     queryState,
     removeChannelVideos 
   } = useVideoSummariesCached();
@@ -38,6 +39,7 @@ export default function SummariesScreen() {
     videoSummariesCount: videoSummaries.length,
     isLoading,
     error: error?.message || null,
+    cachePrimed,
     fromCache: cacheData?.fromCache,
     cacheStats: cacheData?.cacheStats,
     lastSync: cacheData?.lastSync ? new Date(cacheData.lastSync).toISOString() : null
@@ -131,8 +133,10 @@ export default function SummariesScreen() {
     />
   );
 
-  // Show loading state only when there's no data at all (first load)
-  if (isLoading && videoSummaries.length === 0) {
+  const hasCachedSummaries = (cacheData?.videos?.length ?? 0) > 0;
+
+  // Show loading state only when there's no cached data to render
+  if (isLoading && videoSummaries.length === 0 && !hasCachedSummaries) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>

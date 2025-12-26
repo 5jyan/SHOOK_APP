@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { apiService, VideoSummary, UserChannel } from '@/services/api';
 import { videoCacheService } from '@/services/video-cache';
@@ -16,14 +16,31 @@ interface CacheAwareData {
   };
 }
 
+const toCacheAwareData = (
+  videos: VideoSummary[],
+  cacheStats: { totalEntries: number; cacheSize: number; lastSync: number }
+): CacheAwareData => ({
+  videos,
+  fromCache: true,
+  lastSync: cacheStats.lastSync,
+  cacheStats: {
+    totalEntries: cacheStats.totalEntries,
+    cacheSize: cacheStats.cacheSize,
+    lastSync: cacheStats.lastSync,
+  }
+});
+
 export const useVideoSummariesCached = () => {
   const { user } = useAuthStore();
   const [cacheData, setCacheData] = useState<CacheAwareData | null>(null);
+  const [cachePrimed, setCachePrimed] = useState(false);
+  const queryClient = useQueryClient();
+  const queryKey = ['videoSummariesCached', user?.id] as const;
   
   serviceLogger.debug('useVideoSummariesCached hook called');
   
   const query = useQuery({
-    queryKey: ['videoSummariesCached', user?.id],
+    queryKey,
     queryFn: async (): Promise<CacheAwareData> => {
       const timerId = serviceLogger.startTimer('hybrid-cache-strategy');
       serviceLogger.info('queryFn executing - hybrid cache strategy starting');
@@ -36,16 +53,7 @@ export const useVideoSummariesCached = () => {
 
           serviceLogger.endTimer(timerId, 'Hybrid sync completed (no user)');
 
-          return {
-            videos: cachedVideos,
-            fromCache: true,
-            lastSync: cacheStats.lastSync,
-            cacheStats: {
-              totalEntries: cacheStats.totalEntries,
-              cacheSize: cacheStats.cacheSize,
-              lastSync: cacheStats.lastSync,
-            }
-          };
+          return toCacheAwareData(cachedVideos, cacheStats);
         }
 
         // Check if user changed (clear cache if needed)
@@ -171,16 +179,7 @@ export const useVideoSummariesCached = () => {
 
           serviceLogger.info('Using cached fallback', { videoCount: fallbackVideos.length });
 
-          return {
-            videos: fallbackVideos,
-            fromCache: true,
-            lastSync: fallbackStats.lastSync,
-            cacheStats: {
-              totalEntries: fallbackStats.totalEntries,
-              cacheSize: fallbackStats.cacheSize,
-              lastSync: fallbackStats.lastSync,
-            }
-          };
+          return toCacheAwareData(fallbackVideos, fallbackStats);
         } catch (fallbackError) {
           serviceLogger.error('Fallback also failed', { error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError) });
           throw error; // Re-throw original error
@@ -190,10 +189,61 @@ export const useVideoSummariesCached = () => {
     staleTime: 2 * 60 * 1000, // 2 minutes (reduced since we have local cache)
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
-    refetchOnMount: (query) => query.state.data === undefined, // Only refetch if no cached data exists
+    refetchOnMount: true, // Always revalidate on mount (SWR)
     retry: 2, // Reduced retries since we have fallback
     enabled: true,
   });
+
+  useEffect(() => {
+    setCacheData(null);
+    setCachePrimed(false);
+  }, [user?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const primeCache = async () => {
+      if (query.data) {
+        if (!cancelled) {
+          setCachePrimed(true);
+        }
+        return;
+      }
+
+      try {
+        const cachedVideos = await videoCacheService.getCachedVideos();
+        if (cachedVideos.length === 0) {
+          if (!cancelled) {
+            setCachePrimed(true);
+          }
+          return;
+        }
+
+        const cacheStats = await videoCacheService.getCacheStats();
+        if (cancelled) {
+          return;
+        }
+
+        const primedData = toCacheAwareData(cachedVideos, cacheStats);
+        queryClient.setQueryData(['videoSummariesCached', user?.id], primedData);
+        setCacheData(primedData);
+        setCachePrimed(true);
+      } catch (error) {
+        serviceLogger.error('Failed to prime video summaries cache', {
+          error: error instanceof Error ? error.message : String(error)
+        });
+        if (!cancelled) {
+          setCachePrimed(true);
+        }
+      }
+    };
+
+    primeCache();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [query.data, queryClient, user?.id]);
 
   // Update local state when query data changes
   useEffect(() => {
@@ -203,17 +253,18 @@ export const useVideoSummariesCached = () => {
     }
   }, [query.data, cacheData]);
   
+  const effectiveCacheData = query.data ?? cacheData;
   const queryState = {
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     isError: query.isError,
     error: query.error?.message,
-    dataLength: query.data?.videos.length || 0,
+    dataLength: effectiveCacheData?.videos.length || 0,
     status: query.status,
     fetchStatus: query.fetchStatus,
-    fromCache: query.data?.fromCache || false,
-    cacheStats: query.data?.cacheStats,
-    lastSync: query.data?.lastSync ? new Date(query.data.lastSync).toISOString() : null,
+    fromCache: effectiveCacheData?.fromCache || false,
+    cacheStats: effectiveCacheData?.cacheStats,
+    lastSync: effectiveCacheData?.lastSync ? new Date(effectiveCacheData.lastSync).toISOString() : null,
   };
 
   serviceLogger.debug('Query state', queryState);
@@ -239,8 +290,9 @@ export const useVideoSummariesCached = () => {
   
   return {
     ...query,
-    data: query.data?.videos || [],
-    cacheData: query.data,
+    data: effectiveCacheData?.videos || [],
+    cacheData: effectiveCacheData,
+    cachePrimed,
     queryState,
     removeChannelVideos, // Export the function
   };
