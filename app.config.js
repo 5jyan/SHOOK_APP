@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-const IS_LOCAL = process.env.EXPO_LOCAL === 'true';
+const IS_LOCAL = process.env.EXPO_LOCAL === 'false';
 
 // API URL config
 const getApiUrl = () => {
