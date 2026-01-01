@@ -1,84 +1,73 @@
 ﻿import { TabHeader } from '@/components/AppHeader';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { apiService } from '@/services/api';
+import { kakaoAuthService } from '@/services/kakao-auth';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// TODO: 카카오 로그인 기능 추가 시 활성화
-// import { authLogger } from '@/utils/logger-enhanced';
-// import { ActivityIndicator } from 'react-native';
-// import { kakaoAuthService } from '@/services/kakao-auth';
 
 export default function SettingsScreen() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, login } = useAuthStore();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isLinkingKakao, setIsLinkingKakao] = React.useState(false);
   const tabBarHeight = useBottomTabOverflow();
 
-  // TODO: 카카오 로그인 기능 추가 시 활성화
-  // const { login } = useAuthStore();
-  // const [isConverting, setIsConverting] = React.useState(false);
 
-  // const handleConvertToKakao = async () => {
-  //   Alert.alert(
-  //     '카카오 계정으로 전환',
-  //     '게스트 계정을 카카오 계정으로 전환하시겠습니까?\n\n모든 구독 채널과 데이터가 유지됩니다.',
-  //     [
-  //       { text: '취소', style: 'cancel' },
-  //       {
-  //         text: '전환하기',
-  //         onPress: async () => {
-  //           try {
-  //             setIsConverting(true);
-  //             authLogger.info('Starting guest to Kakao conversion');
+  const handleLinkKakaoAccount = () => {
+    Alert.alert(
+      '카카오 계정 연동',
+      '게스트 계정을 카카오 계정으로 연동하시겠습니까?\n\n모든 구독 채널과 데이터가 유지됩니다.',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '연동하기',
+          onPress: async () => {
+            try {
+              setIsLinkingKakao(true);
+              uiLogger.info('[SettingsScreen] Starting guest to Kakao link');
 
-  //             // Kakao login
-  //             const kakaoResult = await kakaoAuthService.signIn();
-  //             authLogger.info('Kakao login successful, converting account');
+              const kakaoResult = await kakaoAuthService.signIn();
+              const backendUser = await apiService.verifyKakaoToken(
+                kakaoResult.accessToken,
+                true
+              );
 
-  //             // Verify with backend and convert account
-  //             const backendUser = await apiService.verifyKakaoToken(
-  //               kakaoResult.accessToken,
-  //               true // convertGuestAccount = true
-  //             );
+              login({
+                id: backendUser.id.toString(),
+                username: backendUser.username || backendUser.name || kakaoResult.user.name,
+                email: backendUser.email || kakaoResult.user.email || undefined,
+                role: backendUser.role,
+                isGuest: backendUser.isGuest,
+                picture: kakaoResult.user.profileImage || undefined,
+              });
 
-  //             authLogger.info('Account conversion successful', {
-  //               userId: backendUser.id,
-  //               isGuest: backendUser.isGuest
-  //             });
+              await AsyncStorage.removeItem('channel_list_changed');
 
-  //             // Update local auth state
-  //             login({
-  //               id: backendUser.id.toString(),
-  //               username: backendUser.username,
-  //               email: backendUser.email || undefined,
-  //               role: backendUser.role,
-  //               isGuest: backendUser.isGuest,
-  //             });
-
-  //             Alert.alert(
-  //               '전환 완료',
-  //               '카카오 계정으로 전환되었습니다!\n이제 카카오 계정으로 로그인할 수 있습니다.',
-  //               [{ text: '확인' }]
-  //             );
-  //           } catch (error) {
-  //             authLogger.error('Failed to convert guest account', {
-  //               error: error instanceof Error ? error.message : String(error)
-  //             });
-  //             Alert.alert(
-  //               '전환 실패',
-  //               '계정 전환 중 오류가 발생했습니다.\n다시 시도해주세요.'
-  //             );
-  //           } finally {
-  //             setIsConverting(false);
-  //           }
-  //         },
-  //       },
-  //     ]
-  //   );
-  // };
+              Alert.alert(
+                '연동 완료',
+                '카카오 계정으로 연동되었습니다!\n이제 카카오 계정으로 로그인할 수 있습니다.',
+                [{ text: '확인' }]
+              );
+            } catch (error) {
+              uiLogger.error('[SettingsScreen] Kakao link failed', {
+                error: error instanceof Error ? error.message : String(error)
+              });
+              Alert.alert(
+                '연동 실패',
+                '계정 연동 중 오류가 발생했습니다.\n다시 시도해주세요.'
+              );
+            } finally {
+              setIsLinkingKakao(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -203,7 +192,7 @@ export default function SettingsScreen() {
       onPress: () => {
         Alert.alert(
           'Shook 앱 정보',
-          `버전: 1.0.3\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2025 Shook. All rights reserved.`,
+          `버전: 1.0.4\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2025 Shook. All rights reserved.`,
           [{ text: '확인' }]
         );
       },
@@ -234,30 +223,33 @@ export default function SettingsScreen() {
 
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(24, tabBarHeight * 0.7) }}>
         <View style={styles.content}>
-          {/* Guest Account Conversion (only for guest users) */}
-          {/* TODO: 카카오 로그인 기능 추가 시 활성화 */}
-          {/* {user?.isGuest && (
+          {user?.isGuest && (
             <View style={styles.guestBanner}>
-              <Text style={styles.guestBannerTitle}>게스트로 사용 중입니다</Text>
+              <Text style={styles.guestBannerTitle}>카카오 계정 연동</Text>
               <Text style={styles.guestBannerText}>
-                카카오 계정으로 전환하면 다른 기기에서도 데이터를 동기화할 수 있습니다.
+                게스트 계정을 카카오 계정으로 연동하면 다른 기기에서도 데이터를 동기화할 수 있습니다.
               </Text>
               <Pressable
-                onPress={handleConvertToKakao}
-                disabled={isConverting}
-                style={[styles.convertButton, isConverting && styles.convertButtonDisabled]}
+                onPress={handleLinkKakaoAccount}
+                disabled={isLinkingKakao}
+                style={({ pressed }) => [
+                  styles.convertButton,
+                  isLinkingKakao && styles.convertButtonDisabled,
+                  pressed && !isLinkingKakao && styles.convertButtonPressed
+                ]}
               >
-                {isConverting ? (
-                  <ActivityIndicator color="#ffffff" />
+                {isLinkingKakao ? (
+                  <ActivityIndicator color="#000000" />
                 ) : (
-                  <>
-                    <IconSymbol name="person.fill" size={20} color="#ffffff" />
-                    <Text style={styles.convertButtonText}>카카오 계정으로 전환</Text>
-                  </>
+                  <Image
+                    source={require('@/assets/images/kakao_login_medium_wide.png')}
+                    style={styles.kakaoButtonImage}
+                    resizeMode="cover"
+                  />
                 )}
               </Pressable>
             </View>
-          )} */}
+          )}
 
           {/* Settings Items */}
           <View style={styles.settingsContainer}>
@@ -380,21 +372,23 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   convertButton: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: '100%',
+    height: 48,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
-    gap: 8,
+    alignItems: 'center',
+  },
+  convertButtonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
   convertButtonDisabled: {
     opacity: 0.6,
   },
-  convertButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
+  kakaoButtonImage: {
+    width: '100%',
+    height: 48,
   },
 });

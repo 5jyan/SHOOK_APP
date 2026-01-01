@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Git/IDE
+.git/
+.vscode/
+.idea/
+
+# Native build outputs
+android/
+ios/
+android/**/build/
+ios/build/
+**/.gradle/
+**/.cxx/
+*.apk
+*.aab
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pnpm-debug.*
+
+# local env files
+.env
+.env.*
+!.env.example
+.env*.local
+
+# OS
+.DS_Store
+
+# design assets not needed for build
+assets/images/*.psd
