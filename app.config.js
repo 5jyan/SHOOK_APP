@@ -103,6 +103,9 @@ export default {
       kakaoNativeAppKey: process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY,
       appScheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
       isLocal: IS_LOCAL,
+      minSupportedVersion: "1.1.1",
+      appStoreUrl: "https://apps.apple.com/kr/app/shook-%EC%9C%A0%ED%8A%9C%EB%B8%8C-%EC%83%88-%EC%98%81%EC%83%81-%EC%9A%94%EC%95%BD-%EC%95%8C%EB%A6%BC/id6753907638",
+      playStoreUrl: null,
       eas: {
         projectId: "a8839540-39ec-431e-a346-bdfdff731ecd"
       }

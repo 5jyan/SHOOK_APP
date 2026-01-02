@@ -1,27 +1,27 @@
+import { initializeKakaoSDK } from '@react-native-kakao/core';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
+import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as Updates from 'expo-updates';
 import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, AppState, AppStateStatus, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
-import { initializeKakaoSDK } from '@react-native-kakao/core';
-import Constants from 'expo-constants';
-import * as Updates from 'expo-updates';
-import { ActivityIndicator, AppState, AppStateStatus, StyleSheet, View } from 'react-native';
 
+import { FloatingDebugButton } from '@/components/FloatingDebugButton';
+import { GlobalUIDebugger } from '@/components/GlobalUIDebugger';
+import { ChannelsProvider } from '@/contexts/ChannelsContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { queryClient, restoreQueryClient } from '@/lib/query-client';
-import { notificationService } from '@/services/notification';
-import { ChannelsProvider } from '@/contexts/ChannelsContext';
-import { GlobalUIDebugger } from '@/components/GlobalUIDebugger';
-import { FloatingDebugButton } from '@/components/FloatingDebugButton';
-import { configLogger } from '@/utils/logger-enhanced';
-import { videoCacheService } from '@/services/video-cache-enhanced';
 import { CacheTransaction } from '@/services/cache/CacheTransaction';
+import { notificationService } from '@/services/notification';
+import { videoCacheService } from '@/services/video-cache-enhanced';
+import { configLogger } from '@/utils/logger-enhanced';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -33,6 +33,50 @@ export default function RootLayout() {
   });
   const [isAppReady, setIsAppReady] = useState(false);
   const appState = useRef<AppStateStatus>(AppState.currentState);
+  const currentVersion = Constants.expoConfig?.version || Updates.manifest?.version || '0.0.0';
+  const minSupportedVersion = Constants.expoConfig?.extra?.minSupportedVersion as string | undefined;
+  const appStoreUrl = Constants.expoConfig?.extra?.appStoreUrl as string | undefined;
+  const playStoreUrl = Constants.expoConfig?.extra?.playStoreUrl as string | undefined;
+
+  const compareVersions = (a: string, b: string) => {
+    const aParts = a.split('.').map(Number);
+    const bParts = b.split('.').map(Number);
+    const maxLen = Math.max(aParts.length, bParts.length);
+    for (let i = 0; i < maxLen; i += 1) {
+      const aVal = aParts[i] ?? 0;
+      const bVal = bParts[i] ?? 0;
+      if (aVal > bVal) return 1;
+      if (aVal < bVal) return -1;
+    }
+    return 0;
+  };
+
+  const requiresUpdate = minSupportedVersion
+    ? compareVersions(currentVersion, minSupportedVersion) < 0
+    : false;
+
+  const openStore = async () => {
+    const fallbackPlayUrl = Constants.expoConfig?.android?.package
+      ? `market://details?id=${Constants.expoConfig.android.package}`
+      : undefined;
+    const url =
+      Platform.OS === 'ios'
+        ? appStoreUrl
+        : playStoreUrl || fallbackPlayUrl;
+
+    if (!url) {
+      return;
+    }
+
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      configLogger.error('Failed to open store URL', {
+        error: error instanceof Error ? error.message : String(error),
+        url
+      });
+    }
+  };
 
   // Auto-update on app foreground (background -> active)
   useEffect(() => {
@@ -140,6 +184,22 @@ export default function RootLayout() {
     return null;
   }
 
+  if (requiresUpdate) {
+    return (
+      <View style={styles.forceUpdateContainer}>
+        <View style={styles.forceUpdateCard}>
+          <Text style={styles.forceUpdateTitle}>업데이트가 필요합니다</Text>
+          <Text style={styles.forceUpdateDescription}>
+            안정적인 사용을 위해 최신 버전으로 업데이트해주세요.
+          </Text>
+          <Pressable style={styles.forceUpdateButton} onPress={openStore}>
+            <Text style={styles.forceUpdateButtonText}>업데이트</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   if (!isAppReady) {
     return (
       <View style={styles.startupContainer}>
@@ -187,5 +247,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ffffff',
+  },
+  forceUpdateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 24,
+  },
+  forceUpdateCard: {
+    width: '100%',
+    maxWidth: 320,
+    padding: 24,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000000',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+    alignItems: 'center',
+  },
+  forceUpdateTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  forceUpdateDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  forceUpdateButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    backgroundColor: '#4285f4',
+    borderRadius: 999,
+  },
+  forceUpdateButtonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
