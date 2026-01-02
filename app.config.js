@@ -19,21 +19,21 @@ export default {
   expo: {
     name: "Shook",
     slug: "shook",
-    version: "1.1.0",
+    version: "1.1.1",
     orientation: "portrait",
     icon: "./assets/images/Shook.png",
     scheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
     userInterfaceStyle: "light",
     newArchEnabled: true,
     splash: {
-      image: "./assets/images/shook_256.png",
+      image: "./assets/images/shook_256_pad.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
     updates: {
       url: "https://u.expo.dev/a8839540-39ec-431e-a346-bdfdff731ecd"
     },
-    runtimeVersion: "1.1.0",
+    runtimeVersion: "1.1.1",
     assetBundlePatterns: [
       "**/*"
     ],
@@ -42,10 +42,10 @@ export default {
       bundleIdentifier: "com.shook.app",
       usesNonExemptEncryption: false,
       splash: {
-        image: "./assets/images/shook_256.png",
+        image: "./assets/images/shook_256_pad.png",
         resizeMode: "contain",
         backgroundColor: "#ffffff",
-        tabletImage: "./assets/images/shook_256.png"
+        tabletImage: "./assets/images/shook_256_pad.png"
       },
       infoPlist: {
         LSApplicationQueriesSchemes: ["kakaokompassauth", "kakaolink"],
@@ -63,7 +63,7 @@ export default {
         backgroundColor: "#ffffff"
       },
       splash: {
-        image: "./assets/images/shook_256.png",
+        image: "./assets/images/shook_256_pad.png",
         resizeMode: "contain",
         backgroundColor: "#ffffff"
       },

@@ -4,14 +4,14 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { initializeKakaoSDK } from '@react-native-kakao/core';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
-import { AppState, AppStateStatus } from 'react-native';
+import { ActivityIndicator, AppState, AppStateStatus, StyleSheet, View } from 'react-native';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { queryClient, restoreQueryClient } from '@/lib/query-client';
@@ -31,6 +31,7 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+  const [isAppReady, setIsAppReady] = useState(false);
   const appState = useRef<AppStateStatus>(AppState.currentState);
 
   // Auto-update on app foreground (background -> active)
@@ -67,6 +68,12 @@ export default function RootLayout() {
       subscription.remove();
     };
   }, []);
+
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded]);
 
   useEffect(() => {
     // Initialize enhanced systems
@@ -114,9 +121,7 @@ export default function RootLayout() {
       // Restore persisted queries
       restoreQueryClient();
 
-      if (loaded) {
-        SplashScreen.hideAsync();
-      }
+      setIsAppReady(true);
     };
     
     // Setup notification listeners
@@ -133,6 +138,14 @@ export default function RootLayout() {
 
   if (!loaded) {
     return null;
+  }
+
+  if (!isAppReady) {
+    return (
+      <View style={styles.startupContainer}>
+        <ActivityIndicator size="large" color="#4285f4" />
+      </View>
+    );
   }
 
   return (
@@ -167,3 +180,12 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  startupContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+  },
+});
