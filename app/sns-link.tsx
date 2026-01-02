@@ -1,10 +1,10 @@
 import { ModalHeader } from '@/components/AppHeader';
+import { queryClient } from '@/lib/query-client';
 import { apiService } from '@/services/api';
 import { channelCacheService } from '@/services/channel-cache';
 import { kakaoAuthService } from '@/services/kakao-auth';
-import { queryClient } from '@/lib/query-client';
-import { useAuthStore } from '@/stores/auth-store';
 import { videoCacheService } from '@/services/video-cache';
+import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
 import { Asset } from 'expo-asset';
 import React from 'react';
@@ -78,7 +78,7 @@ export default function SnsLinkScreen() {
 
               Alert.alert(
                 '연동 완료',
-                '카카오 계정으로 연동되었습니다!\n이제 카카오 계정으로 로그인할 수 있습니다.',
+                '카카오 계정으로 연동되었습니다!',
                 [{ text: '확인' }]
               );
             } catch (error) {
