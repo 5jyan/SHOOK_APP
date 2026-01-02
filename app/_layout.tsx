@@ -156,6 +156,7 @@ export default function RootLayout() {
               <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
               <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
               <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
+              <Stack.Screen name="sns-link" options={{ headerShown: false }} />
             </Stack>
             <StatusBar style="dark" />
             <FloatingDebugButton />

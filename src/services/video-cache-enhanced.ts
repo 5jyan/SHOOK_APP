@@ -64,8 +64,7 @@ export class EnhancedVideoCacheService {
   };
 
   // Cache configuration
-  private readonly MAX_CACHE_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
-  private readonly MAX_ENTRIES = 1000; // Maximum number of videos to cache (increased for 30 days)
+  private readonly MAX_ENTRIES = Number.MAX_SAFE_INTEGER; // No practical cap
   private readonly VALIDATION_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
   private readonly CHANNEL_CHANGE_KEY = 'channel_list_changed'; // Key for tracking channel changes
   private readonly AUTO_RECOVERY_ENABLED = true; // RE-ENABLED: crypto issue fixed with expo-crypto
@@ -236,27 +235,16 @@ export class EnhancedVideoCacheService {
       const cacheEntries: CacheEntry[] = JSON.parse(cachedData);
       const currentTime = Date.now();
       
-      // Filter out expired and invalid entries
+      // Filter out invalid entries
       const validEntries = cacheEntries.filter(entry => {
-        // Check expiration
-        const age = currentTime - entry.cachedAt;
-        const isExpired = age >= this.MAX_CACHE_AGE;
-        
         // Check entry validity
         const isValid = this.isValidCacheEntry(entry);
-        
-        if (isExpired) {
-          cacheLogger.debug('Expired entry removed', { 
-            videoId: entry.videoId, 
-            ageHours: Math.round(age / (1000 * 60 * 60)) 
-          });
-        }
-        
+
         if (!isValid) {
           cacheLogger.warn('Invalid entry removed', { videoId: entry.videoId });
         }
         
-        return !isExpired && isValid;
+        return isValid;
       });
 
       // Sort by createdAt (when video was processed - newest first)
@@ -305,7 +293,7 @@ export class EnhancedVideoCacheService {
   }
 
   /**
-   * Save videos to cache with atomic transaction and 30-day filtering
+   * Save videos to cache with atomic transaction
    */
   async saveVideosToCache(videos: VideoSummary[], isRetry: boolean = false): Promise<CacheOperationResult> {
     await this.ensureInitialized();
@@ -315,19 +303,8 @@ export class EnhancedVideoCacheService {
     let recoveryApplied = false;
 
     try {
-      // Apply 30-day filter before saving
-      const recentVideos = this.filterRecentVideos(videos);
-
-      if (recentVideos.length !== videos.length) {
-        cacheLogger.info('Filtered out old videos before caching', {
-          originalCount: videos.length,
-          filteredCount: recentVideos.length,
-          removedCount: videos.length - recentVideos.length
-        });
-      }
-
       const currentTime = Date.now();
-      const cacheEntries: CacheEntry[] = recentVideos.map(video => ({
+      const cacheEntries: CacheEntry[] = videos.map(video => ({
         videoId: video.videoId,
         data: video,
         cachedAt: currentTime,
@@ -358,10 +335,10 @@ export class EnhancedVideoCacheService {
         // Calculate lastSyncTimestamp using server's latest video timestamp
         // This avoids clock skew issues between client and server
         let serverTimestamp = currentTime;
-        if (recentVideos.length > 0) {
+        if (videos.length > 0) {
           // Use the most recent video's createdAt as the sync timestamp
           const latestVideoTime = Math.max(
-            ...recentVideos.map(v => new Date(v.createdAt).getTime())
+            ...videos.map(v => new Date(v.createdAt).getTime())
           );
           serverTimestamp = latestVideoTime;
           cacheLogger.debug('Using server timestamp from latest video', {
@@ -927,52 +904,12 @@ export class EnhancedVideoCacheService {
   }
 
   /**
-   * Clean videos older than 30 days
+   * Clean old videos (no-op while retention is disabled)
    */
   async cleanOldVideos(): Promise<number> {
     await this.ensureInitialized();
-    cacheLogger.debug('Cleaning videos older than 30 days');
-
-    try {
-      const cutoffDate = Date.now() - this.MAX_CACHE_AGE;
-      const cachedVideos = await this.getCachedVideos();
-
-      const recentVideos = cachedVideos.filter(video => {
-        const videoDate = new Date(video.createdAt).getTime();
-        return videoDate >= cutoffDate;
-      });
-
-      const deletedCount = cachedVideos.length - recentVideos.length;
-
-      if (deletedCount > 0) {
-        await this.saveVideosToCache(recentVideos);
-        cacheLogger.info('Cleaned old videos from cache', {
-          totalVideos: cachedVideos.length,
-          keptVideos: recentVideos.length,
-          deletedCount,
-          cutoffDate: new Date(cutoffDate).toISOString()
-        });
-      }
-
-      return deletedCount;
-    } catch (error) {
-      cacheLogger.error('Error cleaning old videos', {
-        error: error instanceof Error ? error.message : String(error)
-      });
-      return 0;
-    }
-  }
-
-  /**
-   * Filter videos to only include those within 30 days
-   */
-  private filterRecentVideos(videos: VideoSummary[]): VideoSummary[] {
-    const cutoffDate = Date.now() - this.MAX_CACHE_AGE;
-
-    return videos.filter(video => {
-      const videoDate = new Date(video.createdAt).getTime();
-      return videoDate >= cutoffDate;
-    });
+    cacheLogger.debug('Clean old videos skipped (retention disabled)');
+    return 0;
   }
 
 }

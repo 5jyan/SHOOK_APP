@@ -12,12 +12,12 @@ export const useVideoSummaries = () => {
       serviceLogger.debug('🔥 API service initialized', { hasApiService: !!apiService });
       
       try {
-        const response = await apiService.getVideoSummaries();
+        const response = await apiService.getVideoSummaries({ limit: 50, paginated: true });
         serviceLogger.debug('🔥 API response received', {
           hookName: 'useVideoSummaries',
           success: response.success,
           hasData: !!response.data,
-          dataLength: response.data?.length || 0
+          dataLength: response.data?.videos.length || 0
         });
         
         if (!response.success) {
@@ -30,9 +30,9 @@ export const useVideoSummaries = () => {
         
         serviceLogger.info('🔥 API call successful', {
           hookName: 'useVideoSummaries',
-          videoCount: response.data?.length || 0
+          videoCount: response.data?.videos.length || 0
         });
-        return response.data;
+        return response.data.videos;
       } catch (error) {
         serviceLogger.error('🔥 API call error', {
           hookName: 'useVideoSummaries',

@@ -19,7 +19,7 @@ export default {
   expo: {
     name: "Shook",
     slug: "shook",
-    version: "1.0.3",
+    version: "1.1.0",
     orientation: "portrait",
     icon: "./assets/images/Shook.png",
     scheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
@@ -33,7 +33,7 @@ export default {
     updates: {
       url: "https://u.expo.dev/a8839540-39ec-431e-a346-bdfdff731ecd"
     },
-    runtimeVersion: "1.0.3",
+    runtimeVersion: "1.1.0",
     assetBundlePatterns: [
       "**/*"
     ],

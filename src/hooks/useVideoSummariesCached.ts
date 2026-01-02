@@ -9,6 +9,7 @@ interface CacheAwareData {
   videos: VideoSummary[];
   fromCache: boolean;
   lastSync: number;
+  nextCursor: string | null;
   cacheStats: {
     totalEntries: number;
     cacheSize: number;
@@ -23,6 +24,7 @@ const toCacheAwareData = (
   videos,
   fromCache: true,
   lastSync: cacheStats.lastSync,
+  nextCursor: null,
   cacheStats: {
     totalEntries: cacheStats.totalEntries,
     cacheSize: cacheStats.cacheSize,
@@ -30,10 +32,28 @@ const toCacheAwareData = (
   }
 });
 
+const buildCursorFromVideos = (videos: VideoSummary[]): string | null => {
+  if (videos.length === 0) {
+    return null;
+  }
+
+  const sorted = [...videos].sort((a, b) => {
+    const timeDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    if (timeDiff !== 0) {
+      return timeDiff;
+    }
+    return b.videoId.localeCompare(a.videoId);
+  });
+  const lastVideo = sorted[sorted.length - 1];
+  return `${new Date(lastVideo.createdAt).getTime()}_${lastVideo.videoId}`;
+};
+
 export const useVideoSummariesCached = () => {
   const { user } = useAuthStore();
   const [cacheData, setCacheData] = useState<CacheAwareData | null>(null);
   const [cachePrimed, setCachePrimed] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const queryClient = useQueryClient();
   const queryKey = ['videoSummariesCached', user?.id] as const;
   
@@ -53,7 +73,9 @@ export const useVideoSummariesCached = () => {
 
           serviceLogger.endTimer(timerId, 'Hybrid sync completed (no user)');
 
-          return toCacheAwareData(cachedVideos, cacheStats);
+          const data = toCacheAwareData(cachedVideos, cacheStats);
+          data.nextCursor = buildCursorFromVideos(cachedVideos);
+          return data;
         }
 
         // Check if user changed (clear cache if needed)
@@ -87,18 +109,20 @@ export const useVideoSummariesCached = () => {
         // Step 4: Fetch new/updated data from server
         let serverResponse;
         let finalVideos: VideoSummary[];
+        let nextCursorFromSync: string | null = null;
 
         if (shouldFullSync) {
           // Full sync - get all videos
           serviceLogger.info('Performing full sync');
-          serverResponse = await apiService.getVideoSummaries();
+          serverResponse = await apiService.getVideoSummaries({ limit: 50, paginated: true });
 
           if (!serverResponse.success) {
             serviceLogger.error('Full sync failed', { error: serverResponse.error });
             throw new Error(serverResponse.error || 'Failed to fetch video summaries');
           }
 
-          finalVideos = serverResponse.data;
+          finalVideos = serverResponse.data.videos;
+          nextCursorFromSync = serverResponse.data.nextCursor;
 
           // Replace entire cache with server timestamp
           await videoCacheService.saveVideosToCache(finalVideos);
@@ -113,14 +137,14 @@ export const useVideoSummariesCached = () => {
         } else {
           // Incremental sync - get only new videos
           serviceLogger.info('Performing incremental sync');
-          serverResponse = await apiService.getVideoSummaries(lastSyncTimestamp);
+          serverResponse = await apiService.getVideoSummaries({ since: lastSyncTimestamp, limit: 50, paginated: true });
 
           if (!serverResponse.success) {
             serviceLogger.error('Incremental sync failed', { error: serverResponse.error });
             throw new Error(serverResponse.error || 'Failed to fetch new video summaries');
           }
 
-          const newVideos = serverResponse.data;
+          const newVideos = serverResponse.data.videos;
           serviceLogger.info('Incremental sync received new videos', { newVideoCount: newVideos.length });
 
           if (newVideos.length > 0) {
@@ -138,7 +162,7 @@ export const useVideoSummariesCached = () => {
           }
         }
 
-        // Step 5: Clean old videos (30+ days) periodically
+        // Step 5: Optional cache maintenance (retention disabled)
         const cleanedCount = await videoCacheService.cleanOldVideos();
         if (cleanedCount > 0) {
           serviceLogger.info('Cleaned old videos during sync', { cleanedCount });
@@ -149,8 +173,9 @@ export const useVideoSummariesCached = () => {
 
         const result: CacheAwareData = {
           videos: finalVideos,
-          fromCache: !shouldFullSync && serverResponse.data.length === 0,
+          fromCache: !shouldFullSync && serverResponse.data.videos.length === 0,
           lastSync: Date.now(),
+          nextCursor: shouldFullSync ? nextCursorFromSync : (nextCursor ?? buildCursorFromVideos(finalVideos)),
           cacheStats: {
             totalEntries: updatedCacheStats.totalEntries,
             cacheSize: updatedCacheStats.cacheSize,
@@ -164,7 +189,7 @@ export const useVideoSummariesCached = () => {
           fromCache: result.fromCache,
           cacheSizeKB: updatedCacheStats.cacheSize,
           syncType: shouldFullSync ? 'full' : 'incremental',
-          networkVideos: shouldFullSync ? finalVideos.length : serverResponse.data.length
+          networkVideos: shouldFullSync ? finalVideos.length : serverResponse.data.videos.length
         });
 
         return result;
@@ -179,7 +204,9 @@ export const useVideoSummariesCached = () => {
 
           serviceLogger.info('Using cached fallback', { videoCount: fallbackVideos.length });
 
-          return toCacheAwareData(fallbackVideos, fallbackStats);
+          const data = toCacheAwareData(fallbackVideos, fallbackStats);
+          data.nextCursor = buildCursorFromVideos(fallbackVideos);
+          return data;
         } catch (fallbackError) {
           serviceLogger.error('Fallback also failed', { error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError) });
           throw error; // Re-throw original error
@@ -225,6 +252,7 @@ export const useVideoSummariesCached = () => {
         }
 
         const primedData = toCacheAwareData(cachedVideos, cacheStats);
+        primedData.nextCursor = buildCursorFromVideos(cachedVideos);
         queryClient.setQueryData(['videoSummariesCached', user?.id], primedData);
         setCacheData(primedData);
         setCachePrimed(true);
@@ -252,6 +280,12 @@ export const useVideoSummariesCached = () => {
       serviceLogger.debug('Cache data updated in component state');
     }
   }, [query.data, cacheData]);
+
+  useEffect(() => {
+    if (query.data && query.data.nextCursor !== nextCursor) {
+      setNextCursor(query.data.nextCursor);
+    }
+  }, [query.data, nextCursor]);
   
   const effectiveCacheData = query.data ?? cacheData;
   const queryState = {
@@ -287,6 +321,62 @@ export const useVideoSummariesCached = () => {
       throw error;
     }
   };
+
+  const fetchNextPage = async () => {
+    if (!nextCursor || isFetchingMore) {
+      return;
+    }
+
+    setIsFetchingMore(true);
+    serviceLogger.info('Fetching next video summaries page', { cursor: nextCursor });
+
+    try {
+      const response = await apiService.getVideoSummaries({
+        cursor: nextCursor,
+        limit: 50,
+        paginated: true
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch more video summaries');
+      }
+
+      const page = response.data;
+      if (page.videos.length === 0) {
+        setNextCursor(null);
+        return;
+      }
+
+      const mergedVideos = await videoCacheService.mergeVideos(page.videos);
+      const updatedCacheStats = await videoCacheService.getCacheStats();
+
+      const updatedData: CacheAwareData = {
+        videos: mergedVideos,
+        fromCache: false,
+        lastSync: Date.now(),
+        nextCursor: page.nextCursor,
+        cacheStats: {
+          totalEntries: updatedCacheStats.totalEntries,
+          cacheSize: updatedCacheStats.cacheSize,
+          lastSync: updatedCacheStats.lastSync,
+        }
+      };
+
+      queryClient.setQueryData(queryKey, updatedData);
+      setNextCursor(page.nextCursor);
+      serviceLogger.info('Fetched next page successfully', {
+        newVideos: page.videos.length,
+        totalVideos: mergedVideos.length,
+        hasNextPage: !!page.nextCursor
+      });
+    } catch (error) {
+      serviceLogger.error('Failed to fetch next page', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    } finally {
+      setIsFetchingMore(false);
+    }
+  };
   
   return {
     ...query,
@@ -295,6 +385,9 @@ export const useVideoSummariesCached = () => {
     cachePrimed,
     queryState,
     removeChannelVideos, // Export the function
+    fetchNextPage,
+    hasNextPage: !!nextCursor,
+    isFetchingNextPage: isFetchingMore,
   };
 };
 

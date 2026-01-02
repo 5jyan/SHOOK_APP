@@ -98,6 +98,11 @@ interface VideoSummary {
   channelThumbnail?: string; // Channel thumbnail URL from backend
 }
 
+interface VideoSummariesPage {
+  videos: VideoSummary[];
+  nextCursor: string | null;
+}
+
 class ApiService {
   private async makeRequest<T>(
     endpoint: string,
@@ -392,40 +397,64 @@ class ApiService {
   }
 
   // Video summaries endpoint - GET /api/videos
-  async getVideoSummaries(since?: number): Promise<ApiResponse<VideoSummary[]>> {
-    // Apply 30-day filter to limit cache size and focus on recent content
-    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-    const effectiveSince = since ? Math.max(since, thirtyDaysAgo) : thirtyDaysAgo;
+  async getVideoSummaries(options: {
+    since?: number;
+    cursor?: string;
+    limit?: number;
+    paginated?: boolean;
+  } = {}): Promise<ApiResponse<VideoSummariesPage>> {
+    const params = new URLSearchParams();
+    if (options.since) {
+      params.set('since', String(options.since));
+    }
+    if (options.cursor) {
+      params.set('cursor', options.cursor);
+    }
+    if (typeof options.limit === 'number') {
+      params.set('limit', String(options.limit));
+    }
+    if (options.paginated) {
+      params.set('pagination', '1');
+    }
 
-    const endpoint = `/api/videos?since=${effectiveSince}`;
-    
-    const syncType = since ? 'incremental' : 'full';
-    apiLogger.info(`Starting video summaries sync: ${syncType} (30-day filtered)`, {
-      originalSince: since ? new Date(since).toISOString() : null,
-      effectiveSince: new Date(effectiveSince).toISOString(),
-      thirtyDayLimit: new Date(thirtyDaysAgo).toISOString(),
+    const endpoint = params.toString() ? `/api/videos?${params}` : '/api/videos';
+    const syncType = options.since ? 'incremental' : options.cursor ? 'page' : 'full';
+    apiLogger.info(`Starting video summaries sync: ${syncType}`, {
+      originalSince: options.since ? new Date(options.since).toISOString() : null,
+      cursor: options.cursor || null,
+      limit: options.limit ?? null,
+      paginated: !!options.paginated,
       endpoint,
       syncType
     });
     
-    const result = await this.makeRequest<VideoSummary[]>(endpoint);
-    
-    // Apply HTML entity decoding to video titles and summaries (redundant safety check)
-    if (result.success && result.data) {
-      apiLogger.debug('Applying HTML entity decoding to video data', {
-        videoCount: result.data.length
-      });
-      result.data = decodeVideoHtmlEntities(result.data);
+    const result = await this.makeRequest<VideoSummariesPage | VideoSummary[]>(endpoint);
+    let page: VideoSummariesPage | null = null;
+
+    if (result.success && Array.isArray(result.data)) {
+      page = { videos: result.data, nextCursor: null };
+    } else if (result.success) {
+      page = result.data as VideoSummariesPage;
     }
-    
+
+    if (result.success && page) {
+      apiLogger.debug('Applying HTML entity decoding to video data', {
+        videoCount: page.videos.length
+      });
+      page.videos = decodeVideoHtmlEntities(page.videos);
+    }
+
     apiLogger.info(`Video summaries sync completed: ${syncType}`, {
       success: result.success,
-      videoCount: result.data?.length || 0,
+      videoCount: page?.videos.length || 0,
       syncType,
       hasError: !!result.error
     });
-    
-    return result;
+
+    return {
+      ...result,
+      data: page || { videos: [], nextCursor: null }
+    };
   }
 
   // Push notification endpoints

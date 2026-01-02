@@ -1,73 +1,17 @@
 ﻿import { TabHeader } from '@/components/AppHeader';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { apiService } from '@/services/api';
-import { kakaoAuthService } from '@/services/kakao-auth';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
-  const { user, logout, login } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [isLoading, setIsLoading] = React.useState(false);
-  const [isLinkingKakao, setIsLinkingKakao] = React.useState(false);
   const tabBarHeight = useBottomTabOverflow();
-
-
-  const handleLinkKakaoAccount = () => {
-    Alert.alert(
-      '카카오 계정 연동',
-      '게스트 계정을 카카오 계정으로 연동하시겠습니까?\n\n모든 구독 채널과 데이터가 유지됩니다.',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '연동하기',
-          onPress: async () => {
-            try {
-              setIsLinkingKakao(true);
-              uiLogger.info('[SettingsScreen] Starting guest to Kakao link');
-
-              const kakaoResult = await kakaoAuthService.signIn();
-              const backendUser = await apiService.verifyKakaoToken(
-                kakaoResult.accessToken,
-                true
-              );
-
-              login({
-                id: backendUser.id.toString(),
-                username: backendUser.username || backendUser.name || kakaoResult.user.name,
-                email: backendUser.email || kakaoResult.user.email || undefined,
-                role: backendUser.role,
-                isGuest: backendUser.isGuest,
-                picture: kakaoResult.user.profileImage || undefined,
-              });
-
-              await AsyncStorage.removeItem('channel_list_changed');
-
-              Alert.alert(
-                '연동 완료',
-                '카카오 계정으로 연동되었습니다!\n이제 카카오 계정으로 로그인할 수 있습니다.',
-                [{ text: '확인' }]
-              );
-            } catch (error) {
-              uiLogger.error('[SettingsScreen] Kakao link failed', {
-                error: error instanceof Error ? error.message : String(error)
-              });
-              Alert.alert(
-                '연동 실패',
-                '계정 연동 중 오류가 발생했습니다.\n다시 시도해주세요.'
-              );
-            } finally {
-              setIsLinkingKakao(false);
-            }
-          },
-        },
-      ]
-    );
-  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -166,6 +110,13 @@ export default function SettingsScreen() {
 
   const settingsItems = [
     {
+      title: 'SNS 계정 연동',
+      description: 'Shook 계정을 카카오 계정와 연동합니다',
+      onPress: () => {
+        router.push('/sns-link');
+      },
+    },
+    {
       title: '알림 설정',
       description: '푸시 알림 및 알림 주기를 설정합니다',
       onPress: () => {
@@ -192,7 +143,7 @@ export default function SettingsScreen() {
       onPress: () => {
         Alert.alert(
           'Shook 앱 정보',
-          `버전: 1.0.4\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2025 Shook. All rights reserved.`,
+          `버전: 1.1.0\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2025 Shook. All rights reserved.`,
           [{ text: '확인' }]
         );
       },
@@ -223,34 +174,6 @@ export default function SettingsScreen() {
 
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(24, tabBarHeight * 0.7) }}>
         <View style={styles.content}>
-          {user?.isGuest && (
-            <View style={styles.guestBanner}>
-              <Text style={styles.guestBannerTitle}>카카오 계정 연동</Text>
-              <Text style={styles.guestBannerText}>
-                게스트 계정을 카카오 계정으로 연동하면 다른 기기에서도 데이터를 동기화할 수 있습니다.
-              </Text>
-              <Pressable
-                onPress={handleLinkKakaoAccount}
-                disabled={isLinkingKakao}
-                style={({ pressed }) => [
-                  styles.convertButton,
-                  isLinkingKakao && styles.convertButtonDisabled,
-                  pressed && !isLinkingKakao && styles.convertButtonPressed
-                ]}
-              >
-                {isLinkingKakao ? (
-                  <ActivityIndicator color="#000000" />
-                ) : (
-                  <Image
-                    source={require('@/assets/images/kakao_login_medium_wide.png')}
-                    style={styles.kakaoButtonImage}
-                    resizeMode="cover"
-                  />
-                )}
-              </Pressable>
-            </View>
-          )}
-
           {/* Settings Items */}
           <View style={styles.settingsContainer}>
             {settingsItems.map((item, index) => (
@@ -350,45 +273,5 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     padding: 4,
-  },
-  guestBanner: {
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#3b82f6',
-    padding: 16,
-    marginBottom: 24,
-  },
-  guestBannerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1e40af',
-    marginBottom: 8,
-  },
-  guestBannerText: {
-    fontSize: 14,
-    color: '#3b82f6',
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  convertButton: {
-    width: '100%',
-    height: 48,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  convertButtonPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
-  },
-  convertButtonDisabled: {
-    opacity: 0.6,
-  },
-  kakaoButtonImage: {
-    width: '100%',
-    height: 48,
   },
 });

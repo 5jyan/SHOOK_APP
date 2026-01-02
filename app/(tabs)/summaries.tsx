@@ -10,7 +10,7 @@ import { uiLogger } from '@/utils/logger-enhanced';
 import { useIsFocused } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SummariesScreen() {
@@ -32,7 +32,10 @@ export default function SummariesScreen() {
     cacheData,
     cachePrimed,
     queryState,
-    removeChannelVideos 
+    removeChannelVideos,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
   } = useVideoSummariesCached();
   
   uiLogger.debug('[SummariesScreen] Hook results', {
@@ -125,6 +128,30 @@ export default function SummariesScreen() {
     });
   };
 
+  const handleEndReached = React.useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  const renderListFooter = () => {
+    if (!hasNextPage) {
+      return null;
+    }
+    if (isFetchingNextPage) {
+      return (
+        <View style={styles.footerLoading}>
+          <ActivityIndicator size="small" color="#4285f4" />
+        </View>
+      );
+    }
+    return (
+      <Pressable style={styles.loadMoreButton} onPress={fetchNextPage}>
+        <Text style={styles.loadMoreText}>더 불러오기</Text>
+      </Pressable>
+    );
+  };
+
   const renderSummaryCard = ({ item }: { item: SummaryCardData }) => (
     <SummaryCard
       key={item.id}
@@ -196,11 +223,14 @@ export default function SummariesScreen() {
           data={summaries}
           renderItem={renderSummaryCard}
           keyExtractor={(item) => item.id}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
           contentContainerStyle={[
             styles.listContainer,
             { paddingBottom: Math.max(16, tabBarHeight * 0.7), flexGrow: 1 }
           ]}
           showsVerticalScrollIndicator={false}
+          ListFooterComponent={renderListFooter}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
@@ -232,6 +262,21 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#6b7280',
+  },
+  footerLoading: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadMoreButton: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadMoreText: {
+    fontSize: 14,
+    color: '#4285f4',
+    fontWeight: '600',
   },
   retryButton: {
     backgroundColor: '#4285f4',
