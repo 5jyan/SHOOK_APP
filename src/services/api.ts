@@ -457,6 +457,22 @@ class ApiService {
     };
   }
 
+  async getVideoSummaryById(videoId: string): Promise<ApiResponse<VideoSummary>> {
+    const endpoint = `/api/videos/${videoId}`;
+    apiLogger.info('Fetching video summary by id', { videoId, endpoint });
+
+    const result = await this.makeRequest<VideoSummary>(endpoint);
+    if (result.success && result.data) {
+      const [decoded] = decodeVideoHtmlEntities([result.data]);
+      return {
+        ...result,
+        data: decoded
+      };
+    }
+
+    return result;
+  }
+
   // Push notification endpoints
   async registerPushToken(tokenData: PushTokenData): Promise<ApiResponse<RegisterPushTokenResponse>> {
     apiLogger.info('Registering push token', {

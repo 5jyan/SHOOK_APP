@@ -505,19 +505,15 @@ export class NotificationService {
       if (data?.videoId) {
         notificationLogger.info('Handling notification tap for video', { videoId: data.videoId });
 
-        // Trigger background refetch immediately
-        notificationLogger.info('Triggering background refetch for new video');
-        queryClient.refetchQueries({
-          queryKey: ['videoSummariesCached']
-        }).catch((error) => {
-          notificationLogger.error('Background refetch failed', {
-            error: error instanceof Error ? error.message : String(error)
-          });
-        });
-
         // Navigate to summaries tab first, then push detail for a smoother UX
         notificationLogger.info('Navigating to summaries tab before summary detail', { videoId: data.videoId });
-        router.replace('/(tabs)/summaries');
+        router.replace({
+          pathname: '/(tabs)/summaries',
+          params: {
+            fromNotification: 'true',
+            _t: String(Date.now())
+          }
+        });
         setTimeout(() => {
           router.push({
             pathname: '/summary-detail',

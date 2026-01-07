@@ -18,7 +18,9 @@ export default function SummariesScreen() {
 
   const isFocused = useIsFocused();
   const params = useLocalSearchParams();
+  const fromNotification = params.fromNotification === 'true';
   const { user } = useAuthStore();
+  const [skipInitialFetch] = React.useState(fromNotification);
   const { channels } = useChannels(); // Get channel data from context
   const tabBarHeight = useBottomTabOverflow();
   uiLogger.debug('[SummariesScreen] User from auth store', { userId: user?.id, userEmail: user?.email });
@@ -36,7 +38,16 @@ export default function SummariesScreen() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
-  } = useVideoSummariesCached();
+  } = useVideoSummariesCached({
+    refetchOnMount: !fromNotification,
+    skipInitialFetch
+  });
+
+  React.useEffect(() => {
+    if (fromNotification) {
+      router.setParams({ fromNotification: undefined });
+    }
+  }, [fromNotification, router]);
   
   uiLogger.debug('[SummariesScreen] Hook results', {
     videoSummariesCount: videoSummaries.length,

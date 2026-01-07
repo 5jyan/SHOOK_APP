@@ -1,222 +1,47 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiService, VideoSummary, UserChannel } from '@/services/api';
 import { videoCacheService } from '@/services/video-cache';
+import {
+  type CacheAwareData,
+  buildCursorFromVideos,
+  getVideoSummariesQueryKey,
+  videoSummariesSyncService
+} from '@/services/video-summaries-sync';
 import { useAuthStore } from '@/stores/auth-store';
 import { serviceLogger } from '@/utils/logger-enhanced';
 
-interface CacheAwareData {
-  videos: VideoSummary[];
-  fromCache: boolean;
-  lastSync: number;
-  nextCursor: string | null;
-  cacheStats: {
-    totalEntries: number;
-    cacheSize: number;
-    lastSync: number;
-  };
+interface UseVideoSummariesCachedOptions {
+  refetchOnMount?: boolean;
+  skipInitialFetch?: boolean;
 }
 
-const toCacheAwareData = (
-  videos: VideoSummary[],
-  cacheStats: { totalEntries: number; cacheSize: number; lastSync: number }
-): CacheAwareData => ({
-  videos,
-  fromCache: true,
-  lastSync: cacheStats.lastSync,
-  nextCursor: null,
-  cacheStats: {
-    totalEntries: cacheStats.totalEntries,
-    cacheSize: cacheStats.cacheSize,
-    lastSync: cacheStats.lastSync,
-  }
-});
-
-const buildCursorFromVideos = (videos: VideoSummary[]): string | null => {
-  if (videos.length === 0) {
-    return null;
-  }
-
-  const sorted = [...videos].sort((a, b) => {
-    const timeDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    if (timeDiff !== 0) {
-      return timeDiff;
-    }
-    return b.videoId.localeCompare(a.videoId);
-  });
-  const lastVideo = sorted[sorted.length - 1];
-  return `${new Date(lastVideo.createdAt).getTime()}_${lastVideo.videoId}`;
-};
-
-export const useVideoSummariesCached = () => {
+export const useVideoSummariesCached = (options: UseVideoSummariesCachedOptions = {}) => {
   const { user } = useAuthStore();
   const [cacheData, setCacheData] = useState<CacheAwareData | null>(null);
   const [cachePrimed, setCachePrimed] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const queryClient = useQueryClient();
-  const queryKey = ['videoSummariesCached', user?.id] as const;
+  const queryKey = getVideoSummariesQueryKey(user?.id);
+  const skipInitialFetchRef = useRef(options.skipInitialFetch ?? false);
   
   serviceLogger.debug('useVideoSummariesCached hook called');
   
   const query = useQuery({
     queryKey,
     queryFn: async (): Promise<CacheAwareData> => {
-      const timerId = serviceLogger.startTimer('hybrid-cache-strategy');
-      serviceLogger.info('queryFn executing - hybrid cache strategy starting');
-
-      try {
-        if (!user) {
-          serviceLogger.warn('No authenticated user, using cached video summaries only');
-          const cachedVideos = await videoCacheService.getCachedVideos();
-          const cacheStats = await videoCacheService.getCacheStats();
-
-          serviceLogger.endTimer(timerId, 'Hybrid sync completed (no user)');
-
-          const data = toCacheAwareData(cachedVideos, cacheStats);
-          data.nextCursor = buildCursorFromVideos(cachedVideos);
-          return data;
-        }
-
-        // Check if user changed (clear cache if needed)
-        await videoCacheService.checkUserChanged(parseInt(user.id));
-
-        // Step 1: Load cached data immediately for instant UI update
-        serviceLogger.debug('Step 1: Loading cached data');
-        const cachedVideos = await videoCacheService.getCachedVideos();
-        const cacheStats = await videoCacheService.getCacheStats();
-
-        serviceLogger.info('Cached data loaded', { videoCount: cachedVideos.length });
-
-        // Step 2: Get last sync timestamp for incremental sync
-        const lastSyncTimestamp = await videoCacheService.getLastSyncTimestamp();
-        serviceLogger.debug('Last sync timestamp', { lastSync: new Date(lastSyncTimestamp).toISOString() });
-
-        // Step 3: Determine sync strategy based on channel changes
-        const channelListChanged = await videoCacheService.hasChannelListChanged();
-        const shouldFullSync = channelListChanged || lastSyncTimestamp === 0;
-
-        if (shouldFullSync) {
-          if (channelListChanged) {
-            serviceLogger.info('Full sync required - channel list changed');
-          } else {
-            serviceLogger.info('Full sync required - first time sync');
-          }
-        } else {
-          serviceLogger.info('Incremental sync - no channel changes detected');
-        }
-
-        // Step 4: Fetch new/updated data from server
-        let serverResponse;
-        let finalVideos: VideoSummary[];
-        let nextCursorFromSync: string | null = null;
-
-        if (shouldFullSync) {
-          // Full sync - get all videos
-          serviceLogger.info('Performing full sync');
-          serverResponse = await apiService.getVideoSummaries({ limit: 50, paginated: true });
-
-          if (!serverResponse.success) {
-            serviceLogger.error('Full sync failed', { error: serverResponse.error });
-            throw new Error(serverResponse.error || 'Failed to fetch video summaries');
-          }
-
-          finalVideos = serverResponse.data.videos;
-          nextCursorFromSync = serverResponse.data.nextCursor;
-
-          // Replace entire cache with server timestamp
-          await videoCacheService.saveVideosToCache(finalVideos);
-
-          // Clear channel change signal after successful full sync
-          if (channelListChanged) {
-            await videoCacheService.clearChannelChangeSignal();
-            serviceLogger.info('Channel change signal cleared after full sync');
-          }
-
-          serviceLogger.info('Full sync completed', { videosCached: finalVideos.length });
-        } else {
-          // Incremental sync - get only new videos
-          serviceLogger.info('Performing incremental sync');
-          serverResponse = await apiService.getVideoSummaries({ since: lastSyncTimestamp, limit: 50, paginated: true });
-
-          if (!serverResponse.success) {
-            serviceLogger.error('Incremental sync failed', { error: serverResponse.error });
-            throw new Error(serverResponse.error || 'Failed to fetch new video summaries');
-          }
-
-          const newVideos = serverResponse.data.videos;
-          serviceLogger.info('Incremental sync received new videos', { newVideoCount: newVideos.length });
-
-          if (newVideos.length > 0) {
-            // Merge new videos with cached ones
-            finalVideos = await videoCacheService.mergeVideos(newVideos);
-            serviceLogger.info('Cache merged', { totalVideos: finalVideos.length });
-          } else {
-            // No new videos, use cached data
-            finalVideos = cachedVideos;
-            serviceLogger.info('No new videos, using cached data');
-
-            // Update last sync timestamp using server time (current server time approximation)
-            // Since no new videos, keep the last sync timestamp as is to avoid clock skew issues
-            serviceLogger.debug('No timestamp update needed - no new videos received');
-          }
-        }
-
-        // Step 5: Optional cache maintenance (retention disabled)
-        const cleanedCount = await videoCacheService.cleanOldVideos();
-        if (cleanedCount > 0) {
-          serviceLogger.info('Cleaned old videos during sync', { cleanedCount });
-        }
-
-        // Step 6: Get updated cache stats
-        const updatedCacheStats = await videoCacheService.getCacheStats();
-
-        const result: CacheAwareData = {
-          videos: finalVideos,
-          fromCache: !shouldFullSync && serverResponse.data.videos.length === 0,
-          lastSync: Date.now(),
-          nextCursor: shouldFullSync ? nextCursorFromSync : (nextCursor ?? buildCursorFromVideos(finalVideos)),
-          cacheStats: {
-            totalEntries: updatedCacheStats.totalEntries,
-            cacheSize: updatedCacheStats.cacheSize,
-            lastSync: updatedCacheStats.lastSync,
-          }
-        };
-
-        serviceLogger.endTimer(timerId, 'Hybrid sync completed');
-        serviceLogger.info('Hybrid sync details', {
-          totalVideos: finalVideos.length,
-          fromCache: result.fromCache,
-          cacheSizeKB: updatedCacheStats.cacheSize,
-          syncType: shouldFullSync ? 'full' : 'incremental',
-          networkVideos: shouldFullSync ? finalVideos.length : serverResponse.data.videos.length
-        });
-
-        return result;
-      } catch (error) {
-        serviceLogger.endTimer(timerId, 'Hybrid sync failed');
-        serviceLogger.error('Hybrid sync error', { error: error instanceof Error ? error.message : String(error) });
-
-        // Fallback: try to return cached data on error
-        try {
-          const fallbackVideos = await videoCacheService.getCachedVideos();
-          const fallbackStats = await videoCacheService.getCacheStats();
-
-          serviceLogger.info('Using cached fallback', { videoCount: fallbackVideos.length });
-
-          const data = toCacheAwareData(fallbackVideos, fallbackStats);
-          data.nextCursor = buildCursorFromVideos(fallbackVideos);
-          return data;
-        } catch (fallbackError) {
-          serviceLogger.error('Fallback also failed', { error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError) });
-          throw error; // Re-throw original error
-        }
+      if (skipInitialFetchRef.current) {
+        skipInitialFetchRef.current = false;
+        serviceLogger.info('Skipping initial network sync; using cached summaries only');
+        return videoSummariesSyncService.getCachedData();
       }
+      return videoSummariesSyncService.sync({ userId: user?.id, existingCursor: nextCursor });
     },
     staleTime: 2 * 60 * 1000, // 2 minutes (reduced since we have local cache)
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
-    refetchOnMount: true, // Always revalidate on mount (SWR)
+    refetchOnMount: options.refetchOnMount ?? true, // Always revalidate on mount (SWR)
     retry: 2, // Reduced retries since we have fallback
     enabled: true,
   });
@@ -238,22 +63,24 @@ export const useVideoSummariesCached = () => {
       }
 
       try {
-        const cachedVideos = await videoCacheService.getCachedVideos();
-        if (cachedVideos.length === 0) {
+        const cachedData = await videoSummariesSyncService.getCachedData();
+        if (cachedData.videos.length === 0) {
           if (!cancelled) {
             setCachePrimed(true);
           }
           return;
         }
 
-        const cacheStats = await videoCacheService.getCacheStats();
         if (cancelled) {
           return;
         }
 
-        const primedData = toCacheAwareData(cachedVideos, cacheStats);
-        primedData.nextCursor = buildCursorFromVideos(cachedVideos);
-        queryClient.setQueryData(['videoSummariesCached', user?.id], primedData);
+        const primedData: CacheAwareData = {
+          ...cachedData,
+          videos: cachedData.videos
+        };
+        primedData.nextCursor = buildCursorFromVideos(cachedData.videos);
+        queryClient.setQueryData(queryKey, primedData);
         setCacheData(primedData);
         setCachePrimed(true);
       } catch (error) {

@@ -2,7 +2,11 @@ import { ModalHeader } from '@/components/AppHeader';
 import { ShookLoadingScreen } from '@/components/ShookLoadingScreen';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useUserChannelsCached } from '@/hooks/useUserChannelsCached';
-import { transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
+import { useVideoSummaryDetail } from '@/hooks/useVideoSummaryDetail';
+import { transformVideoSummaryToCardData } from '@/hooks/useVideoSummariesCached';
+import { getVideoSummariesQueryKey, type CacheAwareData, videoSummariesSyncService } from '@/services/video-summaries-sync';
+import { useAuthStore } from '@/stores/auth-store';
+import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
@@ -23,46 +27,38 @@ export default function SummaryDetailScreen() {
   const videoId = params.summaryId as string;
   const fromNotification = params.fromNotification === 'true';
 
-  const { data: videoSummaries = [], isLoading, error, refetch } = useVideoSummariesCached();
+  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+  const backgroundSyncTriggered = React.useRef(false);
+  const { data: videoSummary, isLoading, error } = useVideoSummaryDetail(videoId, { fromNotification });
   const { channels } = useUserChannelsCached();
 
-  // Find the specific video by ID and transform it to get channel info
-  const videoSummary = React.useMemo(() => {
-    return videoSummaries.find(video => video.videoId === videoId);
-  }, [videoSummaries, videoId]);
-
-  // Auto-refetch polling when from notification and summary not ready
+  // Background sync to refresh summaries list while viewing detail from notification
   React.useEffect(() => {
-    if (!fromNotification) return;
-    if (videoSummary?.summary && videoSummary?.processed) return;
+    if (!fromNotification || backgroundSyncTriggered.current) {
+      return;
+    }
+    if (!user?.id) {
+      return;
+    }
 
-    uiLogger.info('Starting polling for video summary', { videoId });
+    backgroundSyncTriggered.current = true;
 
-    // Poll every 2 seconds, max 15 times (30 seconds total)
-    let pollCount = 0;
-    const maxPolls = 15;
+    const queryKey = getVideoSummariesQueryKey(user.id);
+    const existingData = queryClient.getQueryData<CacheAwareData>(queryKey);
+    const existingCursor = existingData?.nextCursor ?? null;
 
-    const pollInterval = setInterval(async () => {
-      pollCount++;
-      uiLogger.debug('Polling for summary', { videoId, pollCount, maxPolls });
-
-      await refetch();
-
-      // Check if we got the summary
-      const updatedVideo = videoSummaries.find(v => v.videoId === videoId);
-      if (updatedVideo?.summary && updatedVideo?.processed) {
-        uiLogger.info('Summary loaded successfully', { videoId, pollCount });
-        clearInterval(pollInterval);
-      } else if (pollCount >= maxPolls) {
-        uiLogger.warn('Polling timeout - summary not ready', { videoId, pollCount });
-        clearInterval(pollInterval);
-      }
-    }, 2000);
-
-    return () => {
-      clearInterval(pollInterval);
-    };
-  }, [fromNotification, videoId, videoSummary?.summary, videoSummary?.processed, refetch, videoSummaries]);
+    videoSummariesSyncService.syncInBackground({
+      userId: user.id,
+      existingCursor,
+      queryClient,
+      reason: 'notification-detail'
+    }).catch((syncError) => {
+      uiLogger.error('Background summaries sync failed', {
+        error: syncError instanceof Error ? syncError.message : String(syncError)
+      });
+    });
+  }, [fromNotification, queryClient, user?.id]);
   
   // Transform to get channel information using cached data (includes real thumbnails)
   const cardData = React.useMemo(() => {
