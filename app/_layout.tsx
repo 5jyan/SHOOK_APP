@@ -33,6 +33,7 @@ export default function RootLayout() {
   });
   const [isAppReady, setIsAppReady] = useState(false);
   const appState = useRef<AppStateStatus>(AppState.currentState);
+  const hasHandledInitialNotification = useRef(false);
   const currentVersion = Constants.expoConfig?.version || Updates.manifest?.version || '0.0.0';
   const minSupportedVersion = Constants.expoConfig?.extra?.minSupportedVersion as string | undefined;
   const appStoreUrl = Constants.expoConfig?.extra?.appStoreUrl as string | undefined;
@@ -179,6 +180,18 @@ export default function RootLayout() {
       notificationService.removeNotificationListeners(listeners);
     };
   }, [loaded]);
+
+  useEffect(() => {
+    if (!isAppReady || hasHandledInitialNotification.current) {
+      return;
+    }
+    hasHandledInitialNotification.current = true;
+    notificationService.handleInitialNotificationResponse().catch((error) => {
+      configLogger.error('Failed to handle initial notification response', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    });
+  }, [isAppReady]);
 
   if (!loaded) {
     return null;

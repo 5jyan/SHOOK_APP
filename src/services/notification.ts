@@ -5,6 +5,8 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 import { useNotificationStore } from '@/stores/notification-store';
 import { apiService, type PushTokenData, type PushTokenInfo } from './api';
 import { queryClient } from '@/lib/query-client';
@@ -30,6 +32,8 @@ export class NotificationService {
   private static instance: NotificationService;
   private pushToken: string | null = null;
   private isInitialized = false;
+  private lastHandledResponseId: string | null = null;
+  private readonly DEVICE_ID_KEY = '@device_id';
 
   private constructor() {}
 
@@ -58,7 +62,7 @@ export class NotificationService {
       
       if (response.success && response.data && Array.isArray(response.data)) {
         const tokens = response.data;
-        const deviceId = Constants.sessionId || 'unknown';
+        const deviceId = await this.getDeviceId();
         
         // Find current device's token
         const currentDeviceToken = tokens.find(token => token.deviceId === deviceId);
@@ -171,6 +175,20 @@ export class NotificationService {
     }
   }
 
+  private async getDeviceId(): Promise<string> {
+    const stored = await AsyncStorage.getItem(this.DEVICE_ID_KEY);
+    if (stored) {
+      return stored;
+    }
+
+    const newId = uuidv4();
+    await AsyncStorage.setItem(this.DEVICE_ID_KEY, newId);
+    notificationLogger.info('New device ID created for notifications', {
+      deviceId: newId.substring(0, 8) + '...'
+    });
+    return newId;
+  }
+
   // Request notification permissions
   async requestPermissions(): Promise<Notifications.NotificationPermissionsStatus> {
     notificationLogger.info('Requesting notification permissions');
@@ -266,9 +284,10 @@ export class NotificationService {
       return null;
     }
 
+    const deviceId = await this.getDeviceId();
     return {
       token: this.pushToken,
-      deviceId: Constants.sessionId || 'unknown',
+      deviceId,
       platform: Platform.OS,
       appVersion: Constants.expoConfig?.version || '1.0.0',
     };
@@ -320,7 +339,7 @@ export class NotificationService {
     notificationLogger.info('Unregistering push token from backend');
     
     try {
-      const deviceId = Constants.sessionId || 'unknown';
+      const deviceId = await this.getDeviceId();
       const response = await apiService.unregisterPushToken(deviceId);
       
       if (response.success) {
@@ -435,54 +454,8 @@ export class NotificationService {
     });
 
     // Listener for when user taps on notification
-    const responseListener = Notifications.addNotificationResponseReceivedListener(async (response) => {
-      notificationLogger.info('User tapped notification', { title: response.notification.request.content.title });
-
-      // Handle notification tap - navigate to specific summary or summaries tab
-      const data = response.notification.request.content.data;
-
-      try {
-        if (data?.videoId) {
-          notificationLogger.info('Handling notification tap for video', { videoId: data.videoId });
-
-          // Trigger background refetch immediately
-          notificationLogger.info('Triggering background refetch for new video');
-          queryClient.refetchQueries({
-            queryKey: ['videoSummariesCached']
-          }).catch((error) => {
-            notificationLogger.error('Background refetch failed', {
-              error: error instanceof Error ? error.message : String(error)
-            });
-          });
-
-          // Navigate to detail page (will show loading screen until refetch completes)
-          notificationLogger.info('Navigating to summary detail', { videoId: data.videoId });
-          router.push({
-            pathname: '/summary-detail',
-            params: {
-              summaryId: data.videoId,
-              fromNotification: 'true'  // Flag to trigger polling
-            }
-          });
-        } else {
-          notificationLogger.info('No videoId, navigating to summaries tab');
-
-          // Fallback: Navigate to summaries tab when no specific video ID
-          router.replace('/(tabs)/summaries');
-        }
-      } catch (error) {
-        notificationLogger.error('Error navigating to summary detail', {
-          error: error instanceof Error ? error.message : String(error)
-        });
-        // Fallback: try to navigate to summaries tab
-        try {
-          router.replace('/(tabs)/summaries');
-        } catch (fallbackError) {
-          notificationLogger.error('Fallback navigation also failed', {
-            error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
-          });
-        }
-      }
+    const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
+      this.handleNotificationResponse(response);
     });
 
     return {
@@ -499,6 +472,80 @@ export class NotificationService {
     notificationLogger.info('Removing notification listeners');
     listeners.notificationListener.remove();
     listeners.responseListener.remove();
+  }
+
+  // Handle notification tap for both foreground/background and cold start cases
+  async handleInitialNotificationResponse(): Promise<void> {
+    try {
+      const response = await Notifications.getLastNotificationResponseAsync();
+      if (!response) {
+        return;
+      }
+      await this.handleNotificationResponse(response);
+    } catch (error) {
+      notificationLogger.error('Failed to handle initial notification response', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async handleNotificationResponse(response: Notifications.NotificationResponse): Promise<void> {
+    const responseId = response.notification.request.identifier;
+    if (this.lastHandledResponseId === responseId) {
+      return;
+    }
+    this.lastHandledResponseId = responseId;
+
+    notificationLogger.info('User tapped notification', { title: response.notification.request.content.title });
+
+    // Handle notification tap - navigate to specific summary or summaries tab
+    const data = response.notification.request.content.data;
+
+    try {
+      if (data?.videoId) {
+        notificationLogger.info('Handling notification tap for video', { videoId: data.videoId });
+
+        // Trigger background refetch immediately
+        notificationLogger.info('Triggering background refetch for new video');
+        queryClient.refetchQueries({
+          queryKey: ['videoSummariesCached']
+        }).catch((error) => {
+          notificationLogger.error('Background refetch failed', {
+            error: error instanceof Error ? error.message : String(error)
+          });
+        });
+
+        // Navigate to summaries tab first, then push detail for a smoother UX
+        notificationLogger.info('Navigating to summaries tab before summary detail', { videoId: data.videoId });
+        router.replace('/(tabs)/summaries');
+        setTimeout(() => {
+          router.push({
+            pathname: '/summary-detail',
+            params: {
+              summaryId: data.videoId,
+              fromNotification: 'true'  // Flag to trigger polling
+            }
+          });
+        }, 50);
+      } else {
+        notificationLogger.info('No videoId, navigating to summaries tab');
+
+        // Fallback: Navigate to summaries tab when no specific video ID
+        router.replace('/(tabs)/summaries');
+      }
+    } catch (error) {
+      notificationLogger.error('Error navigating to summary detail', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      // Fallback: try to navigate to summaries tab
+      try {
+        router.replace('/(tabs)/summaries');
+      } catch (fallbackError) {
+        notificationLogger.error('Fallback navigation also failed', {
+          error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+        });
+      }
+    }
   }
 }
 

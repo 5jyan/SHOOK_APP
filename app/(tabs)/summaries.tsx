@@ -10,7 +10,7 @@ import { uiLogger } from '@/utils/logger-enhanced';
 import { useIsFocused } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SummariesScreen() {
@@ -145,11 +145,7 @@ export default function SummariesScreen() {
         </View>
       );
     }
-    return (
-      <Pressable style={styles.loadMoreButton} onPress={fetchNextPage}>
-        <Text style={styles.loadMoreText}>더 불러오기</Text>
-      </Pressable>
-    );
+    return null;
   };
 
   const renderSummaryCard = ({ item }: { item: SummaryCardData }) => (
@@ -267,16 +263,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  loadMoreButton: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadMoreText: {
-    fontSize: 14,
-    color: '#4285f4',
-    fontWeight: '600',
   },
   retryButton: {
     backgroundColor: '#4285f4',
