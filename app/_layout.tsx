@@ -38,6 +38,24 @@ export default function RootLayout() {
   const minSupportedVersion = Constants.expoConfig?.extra?.minSupportedVersion as string | undefined;
   const appStoreUrl = Constants.expoConfig?.extra?.appStoreUrl as string | undefined;
   const playStoreUrl = Constants.expoConfig?.extra?.playStoreUrl as string | undefined;
+  const checkForUpdates = async () => {
+    try {
+      // Only check in production builds
+      if (!__DEV__) {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          configLogger.info('Update available, downloading...');
+          await Updates.fetchUpdateAsync();
+          configLogger.info('Update downloaded, reloading app...');
+          await Updates.reloadAsync();
+        }
+      }
+    } catch (error) {
+      configLogger.error('Update check failed', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  };
 
   const compareVersions = (a: string, b: string) => {
     const aParts = a.split('.').map(Number);
@@ -81,25 +99,6 @@ export default function RootLayout() {
 
   // Auto-update on app foreground (background -> active)
   useEffect(() => {
-    const checkForUpdates = async () => {
-      try {
-        // Only check in production builds
-        if (!__DEV__) {
-          const update = await Updates.checkForUpdateAsync();
-          if (update.isAvailable) {
-            configLogger.info('Update available, downloading...');
-            await Updates.fetchUpdateAsync();
-            configLogger.info('Update downloaded, reloading app...');
-            await Updates.reloadAsync();
-          }
-        }
-      } catch (error) {
-        configLogger.error('Update check failed', {
-          error: error instanceof Error ? error.message : String(error)
-        });
-      }
-    };
-
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       // App moved from background to foreground
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
@@ -165,6 +164,9 @@ export default function RootLayout() {
 
       // Restore persisted queries
       restoreQueryClient();
+
+      // Check for OTA updates on cold start too
+      await checkForUpdates();
 
       setIsAppReady(true);
     };
