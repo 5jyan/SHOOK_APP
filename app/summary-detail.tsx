@@ -118,9 +118,11 @@ export default function SummaryDetailScreen() {
     try {
       const youtubeUrl = `https://youtube.com/watch?v=${videoSummary.videoId}`;
       const summary = videoSummary.summary || '요약이 아직 생성되지 않았습니다.';
+      const channelName = cardData?.channelName || videoSummary.channelTitle || 'Unknown Channel';
+      const shareMessage = `채널: ${channelName}\n제목: ${videoSummary.title}\n\n${summary}\n\n영상 보기: ${youtubeUrl}`;
       
       await Share.share({
-        message: `${videoSummary.title}\n\n${summary.substring(0, 200)}...\n\n영상 보기: ${youtubeUrl}`,
+        message: shareMessage,
         title: videoSummary.title,
       });
     } catch (error) {
