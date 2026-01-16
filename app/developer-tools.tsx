@@ -19,7 +19,7 @@ export default function DeveloperToolsScreen() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <Text style={styles.description}>
-            개발 및 테스트를 위한 도구들입니다. 이 기능들은 앱의 내부 동작을 확인하고 디버깅하는 데 사용됩니다.(v1.1.1-3: 공유하기 기능 개선)
+            개발 및 테스트를 위한 도구들입니다. 이 기능들은 앱의 내부 동작을 확인하고 디버깅하는 데 사용됩니다.(v1.1.1-5: 인기 채널 ui 깨짐 개선)
           </Text>
 
           {/* Developer Tools Section */}

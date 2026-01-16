@@ -285,13 +285,14 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
     );
   };
 
-  const renderPopularSection = () => {
+  const renderPopularSection = (options: { fullBleed?: boolean } = {}) => {
     if (!showPopularSection) {
       return null;
     }
+    const { fullBleed = true } = options;
 
     return (
-      <View style={styles.popularSection}>
+      <View style={[styles.popularSection, fullBleed && styles.popularSectionFullBleed]}>
         <Text style={styles.popularSectionTitle}>인기 채널</Text>
         <View style={styles.popularCardsRow}>
           {popularChannels.slice(0, 3).map((channel) => {
@@ -336,7 +337,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
 
   const renderListHeader = () => (
     <View>
-      {renderPopularSection()}
+      {renderPopularSection({ fullBleed: true })}
       <Text style={styles.myChannelsTitle}>나의 채널</Text>
     </View>
   );
@@ -364,7 +365,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
   if (channels.length === 0) {
     return (
       <View style={styles.container}>
-        {renderPopularSection()}
+        {renderPopularSection({ fullBleed: false })}
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>구독 중인 채널이 없습니다</Text>
           <Text style={styles.emptyDescription}>
@@ -419,11 +420,13 @@ const styles = StyleSheet.create({
   },
   popularSection: {
     marginBottom: 10,
-    marginHorizontal: -16,
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 16,
     backgroundColor: '#f3f4f6',
+  },
+  popularSectionFullBleed: {
+    marginHorizontal: -16,
   },
   popularSectionTitle: {
     fontSize: 18,
