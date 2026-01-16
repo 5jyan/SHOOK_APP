@@ -116,7 +116,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
               Alert.alert('구독 취소 완료', `"${channel.youtubeChannel.title}" 채널 구독이 취소되었습니다.`);
             } catch (err) {
               Alert.alert(
-                '구독 취소 실패', 
+                '구독 취소 실패',
                 err instanceof Error ? err.message : '채널 구독 취소 중 오류가 발생했습니다.'
               );
             } finally {
@@ -364,11 +364,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
   if (channels.length === 0) {
     return (
       <View style={styles.container}>
-        {showPopularSection ? (
-          <View style={styles.popularSectionWrapper}>
-            {renderPopularSection()}
-          </View>
-        ) : null}
+        {renderPopularSection()}
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>구독 중인 채널이 없습니다</Text>
           <Text style={styles.emptyDescription}>
@@ -412,23 +408,31 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   listContainer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 0,
   },
   popularSectionWrapper: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   popularSection: {
-    marginBottom: 16,
+    marginBottom: 10,
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 16,
+    backgroundColor: '#f3f4f6',
   },
   popularSectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 12,
   },
   myChannelsTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 12,
