@@ -49,7 +49,7 @@ export default function ChannelSearchScreen() {
   } = useChannelSearch();
   
   const [loadingChannelId, setLoadingChannelId] = React.useState<string | null>(null);
-  const maxChannels = 5;
+  const maxChannels = 7;
   const maxSearchResults = 10; // 검색 결과는 최대 10개
   // manager 역할 사용자는 채널 제한이 없음
   const isChannelLimitReached = user?.role !== 'manager' && channelCount >= maxChannels;

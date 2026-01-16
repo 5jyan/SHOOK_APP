@@ -34,7 +34,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
   const [addingChannelId, setAddingChannelId] = React.useState<string | null>(null);
   const [cachedPopularChannels, setCachedPopularChannels] = React.useState<PopularChannel[]>([]);
   const queryClient = useQueryClient();
-  const maxChannels = 5;
+  const maxChannels = 7;
   const isChannelLimitReached = user?.role !== 'manager' && channelCount >= maxChannels;
 
   const popularChannelsQuery = useQuery({
