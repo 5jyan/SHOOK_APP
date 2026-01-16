@@ -38,7 +38,7 @@ export default function ChannelsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <TabHeader
-        title="나의 채널"
+        title="채널"
         rightComponent={
           <TouchableOpacity onPress={handleSearchPress} style={styles.addButton}>
             <IconSymbol name="plus.circle.fill" size={24} color="#374151" />

@@ -68,6 +68,11 @@ interface YoutubeChannel {
   lastRssErrorAt?: string | null;
 }
 
+interface PopularChannel extends YoutubeChannel {
+  rank: number;
+  userSubscriberCount: number;
+}
+
 // Backend actually returns this structure
 interface BackendUserChannel extends YoutubeChannel {
   subscriptionId: number;
@@ -96,6 +101,12 @@ interface VideoSummary {
   createdAt: string; // ISO 8601 date-time
   channelTitle: string; // Channel name from JOIN with youtube_channels table
   channelThumbnail?: string; // Channel thumbnail URL from backend
+}
+
+interface AddChannelResponse {
+  success: boolean;
+  message?: string;
+  latestVideo?: VideoSummary | null;
 }
 
 interface VideoSummariesPage {
@@ -383,8 +394,12 @@ class ApiService {
     return response as ApiResponse<UserChannel[]>;
   }
 
-  async addChannel(channelId: string): Promise<ApiResponse<{ success: boolean; message?: string }>> {
-    return this.makeRequest<{ success: boolean; message?: string }>('/api/channels', {
+  async getPopularChannels(): Promise<ApiResponse<PopularChannel[]>> {
+    return this.makeRequest<PopularChannel[]>(`/api/channels/popular`);
+  }
+
+  async addChannel(channelId: string): Promise<ApiResponse<AddChannelResponse>> {
+    return this.makeRequest<AddChannelResponse>('/api/channels', {
       method: 'POST',
       body: JSON.stringify({ channelId }),
     });
@@ -606,4 +621,4 @@ interface PushTokenInfo {
 }
 
 // Export interfaces for use in other files
-export type { BackendUserChannel, UserChannel, VideoSummary, YoutubeChannel, PushTokenData, RegisterPushTokenResponse, PushTokenInfo };
+export type { BackendUserChannel, UserChannel, VideoSummary, YoutubeChannel, PopularChannel, PushTokenData, RegisterPushTokenResponse, PushTokenInfo };
