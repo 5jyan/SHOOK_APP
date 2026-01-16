@@ -90,41 +90,27 @@ export default function ChannelSearchScreen() {
       const response = await apiService.addChannel(channel.channelId);
 
       if (response.success) {
+        const latestVideos = response.data?.latestVideos?.length
+          ? response.data.latestVideos
+          : response.data?.latestVideo
+            ? [response.data.latestVideo]
+            : [];
+
         serviceLogger.info('Channel added successfully', {
           channelTitle: channel.title,
-          hasLatestVideo: !!response.data?.latestVideo,
-          videoId: response.data?.latestVideo?.videoId
+          latestVideosCount: latestVideos.length,
         });
 
-        // Check if backend returned latest video (existing channel scenario)
-        if (response.data?.latestVideo) {
-          // Existing channel - add video to cache immediately
-          serviceLogger.info('Adding latest video to cache immediately', {
-            videoId: response.data.latestVideo.videoId,
+        if (latestVideos.length > 0) {
+          serviceLogger.info('Merging latest videos into cache', {
+            videoIds: latestVideos.map((video) => video.videoId),
             channelTitle: channel.title
           });
 
-          const currentCache = await videoCacheService.getCachedVideos();
-
-          // Log the video data we're about to add
-          serviceLogger.info('Video data received from backend', {
-            videoId: response.data.latestVideo.videoId,
-            title: response.data.latestVideo.title,
-            processed: response.data.latestVideo.processed,
-            hasSummary: !!response.data.latestVideo.summary,
-            summaryLength: response.data.latestVideo.summary?.length || 0,
-            processingStatus: response.data.latestVideo.processingStatus
-          });
-
-          const updatedCache = [response.data.latestVideo, ...currentCache];
-          await videoCacheService.saveVideosToCache(updatedCache);
+          await videoCacheService.mergeVideos(latestVideos);
 
           // Invalidate TanStack Query cache to trigger re-render
           queryClient.invalidateQueries({ queryKey: ['videoSummariesCached', user?.id] });
-
-          serviceLogger.info('Latest video added to cache and query invalidated', {
-            videoId: response.data.latestVideo.videoId
-          });
         } else {
           // New channel - video processing in background
           // Don't signal channel list change - let incremental sync handle it naturally

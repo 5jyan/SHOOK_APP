@@ -10,7 +10,7 @@ import { uiLogger } from '@/utils/logger-enhanced';
 import { useIsFocused } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SummariesScreen() {
@@ -78,7 +78,13 @@ export default function SummariesScreen() {
   
   // Transform API data to match component interface
   const summaries: SummaryCardData[] = React.useMemo(() => {
-    let filtered = videoSummaries.filter(video => video.processed && video.summary);
+    let filtered = videoSummaries.filter((video) => {
+      const isSummarized = video.isSummarized ?? !!video.summary;
+      if (isSummarized) {
+        return !!video.summary;
+      }
+      return video.processingStatus !== 'failed';
+    });
 
     // Filter by selected channel if one is selected
     if (selectedChannelId) {
@@ -129,6 +135,11 @@ export default function SummariesScreen() {
   }, [refetch]);
 
   const handleCardPress = (summary: SummaryCardData) => {
+    if (!summary.isSummarized) {
+      Alert.alert('요약 진행 중', '해당 영상은 요약이 진행중입니다');
+      return;
+    }
+
     uiLogger.info('Opening summary', { videoTitle: summary.videoTitle, videoId: summary.videoId });
     router.push({
       pathname: '/summary-detail',
@@ -202,7 +213,10 @@ export default function SummariesScreen() {
   }
 
   // 전체 영상이 없는 경우 (채널 구독 전)
-  const hasNoVideosAtAll = videoSummaries.filter(video => video.processed && video.summary).length === 0;
+  const hasNoVideosAtAll = videoSummaries.filter((video) => {
+    const isSummarized = video.isSummarized ?? !!video.summary;
+    return isSummarized ? !!video.summary : true;
+  }).length === 0;
 
   return (
     <SafeAreaView style={styles.container}>

@@ -133,8 +133,8 @@ export class VideoSummariesSyncService {
         finalVideos = serverResponse.data.videos;
         nextCursorFromSync = serverResponse.data.nextCursor;
 
-        // Replace entire cache with server timestamp
-        await videoCacheService.saveVideosToCache(finalVideos);
+        // Merge to preserve unsummarized local videos (e.g., newly added channels)
+        finalVideos = await videoCacheService.mergeVideos(finalVideos);
 
         // Clear channel change signal after successful full sync
         if (channelListChanged) {

@@ -76,6 +76,7 @@ export interface SummaryCardData {
   createdAt: string;
   publishedAt: string;
   duration: string;
+  isSummarized: boolean;
 }
 
 export const transformVideoSummaryToCardData = (
@@ -94,5 +95,6 @@ export const transformVideoSummaryToCardData = (
     createdAt: video.createdAt,
     publishedAt: video.publishedAt,
     duration: '00:00', // Duration not provided by API, would need additional YouTube API call
+    isSummarized: video.isSummarized ?? !!video.summary,
   };
 };

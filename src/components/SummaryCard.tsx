@@ -18,6 +18,7 @@ interface SummaryData {
   createdAt: string;
   publishedAt: string;
   duration: string;
+  isSummarized: boolean;
 }
 
 interface SummaryCardProps {
@@ -26,6 +27,8 @@ interface SummaryCardProps {
 }
 
 export function SummaryCard({ summary, onPress }: SummaryCardProps) {
+  const isPending = !summary.isSummarized;
+
   const formatTimeAgo = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
@@ -54,6 +57,7 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
     <Pressable 
       style={({ pressed }) => [
         styles.listItem,
+        isPending && styles.listItemPending,
         pressed && styles.listItemPressed
       ]}
       onPress={onPress}
@@ -103,6 +107,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     paddingVertical: 8,
     paddingHorizontal: 12,
+  },
+  listItemPending: {
+    opacity: 0.5,
   },
   listItemPressed: {
     backgroundColor: '#f9fafb',

@@ -97,16 +97,23 @@ interface VideoSummary {
   summary: string | null;
   transcript: string | null;
   processed: boolean;
+  isSummarized?: boolean;
   errorMessage: string | null;
   createdAt: string; // ISO 8601 date-time
   channelTitle: string; // Channel name from JOIN with youtube_channels table
   channelThumbnail?: string; // Channel thumbnail URL from backend
+  processingStatus?: string;
+  processingStartedAt?: string | null;
+  processingCompletedAt?: string | null;
+  retryCount?: number | null;
+  videoType?: string | null;
 }
 
 interface AddChannelResponse {
   success: boolean;
   message?: string;
   latestVideo?: VideoSummary | null;
+  latestVideos?: VideoSummary[] | null;
 }
 
 interface VideoSummariesPage {

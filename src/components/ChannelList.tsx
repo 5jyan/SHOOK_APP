@@ -170,10 +170,14 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
       const response = await apiService.addChannel(channel.channelId);
 
       if (response.success) {
-        if (response.data?.latestVideo) {
-          const currentCache = await videoCacheService.getCachedVideos();
-          const updatedCache = [response.data.latestVideo, ...currentCache];
-          await videoCacheService.saveVideosToCache(updatedCache);
+        const latestVideos = response.data?.latestVideos?.length
+          ? response.data.latestVideos
+          : response.data?.latestVideo
+            ? [response.data.latestVideo]
+            : [];
+
+        if (latestVideos.length > 0) {
+          await videoCacheService.mergeVideos(latestVideos);
           queryClient.invalidateQueries({ queryKey: ['videoSummariesCached', user?.id] });
         }
 
