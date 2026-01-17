@@ -1,7 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
 import { videoSummaryService } from '@/services/video-summary-service';
+import { getVideoSummariesQueryKey, type CacheAwareData } from '@/services/video-summaries-sync';
+import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
 
 interface UseVideoSummaryDetailOptions {
@@ -15,6 +17,8 @@ export const useVideoSummaryDetail = (
   const fromNotification = options.fromNotification ?? false;
   const pollCountRef = useRef(0);
   const maxPolls = 15;
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     pollCountRef.current = 0;
@@ -29,6 +33,37 @@ export const useVideoSummaryDetail = (
       return videoSummaryService.fetchSummaryWithCache(videoId);
     },
     enabled: !!videoId,
+    onSuccess: (data) => {
+      if (!data || !user?.id) {
+        return;
+      }
+
+      const queryKey = getVideoSummariesQueryKey(user.id);
+      queryClient.setQueryData<CacheAwareData>(queryKey, (existing) => {
+        if (!existing) {
+          return existing;
+        }
+
+        let hasUpdate = false;
+        const updatedVideos = existing.videos.map((video) => {
+          if (video.videoId !== data.videoId) {
+            return video;
+          }
+          hasUpdate = true;
+          return { ...video, ...data };
+        });
+
+        if (!hasUpdate) {
+          return existing;
+        }
+
+        return {
+          ...existing,
+          videos: updatedVideos,
+          lastSync: Date.now(),
+        };
+      });
+    },
     refetchOnWindowFocus: false,
     refetchInterval: (data) => {
       if (!fromNotification) {

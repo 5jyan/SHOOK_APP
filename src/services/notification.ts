@@ -10,6 +10,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { useNotificationStore } from '@/stores/notification-store';
 import { apiService, type PushTokenData, type PushTokenInfo } from './api';
 import { queryClient } from '@/lib/query-client';
+import { videoSummaryService } from '@/services/video-summary-service';
+import { getVideoSummariesQueryKey, type CacheAwareData } from '@/services/video-summaries-sync';
+import { useAuthStore } from '@/stores/auth-store';
 import { notificationLogger } from '@/utils/logger-enhanced';
 
 // Configure how notifications are handled when received
@@ -436,16 +439,51 @@ export class NotificationService {
           channelId: data.channelId,
           channelName: data.channelName
         });
-        
-        // Trigger refetch which will use incremental sync to get only new videos
-        queryClient.refetchQueries({
-          queryKey: ['videoSummariesCached']
-        }).then(() => {
-          notificationLogger.info('Video summaries refetch completed - new video should be in cache now');
-        }).catch((error) => {
-          notificationLogger.error('Error during video summaries refetch', { error: error instanceof Error ? error.message : String(error) });
-        });
-        
+
+        if (data.videoId) {
+          videoSummaryService.fetchSummaryById(String(data.videoId)).then((summary) => {
+            const userId = useAuthStore.getState().user?.id;
+            if (!userId) {
+              return;
+            }
+
+            const queryKey = getVideoSummariesQueryKey(userId);
+            queryClient.setQueryData<CacheAwareData>(queryKey, (existing) => {
+              if (!existing) {
+                return existing;
+              }
+
+              let hasUpdate = false;
+              const updatedVideos = existing.videos.map((video) => {
+                if (video.videoId !== summary.videoId) {
+                  return video;
+                }
+                hasUpdate = true;
+                return { ...video, ...summary };
+              });
+
+              if (!hasUpdate) {
+                return existing;
+              }
+
+              return {
+                ...existing,
+                videos: updatedVideos,
+                lastSync: Date.now(),
+              };
+            });
+
+            notificationLogger.info('Video summary merged into cache from foreground push', {
+              videoId: summary.videoId
+            });
+          }).catch((error) => {
+            notificationLogger.error('Failed to fetch summary after push notification', {
+              error: error instanceof Error ? error.message : String(error),
+              videoId: data.videoId
+            });
+          });
+        }
+
         // Also refetch regular video summaries cache for compatibility
         queryClient.refetchQueries({
           queryKey: ['videoSummaries']
