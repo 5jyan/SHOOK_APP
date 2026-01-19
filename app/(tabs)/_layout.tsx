@@ -1,6 +1,7 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { Tabs, useNavigation } from 'expo-router';
+import React, { useCallback } from 'react';
+import { Alert, BackHandler, Platform } from 'react-native';
 
 import { HapticTab } from '@/components/HapticTab';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -11,6 +12,30 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const navigation = useNavigation();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android') {
+        return undefined;
+      }
+
+      const onBackPress = () => {
+        if (navigation.canGoBack()) {
+          return false;
+        }
+
+        Alert.alert('Exit app', 'Close the app?', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Exit', style: 'destructive', onPress: () => BackHandler.exitApp() },
+        ]);
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [navigation])
+  );
 
   return (
     <ProtectedRoute>
