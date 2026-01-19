@@ -2,6 +2,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Tabs, useNavigation } from 'expo-router';
 import React, { useCallback } from 'react';
 import { Alert, BackHandler, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/HapticTab';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -13,6 +14,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 8);
 
   useFocusEffect(
     useCallback(() => {
@@ -48,21 +51,21 @@ export default function TabLayout() {
             tabBarStyle: Platform.select({
               ios: {
                 position: 'absolute',
-                paddingBottom: 8,
-                height: 70,
+                paddingBottom: bottomInset,
+                height: 62 + bottomInset,
                 borderTopWidth: 1,
                 borderTopColor: '#e5e7eb',
               },
               android: {
-                paddingBottom: 8,
-                height: 65,
+                paddingBottom: bottomInset,
+                height: 57 + bottomInset,
                 paddingTop: 8,
                 borderTopWidth: 1,
                 borderTopColor: '#e5e7eb',
               },
               default: {
-                paddingBottom: 8,
-                height: 65,
+                paddingBottom: bottomInset,
+                height: 57 + bottomInset,
                 borderTopWidth: 1,
                 borderTopColor: '#e5e7eb',
               },
