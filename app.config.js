@@ -1,15 +1,15 @@
 import 'dotenv/config';
 
-const IS_LOCAL = false
+const IS_LOCAL = process.env.EXPO_PUBLIC_IS_LOCAL === 'true';
 
 // API URL config
 const getApiUrl = () => {
   if (IS_LOCAL) {
     return {
       android: 'http://10.0.2.2:3000',
-      ios: 'http://192.168.0.156:3000',
-      web: 'http://192.168.0.156:3000',
-      default: 'http://192.168.0.156:3000'
+      ios: 'http://127.0.0.1:3000',
+      web: 'http://127.0.0.1:3000',
+      default: 'http://127.0.0.1:3000'
     };
   }
   return process.env.EXPO_PUBLIC_API_URL_PRODUCTION;
