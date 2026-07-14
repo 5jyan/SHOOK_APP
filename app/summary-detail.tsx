@@ -394,6 +394,8 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 18,
     backgroundColor: '#ffffff',
+    borderBottomColor: '#e2e8f0',
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   videoTitle: {
     fontSize: 23,
