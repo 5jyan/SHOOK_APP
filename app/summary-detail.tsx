@@ -218,7 +218,10 @@ export default function SummaryDetailScreen() {
         {parsed.sections.length > 0 && (
           <View style={styles.detailsSection}>
             {parsed.sections.map((section, index) => {
+              const hasCoreHeading = parsed.sections[0]?.title.trim() === '핵심 내용';
               const expanded = !collapsedSections.has(index);
+              const isCoreHeading = hasCoreHeading && index === 0;
+              const displayNumber = index + 1 - (hasCoreHeading ? 1 : 0);
               return (
                 <View key={`section-${index}`} style={styles.detailCard}>
                   <TouchableOpacity
@@ -228,10 +231,14 @@ export default function SummaryDetailScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`${section.title} ${expanded ? '접기' : '펼치기'}`}
                   >
-                    <View style={styles.detailNumberBadge}>
-                      <Text style={styles.detailNumber}>{String(index + 1).padStart(2, '0')}</Text>
-                    </View>
-                    <Text style={styles.detailTitle}>{section.title}</Text>
+                    {!isCoreHeading && (
+                      <View style={styles.detailNumberBadge}>
+                        <Text style={styles.detailNumber}>{String(displayNumber).padStart(2, '0')}</Text>
+                      </View>
+                    )}
+                    <Text style={[styles.detailTitle, isCoreHeading && styles.coreHeadingTitle]}>
+                      {section.title}
+                    </Text>
                     <IconSymbol
                       name={expanded ? 'chevron.up' : 'chevron.down'}
                       size={18}
@@ -534,7 +541,7 @@ const styles = StyleSheet.create({
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 1,
+    marginRight: 6,
   },
   detailNumber: {
     color: '#2563eb',
@@ -549,6 +556,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     lineHeight: 24,
     marginRight: 4,
+  },
+  coreHeadingTitle: {
+    color: '#2563eb',
   },
   detailBody: {
     backgroundColor: '#ffffff',
