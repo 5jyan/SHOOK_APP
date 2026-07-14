@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomColor: '#e2e8f0',
     borderBottomWidth: 1,
-    paddingBottom: 7,
+    paddingBottom: 12,
     marginBottom: 8,
   },
   detailHeader: {
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   detailNumberBadge: {
-    width: 18,
+    width: 24,
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
@@ -539,8 +539,8 @@ const styles = StyleSheet.create({
   detailNumber: {
     color: '#2563eb',
     textAlign: 'center',
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '700',
   },
   detailTitle: {
     flex: 1,
