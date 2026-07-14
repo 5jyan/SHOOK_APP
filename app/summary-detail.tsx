@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
   },
   summarySection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingTop: 14,
   },
   summaryContent: {
@@ -518,23 +518,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomColor: '#e2e8f0',
     borderBottomWidth: 1,
-    paddingBottom: 18,
-    marginBottom: 22,
+    paddingBottom: 7,
+    marginBottom: 8,
   },
   detailHeader: {
-    minHeight: 48,
+    minHeight: 38,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 0,
-    paddingVertical: 4,
+    paddingVertical: 0,
     backgroundColor: '#ffffff',
   },
   detailNumberBadge: {
-    width: 22,
-    height: 26,
+    width: 18,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 3,
+    marginRight: 1,
   },
   detailNumber: {
     color: '#2563eb',
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     paddingLeft: 0,
     paddingRight: 0,
-    paddingTop: 8,
+    paddingTop: 4,
     paddingBottom: 0,
   },
   timestampButton: {
