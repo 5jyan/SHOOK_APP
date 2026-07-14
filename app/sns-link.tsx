@@ -60,13 +60,15 @@ export default function SnsLinkScreen() {
                 true
               );
 
+              const email = backendUser.email || kakaoResult.user.email || undefined;
+              const picture = kakaoResult.user.profileImage || undefined;
               login({
                 id: backendUser.id.toString(),
                 username: backendUser.username || backendUser.name || kakaoResult.user.name,
-                email: backendUser.email || kakaoResult.user.email || undefined,
                 role: backendUser.role,
                 isGuest: backendUser.isGuest,
-                picture: kakaoResult.user.profileImage || undefined,
+                ...(email ? { email } : {}),
+                ...(picture ? { picture } : {}),
               });
 
               await channelCacheService.clearCache();

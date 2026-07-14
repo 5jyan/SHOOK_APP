@@ -24,51 +24,27 @@ export const useVideoSummaryDetail = (
     pollCountRef.current = 0;
   }, [videoId, fromNotification]);
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['videoSummaryDetail', videoId],
     queryFn: async () => {
       if (!videoId) {
         throw new Error('Missing videoId');
       }
-      return videoSummaryService.fetchSummaryWithCache(videoId);
+      try {
+        return await videoSummaryService.fetchSummaryWithCache(videoId);
+      } finally {
+        if (fromNotification) {
+          pollCountRef.current += 1;
+        }
+      }
     },
     enabled: !!videoId,
-    onSuccess: (data) => {
-      if (!data || !user?.id) {
-        return;
-      }
-
-      const queryKey = getVideoSummariesQueryKey(user.id);
-      queryClient.setQueryData<CacheAwareData>(queryKey, (existing) => {
-        if (!existing) {
-          return existing;
-        }
-
-        let hasUpdate = false;
-        const updatedVideos = existing.videos.map((video) => {
-          if (video.videoId !== data.videoId) {
-            return video;
-          }
-          hasUpdate = true;
-          return { ...video, ...data };
-        });
-
-        if (!hasUpdate) {
-          return existing;
-        }
-
-        return {
-          ...existing,
-          videos: updatedVideos,
-          lastSync: Date.now(),
-        };
-      });
-    },
     refetchOnWindowFocus: false,
-    refetchInterval: (data) => {
+    refetchInterval: (currentQuery) => {
       if (!fromNotification) {
         return false;
       }
+      const data = currentQuery.state.data;
       if (data?.summary && data?.processed) {
         return false;
       }
@@ -76,21 +52,48 @@ export const useVideoSummaryDetail = (
         return false;
       }
       return 2000;
-    },
-    onSettled: (data) => {
-      if (!fromNotification) {
-        return;
-      }
-      if (data?.summary && data?.processed) {
-        return;
-      }
-      pollCountRef.current += 1;
-      if (pollCountRef.current >= maxPolls) {
-        uiLogger.warn('Polling timeout - summary not ready', {
-          videoId,
-          pollCount: pollCountRef.current
-        });
-      }
     }
   });
+
+  useEffect(() => {
+    const data = query.data;
+    if (!data || !user?.id) {
+      return;
+    }
+
+    const queryKey = getVideoSummariesQueryKey(user.id);
+    queryClient.setQueryData<CacheAwareData>(queryKey, (existing) => {
+      if (!existing) {
+        return existing;
+      }
+
+      let hasUpdate = false;
+      const updatedVideos = existing.videos.map((video) => {
+        if (video.videoId !== data.videoId) {
+          return video;
+        }
+        hasUpdate = true;
+        return { ...video, ...data };
+      });
+
+      return hasUpdate
+        ? { ...existing, videos: updatedVideos, lastSync: Date.now() }
+        : existing;
+    });
+  }, [query.data, queryClient, user?.id]);
+
+  useEffect(() => {
+    if (
+      fromNotification &&
+      pollCountRef.current >= maxPolls &&
+      !(query.data?.summary && query.data.processed)
+    ) {
+      uiLogger.warn('Polling timeout - summary not ready', {
+        videoId,
+        pollCount: pollCountRef.current
+      });
+    }
+  }, [fromNotification, query.data, query.dataUpdatedAt, videoId]);
+
+  return query;
 };

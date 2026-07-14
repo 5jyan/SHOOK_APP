@@ -89,7 +89,7 @@ export const UIDebugger: React.FC<UIDebuggerProps> = ({ visible, onClose }) => {
   });
 
   const getStyleInfo = (style: any) => {
-    const styleInfo = [];
+    const styleInfo: string[] = [];
     
     if (style) {
       Object.entries(style).forEach(([key, value]) => {

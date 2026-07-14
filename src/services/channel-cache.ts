@@ -112,54 +112,6 @@ export class ChannelCacheService {
   }
 
   /**
-   * Save channels to permanent cache
-   */
-  async saveChannelsToCache(channels: UserChannel[]): Promise<void> {
-    try {
-      const currentTime = Date.now();
-      const metadata = await this.getCacheMetadata();
-
-      // Create cache entries
-      const cacheEntries: ChannelCacheEntry[] = channels.map(channel => ({
-        channelId: channel.channelId,
-        data: channel,
-        cachedAt: currentTime,
-        userId: channel.userId,
-      }));
-
-      // Save channel data
-      await AsyncStorage.setItem(
-        this.CACHE_KEYS.CHANNEL_LIST,
-        JSON.stringify(cacheEntries)
-      );
-
-      // Update metadata
-      const updatedMetadata: ChannelCacheMetadata = {
-        ...metadata,
-        lastSyncTimestamp: currentTime,
-        totalChannels: channels.length,
-        userId: channels.length > 0 ? channels[0].userId : metadata.userId,
-        cacheVersion: this.CACHE_VERSION,
-      };
-
-      await AsyncStorage.setItem(
-        this.CACHE_KEYS.METADATA,
-        JSON.stringify(updatedMetadata)
-      );
-
-      cacheLogger.info('Channels saved to permanent cache', {
-        channelCount: channels.length,
-        cacheSize: this.calculateCacheSize(cacheEntries),
-        userId: updatedMetadata.userId
-      });
-
-    } catch (error) {
-      cacheLogger.error('Error saving channels to cache', { error: error instanceof Error ? error.message : String(error) });
-      throw error;
-    }
-  }
-
-  /**
    * Get last sync timestamp
    */
   async getLastSyncTimestamp(): Promise<number> {
@@ -386,7 +338,7 @@ export class ChannelCacheService {
         ...metadata,
         lastSyncTimestamp: currentTime,
         totalChannels: channels.length,
-        userId: channels.length > 0 ? channels[0].userId : metadata.userId,
+        userId: channels[0]?.userId ?? metadata.userId,
         cacheVersion: this.CACHE_VERSION,
       };
 

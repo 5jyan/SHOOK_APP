@@ -450,7 +450,11 @@ export class CacheRecovery {
           return false;
         }
 
-        backupKey = backupKeys[0];
+        const latestBackupKey = backupKeys[0];
+        if (!latestBackupKey) {
+          return false;
+        }
+        backupKey = latestBackupKey;
       }
 
       // Load and validate backup

@@ -57,7 +57,7 @@ interface DebuggerActions {
   setDebuggingMode: (mode: boolean) => void;
   
   // 도구 설정
-  toggleTool: (tool: keyof DebuggerState['tools']) => void;
+  toggleTool: (tool: Exclude<keyof DebuggerState['tools'], 'gridSize'>) => void;
   setGridSize: (size: number) => void;
   
   // 측정 도구

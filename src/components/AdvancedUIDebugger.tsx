@@ -185,7 +185,7 @@ export const AdvancedUIDebugger: React.FC<DebuggerProps> = ({ visible, onClose }
     // 여기서는 시뮬레이션
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    setSelectedColor(randomColor);
+    setSelectedColor(randomColor ?? '#000000');
   };
 
   // 화면 터치 핸들러

@@ -34,7 +34,7 @@ export const queryClient = new QueryClient({
 });
 
 // Persist important queries to storage
-export const persistQueryClient = () => {
+export const persistQueryClient = async (): Promise<void> => {
   const queries = queryClient.getQueryCache().getAll();
   const importantQueries = queries
     .filter(query => query.queryKey.includes('channels') || query.queryKey.includes('user'))
@@ -44,18 +44,18 @@ export const persistQueryClient = () => {
       dataUpdatedAt: query.state.dataUpdatedAt,
     }));
   
-  storage.set('persisted-queries', JSON.stringify(importantQueries));
+  await storage.set('persisted-queries', JSON.stringify(importantQueries));
 };
 
 // Restore queries from storage
-export const restoreQueryClient = () => {
+export const restoreQueryClient = async (): Promise<void> => {
   try {
-    const persistedQueries = storage.getString('persisted-queries');
+    const persistedQueries = await storage.getString('persisted-queries');
     if (persistedQueries && persistedQueries.trim()) {
       // Additional validation for JSON string
       if (!persistedQueries.startsWith('[') && !persistedQueries.startsWith('{')) {
         serviceLogger.warn('Invalid persisted queries format, clearing', { preview: persistedQueries.substring(0, 50) });
-        storage.delete('persisted-queries');
+        await storage.delete('persisted-queries');
         return;
       }
       
@@ -73,6 +73,6 @@ export const restoreQueryClient = () => {
   } catch (error) {
     serviceLogger.warn('Failed to restore queries', { error: error instanceof Error ? error.message : String(error) });
     // Clear corrupted data
-    storage.delete('persisted-queries');
+    await storage.delete('persisted-queries');
   }
 };

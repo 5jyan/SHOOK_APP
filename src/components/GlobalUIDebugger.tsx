@@ -120,7 +120,7 @@ export const GlobalUIDebugger: React.FC = () => {
         // 색상 추출 시뮬레이션
         const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#000000', '#ffffff'];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
-        setSelectedColor(randomColor);
+        setSelectedColor(randomColor ?? '#000000');
       }
       
       if (tools.inspectMode) {

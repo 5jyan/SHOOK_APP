@@ -33,7 +33,9 @@ class KakaoAuthService {
         await this.storeTokens({
           accessToken: token.accessToken,
           refreshToken: token.refreshToken || null,
-          expiresAt: token.expiresAt ? new Date(token.expiresAt) : null,
+          expiresAt: token.accessTokenExpiresAt
+            ? new Date(token.accessTokenExpiresAt)
+            : null,
         });
       } catch (storageError) {
         authLogger.error('Failed to store Kakao tokens', {

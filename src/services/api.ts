@@ -382,13 +382,13 @@ class ApiService {
           channelId: backendChannel.channelId,
           handle: backendChannel.handle,
           title: backendChannel.title,
-          description: backendChannel.description,
-          thumbnail: backendChannel.thumbnail,
-          subscriberCount: backendChannel.subscriberCount,
-          videoCount: backendChannel.videoCount,
-          isActive: backendChannel.isActive,
-          lastRssError: backendChannel.lastRssError,
-          lastRssErrorAt: backendChannel.lastRssErrorAt,
+          ...(backendChannel.description !== undefined ? { description: backendChannel.description } : {}),
+          ...(backendChannel.thumbnail !== undefined ? { thumbnail: backendChannel.thumbnail } : {}),
+          ...(backendChannel.subscriberCount !== undefined ? { subscriberCount: backendChannel.subscriberCount } : {}),
+          ...(backendChannel.videoCount !== undefined ? { videoCount: backendChannel.videoCount } : {}),
+          ...(backendChannel.isActive !== undefined ? { isActive: backendChannel.isActive } : {}),
+          ...(backendChannel.lastRssError !== undefined ? { lastRssError: backendChannel.lastRssError } : {}),
+          ...(backendChannel.lastRssErrorAt !== undefined ? { lastRssErrorAt: backendChannel.lastRssErrorAt } : {}),
         }
       }));
       
@@ -398,7 +398,11 @@ class ApiService {
       };
     }
     
-    return response as ApiResponse<UserChannel[]>;
+    return {
+      success: response.success,
+      data: [],
+      ...(response.error !== undefined ? { error: response.error } : {}),
+    };
   }
 
   async getPopularChannels(): Promise<ApiResponse<PopularChannel[]>> {
@@ -486,10 +490,12 @@ class ApiService {
     const result = await this.makeRequest<VideoSummary>(endpoint);
     if (result.success && result.data) {
       const [decoded] = decodeVideoHtmlEntities([result.data]);
-      return {
-        ...result,
-        data: decoded
-      };
+      if (decoded) {
+        return {
+          ...result,
+          data: decoded
+        };
+      }
     }
 
     return result;
@@ -533,7 +539,6 @@ class ApiService {
         apiLogger.info(`Unregister attempt on ${endpoint}`, {
           deviceId,
           success: result.success,
-          status: result.status,
           error: result.error,
           data: result.data
         });
@@ -552,7 +557,11 @@ class ApiService {
       }
     }
     
-    return lastResult || { success: false, error: 'All unregister attempts failed' };
+    return lastResult || {
+      success: false,
+      data: { success: false },
+      error: 'All unregister attempts failed'
+    };
   }
 
   async updatePushToken(tokenData: PushTokenData): Promise<ApiResponse<RegisterPushTokenResponse>> {

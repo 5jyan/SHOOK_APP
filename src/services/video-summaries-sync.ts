@@ -44,6 +44,9 @@ export const buildCursorFromVideos = (videos: VideoSummary[]): string | null => 
     return b.videoId.localeCompare(a.videoId);
   });
   const lastVideo = sorted[sorted.length - 1];
+  if (!lastVideo) {
+    return null;
+  }
   return `${new Date(lastVideo.createdAt).getTime()}_${lastVideo.videoId}`;
 };
 
@@ -51,8 +54,8 @@ export const getVideoSummariesQueryKey = (userId?: string | null) =>
   ['videoSummariesCached', userId ?? null] as const;
 
 interface SyncOptions {
-  userId?: string | null;
-  existingCursor?: string | null;
+  userId?: string | null | undefined;
+  existingCursor?: string | null | undefined;
 }
 
 interface BackgroundSyncOptions extends SyncOptions {

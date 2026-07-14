@@ -6,7 +6,7 @@ import { notificationLogger } from '@/utils/logger-enhanced';
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Linking, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NotificationSettingsScreen() {
@@ -35,27 +35,7 @@ export default function NotificationSettingsScreen() {
   // Safe function to open system settings
   const openSystemSettings = async () => {
     try {
-      // Android: Use Linking.openSettings() directly
-      if (Platform.OS === 'android') {
-        await Linking.openSettings();
-        return;
-      }
-
-      // iOS: Try Expo functions first, then fallback to Linking
-      if (Platform.OS === 'ios') {
-        // Try modern expo-notifications API (if available)
-        if (typeof Notifications.openNotificationSettingsAsync === 'function') {
-          try {
-            await Notifications.openNotificationSettingsAsync();
-            return;
-          } catch (iosError) {
-            notificationLogger.warn('openNotificationSettingsAsync failed, trying fallback');
-          }
-        }
-
-        // Fallback to app-settings URL scheme
-        await Linking.openURL('app-settings:');
-      }
+      await Linking.openSettings();
     } catch (error) {
       notificationLogger.error('Failed to open system settings', {
         error: error instanceof Error ? error.message : String(error)

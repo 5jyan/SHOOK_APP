@@ -42,12 +42,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           });
 
           // Auto-login as guest
+          const email = guestUser.email || undefined;
           login({
             id: guestUser.id.toString(),
             username: guestUser.username,
-            email: guestUser.email || undefined,
             role: guestUser.role,
             isGuest: guestUser.isGuest,
+            ...(email ? { email } : {}),
           });
 
         } catch (error) {

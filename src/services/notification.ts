@@ -19,6 +19,8 @@ import { notificationLogger } from '@/utils/logger-enhanced';
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -208,7 +210,6 @@ export class NotificationService {
             allowAlert: true,
             allowBadge: true,
             allowSound: true,
-            allowAnnouncements: false,
           },
         });
         notificationLogger.debug('New permissions', { permissions });
@@ -540,11 +541,15 @@ export class NotificationService {
     const data = response.notification.request.content.data;
 
     try {
-      if (data?.videoId) {
-        notificationLogger.info('Handling notification tap for video', { videoId: data.videoId });
+      const videoId =
+        typeof data?.videoId === 'string' || typeof data?.videoId === 'number'
+          ? String(data.videoId)
+          : null;
+      if (videoId) {
+        notificationLogger.info('Handling notification tap for video', { videoId });
 
         // Navigate to summaries tab first, then push detail for a smoother UX
-        notificationLogger.info('Navigating to summaries tab before summary detail', { videoId: data.videoId });
+        notificationLogger.info('Navigating to summaries tab before summary detail', { videoId });
         router.replace({
           pathname: '/(tabs)/summaries',
           params: {
@@ -556,7 +561,7 @@ export class NotificationService {
           router.push({
             pathname: '/summary-detail',
             params: {
-              summaryId: data.videoId,
+              summaryId: videoId,
               fromNotification: 'true'  // Flag to trigger polling
             }
           });

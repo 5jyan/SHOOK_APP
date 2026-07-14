@@ -241,7 +241,7 @@ export class EnhancedVideoCacheService {
         const isValid = this.isValidCacheEntry(entry);
 
         if (!isValid) {
-          cacheLogger.warn('Invalid entry removed', { videoId: entry.videoId });
+          cacheLogger.warn('Invalid cache entry removed');
         }
         
         return isValid;

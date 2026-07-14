@@ -32,7 +32,7 @@ export function useChannelSearch() {
         
         // Auto-select the first channel if available
         if (response.data && response.data.length > 0) {
-          setSelectedChannel(response.data[0]);
+          setSelectedChannel(response.data[0] ?? null);
         } else {
           setSelectedChannel(null);
         }

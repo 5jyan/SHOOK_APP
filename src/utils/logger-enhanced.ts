@@ -98,7 +98,7 @@ class Logger {
   private category: string;
   private emoji: string;
   private currentLogLevel: LogLevel;
-  private correlationId?: string;
+  private correlationId: string | undefined;
 
   constructor(category: string, emoji: string) {
     this.category = category;
@@ -177,7 +177,7 @@ class Logger {
       metadata: maskedMetadata,
       attributes: maskedMetadata,
       platform: Platform.OS,
-      correlationId: this.correlationId,
+      ...(this.correlationId !== undefined ? { correlationId: this.correlationId } : {}),
       performanceTime: timestampData.performanceTime,
     };
 

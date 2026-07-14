@@ -18,7 +18,7 @@ export default function TermsOfServiceScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>제1조 (목적)</Text>
           <Text style={styles.text}>
-            이 약관은 Shook(이하 "서비스")의 이용조건 및 절차, 회원과 서비스 제공자의 권리, 의무, 책임사항을 규정함을 목적으로 합니다.
+            이 약관은 Shook(이하 ‘서비스’)의 이용조건 및 절차, 회원과 서비스 제공자의 권리, 의무, 책임사항을 규정함을 목적으로 합니다.
           </Text>
         </View>
 

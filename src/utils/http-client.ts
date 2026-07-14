@@ -188,7 +188,7 @@ class HttpClient {
       /172\./,       // Docker networks
       process.env.EXPO_PUBLIC_API_URL,
       process.env.EXPO_PUBLIC_API_URL_PRODUCTION
-    ].filter(Boolean);
+    ].filter((pattern): pattern is string | RegExp => Boolean(pattern));
 
     return !internalPatterns.some(pattern => {
       if (typeof pattern === 'string') {
@@ -340,10 +340,8 @@ class HttpClient {
   }
 
   async post(url: string, body?: any, init?: LoggedRequestInit): Promise<Response> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    };
+    const headers = new Headers(init?.headers);
+    headers.set('Content-Type', 'application/json');
 
     return this.fetch(url, {
       ...init,
@@ -354,10 +352,8 @@ class HttpClient {
   }
 
   async put(url: string, body?: any, init?: LoggedRequestInit): Promise<Response> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    };
+    const headers = new Headers(init?.headers);
+    headers.set('Content-Type', 'application/json');
 
     return this.fetch(url, {
       ...init,
@@ -368,10 +364,8 @@ class HttpClient {
   }
 
   async patch(url: string, body?: any, init?: LoggedRequestInit): Promise<Response> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    };
+    const headers = new Headers(init?.headers);
+    headers.set('Content-Type', 'application/json');
 
     return this.fetch(url, {
       ...init,

@@ -34,12 +34,13 @@ export function useKakaoAuth() {
       });
 
       // 3. 앱 상태에 사용자 정보 저장
+      const username = backendUser.username || backendUser.name || user.name || '카카오 사용자';
       login({
         id: backendUser.id.toString(),
-        username: backendUser.username || backendUser.name || user.name,
+        username,
         email: backendUser.email || user.email || '',
         role: backendUser.role, // Include role for channel limit logic
-        picture: user.profileImage,
+        ...(user.profileImage ? { picture: user.profileImage } : {}),
       });
 
       // 4. 채널 변경 플래그 초기화 (첫 로그인) - 제거하거나 타임스탬프 0으로 설정

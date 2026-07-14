@@ -34,7 +34,7 @@ export default function RootLayout() {
   const [isAppReady, setIsAppReady] = useState(false);
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const hasHandledInitialNotification = useRef(false);
-  const currentVersion = Constants.expoConfig?.version || Updates.manifest?.version || '0.0.0';
+  const currentVersion = Constants.expoConfig?.version || '0.0.0';
   const minSupportedVersion = Constants.expoConfig?.extra?.minSupportedVersion as string | undefined;
   const appStoreUrl = Constants.expoConfig?.extra?.appStoreUrl as string | undefined;
   const playStoreUrl = Constants.expoConfig?.extra?.playStoreUrl as string | undefined;
@@ -163,7 +163,7 @@ export default function RootLayout() {
       }
 
       // Restore persisted queries
-      restoreQueryClient();
+      await restoreQueryClient();
 
       // Check for OTA updates on cold start too
       await checkForUpdates();
