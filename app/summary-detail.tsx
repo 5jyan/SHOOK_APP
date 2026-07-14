@@ -8,6 +8,7 @@ import { getVideoSummariesQueryKey, type CacheAwareData, videoSummariesSyncServi
 import { useAuthStore } from '@/stores/auth-store';
 import { parseSummary } from '@/utils/summary-parser';
 import { useQueryClient } from '@tanstack/react-query';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
@@ -172,9 +173,18 @@ export default function SummaryDetailScreen() {
   const renderBullets = (items: string[], keyPrefix: string) => items.map((item, index) => (
     <View key={`${keyPrefix}-${index}`} style={styles.bulletItem}>
       <Text style={styles.bulletPoint}>•</Text>
-      <Text style={styles.bulletText}>{item}</Text>
+      <Text style={styles.bulletText}>{renderInlineBold(item)}</Text>
     </View>
   ));
+
+  const renderInlineBold = (text: string) => text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    const isBold = part.startsWith('**') && part.endsWith('**');
+    return (
+      <Text key={`${part}-${index}`} style={isBold ? styles.inlineBold : undefined}>
+        {isBold ? part.slice(2, -2) : part}
+      </Text>
+    );
+  });
 
   const renderFormattedSummary = (summary: string) => {
     const parsed = parseSummary(summary);
@@ -193,12 +203,7 @@ export default function SummaryDetailScreen() {
               <Text style={styles.sectionEyebrow}>SUMMARY</Text>
             </View>
             <Text style={styles.overviewTitle}>한눈에 보기</Text>
-            {parsed.overview.map((item, index) => (
-              <View key={`overview-${index}`} style={styles.overviewItem}>
-                <Text style={styles.overviewNumber}>{String(index + 1).padStart(2, '0')}</Text>
-                <Text style={styles.overviewText}>{item}</Text>
-              </View>
-            ))}
+            {renderBullets(parsed.overview, 'overview')}
           </View>
         )}
 
@@ -208,7 +213,7 @@ export default function SummaryDetailScreen() {
             <View style={styles.keyFactsWrap}>
               {parsed.keyFacts.map((fact, index) => (
                 <View key={`fact-${index}`} style={styles.keyFactChip}>
-                  <Text style={styles.keyFactText}>{fact}</Text>
+                  <Text style={styles.keyFactText}>{renderInlineBold(fact)}</Text>
                 </View>
               ))}
             </View>
@@ -239,27 +244,29 @@ export default function SummaryDetailScreen() {
                     <Text style={[styles.detailTitle, isCoreHeading && styles.coreHeadingTitle]}>
                       {section.title}
                     </Text>
+                    {section.timestampSeconds !== undefined && (
+                      <TouchableOpacity
+                        style={styles.youtubeButton}
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          handleOpenVideoAt(section.timestampSeconds!);
+                        }}
+                        activeOpacity={0.65}
+                        accessibilityRole="link"
+                        accessibilityLabel={`${section.title} 유튜브에서 보기`}
+                      >
+                        <MaterialCommunityIcons name="youtube" size={20} color="#ff0000" />
+                      </TouchableOpacity>
+                    )}
                     <IconSymbol
                       name={expanded ? 'chevron.up' : 'chevron.down'}
-                      size={18}
+                      size={14}
                       color="#64748b"
                     />
                   </TouchableOpacity>
                   {expanded && (
                     <View style={styles.detailBody}>
                       {renderBullets(section.bullets, `section-${index}`)}
-                      {section.timestampSeconds !== undefined && (
-                        <TouchableOpacity
-                          style={styles.timestampButton}
-                          onPress={() => handleOpenVideoAt(section.timestampSeconds!)}
-                          activeOpacity={0.7}
-                          accessibilityRole="link"
-                          accessibilityLabel={`${section.title} 영상에서 보기`}
-                        >
-                          <IconSymbol name="play.rectangle.fill" size={17} color="#2563eb" />
-                          <Text style={styles.timestampButtonText}>영상에서 보기</Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
                   )}
                 </View>
@@ -439,7 +446,7 @@ const styles = StyleSheet.create({
   },
   overviewCard: {
     paddingBottom: 18,
-    marginBottom: 32,
+    marginBottom: 12,
     borderBottomColor: '#e2e8f0',
     borderBottomWidth: 1,
   },
@@ -467,25 +474,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.4,
     marginBottom: 18,
-  },
-  overviewItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 9,
-  },
-  overviewNumber: {
-    color: '#60a5fa',
-    fontSize: 12,
-    fontWeight: '800',
-    lineHeight: 23,
-    marginRight: 14,
-  },
-  overviewText: {
-    flex: 1,
-    color: '#334155',
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 25,
   },
   summarySectionTitle: {
     fontSize: 18,
@@ -561,23 +549,12 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 0,
   },
-  timestampButton: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
+  youtubeButton: {
+    width: 30,
+    height: 30,
     alignItems: 'center',
-    gap: 6,
-    marginLeft: 0,
-    marginTop: 2,
-    marginBottom: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    backgroundColor: '#eff6ff',
-    borderRadius: 8,
-  },
-  timestampButtonText: {
-    color: '#2563eb',
-    fontSize: 14,
-    fontWeight: '700',
+    justifyContent: 'center',
+    marginRight: 2,
   },
   conclusionCard: {
     borderTopColor: '#e2e8f0',
@@ -623,6 +600,10 @@ const styles = StyleSheet.create({
     color: '#475569',
     lineHeight: 23,
     flex: 1,
+  },
+  inlineBold: {
+    color: '#1e293b',
+    fontWeight: '800',
   },
   loadingContainer: {
     flex: 1,
