@@ -3,6 +3,7 @@ import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { apiService } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -15,6 +16,7 @@ export default function SettingsScreen() {
   const { user, logout } = useAuthStore();
   const [isLoading, setIsLoading] = React.useState(false);
   const tabBarHeight = useBottomTabOverflow();
+  const appVersion = Constants.expoConfig?.version ?? '알 수 없음';
 
   const handleLogout = () => {
     Alert.alert(
@@ -146,7 +148,7 @@ export default function SettingsScreen() {
       onPress: () => {
         Alert.alert(
           'Shook 앱 정보',
-          `버전: 1.1.1\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2025 Shook. All rights reserved.`,
+          `버전: ${appVersion}\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2026 Shook. All rights reserved.`,
           [{ text: '확인' }]
         );
       },
