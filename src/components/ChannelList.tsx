@@ -15,19 +15,22 @@ import {
   FlatList,
   Image,
   Pressable,
+  type RefreshControlProps,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
 interface ChannelListProps {
   onChannelDeleted?: (channelId: string) => void;
-  refreshControl?: React.ReactElement;
+  refreshControl?: React.ReactElement<RefreshControlProps>;
   tabBarHeight?: number;
 }
 
 export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0 }: ChannelListProps) {
+  const { width } = useWindowDimensions();
   const { channels, isLoading, error, deleteChannel, refreshChannels, channelCount } = useChannels();
   const { user } = useAuthStore();
   const [deletingChannelId, setDeletingChannelId] = React.useState<string | null>(null);
@@ -36,6 +39,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
   const queryClient = useQueryClient();
   const maxChannels = 7;
   const isChannelLimitReached = user?.role !== 'manager' && channelCount >= maxChannels;
+  const contentWidth = Math.min(width, 752);
 
   const popularChannelsQuery = useQuery({
     queryKey: ['popularChannels'],
@@ -342,7 +346,14 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
   const renderListHeader = () => (
     <View>
       {renderPopularSection({ fullBleed: true })}
-      <Text style={styles.myChannelsTitle}>나의 채널</Text>
+      <Text
+        style={[
+          styles.myChannelsTitle,
+          !showPopularSection && styles.myChannelsTitleStandalone,
+        ]}
+      >
+        나의 채널
+      </Text>
     </View>
   );
 
@@ -389,7 +400,13 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
         keyExtractor={(item) => item?.id?.toString() || `channel-${Date.now()}-${Math.random()}`}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={renderListHeader}
-        contentContainerStyle={[styles.listContainer, { paddingBottom: Math.max(16, tabBarHeight * 0.7) }]}
+        contentContainerStyle={[
+          styles.listContainer,
+          {
+            width: contentWidth,
+            paddingBottom: Math.max(32, tabBarHeight + 16),
+          },
+        ]}
         refreshControl={refreshControl}
       />
     </View>
@@ -413,6 +430,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   listContainer: {
+    alignSelf: 'center',
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: 0,
@@ -443,6 +461,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
     marginBottom: 12,
+  },
+  myChannelsTitleStandalone: {
+    marginTop: 16,
   },
   popularCardsRow: {
     flexDirection: 'row',

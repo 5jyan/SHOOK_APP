@@ -1,9 +1,11 @@
 import React from 'react';
 import {
   Image,
+  PixelRatio,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -28,6 +30,12 @@ interface SummaryCardProps {
 
 export function SummaryCard({ summary, onPress }: SummaryCardProps) {
   const isPending = !summary.isSummarized;
+  const { width } = useWindowDimensions();
+  const isCompact = width < 390;
+  const fontScale = PixelRatio.getFontScale();
+  const thumbnailSize = isCompact
+    ? { width: 132, height: 74 }
+    : { width: 160, height: 90 };
 
   const formatTimeAgo = (dateString: string): string => {
     const date = new Date(dateString);
@@ -67,7 +75,7 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
         <View style={styles.thumbnailContainer}>
           <Image 
             source={{ uri: summary.videoThumbnail }}
-            style={styles.videoThumbnail}
+            style={[styles.videoThumbnail, thumbnailSize]}
             resizeMode="cover"
           />
         </View>
@@ -75,11 +83,15 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
         {/* Content */}
         <View style={styles.textContent}>
           {/* Video Title */}
-          <Text style={styles.videoTitle} numberOfLines={2}>
+          <Text
+            style={styles.videoTitle}
+            numberOfLines={fontScale > 1.2 ? 3 : 2}
+            maxFontSizeMultiplier={1.35}
+          >
             {summary.videoTitle}
           </Text>
                     {/* Time Info */}
-          <Text style={styles.timeAgo}>
+          <Text style={styles.timeAgo} maxFontSizeMultiplier={1.35}>
             {formatTimeAgo(summary.publishedAt)}
           </Text>
 
@@ -91,7 +103,7 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
               resizeMode="cover"
             />
             
-            <Text style={styles.channelName} numberOfLines={1}>
+            <Text style={styles.channelName} numberOfLines={1} maxFontSizeMultiplier={1.35}>
               {summary.channelName}
             </Text>
           </View>

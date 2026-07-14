@@ -1,13 +1,12 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { Tabs, useNavigation } from 'expo-router';
 import React, { useCallback } from 'react';
-import { Alert, BackHandler, Platform } from 'react-native';
+import { Alert, BackHandler, PixelRatio, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/HapticTab';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -16,6 +15,7 @@ export default function TabLayout() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 8);
+  const androidFontHeight = Math.min(12, Math.max(0, PixelRatio.getFontScale() - 1) * 24);
 
   useFocusEffect(
     useCallback(() => {
@@ -47,7 +47,6 @@ export default function TabLayout() {
             tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
             headerShown: false,
             tabBarButton: HapticTab,
-            tabBarBackground: TabBarBackground,
             tabBarStyle: Platform.select({
               ios: {
                 position: 'absolute',
@@ -58,7 +57,7 @@ export default function TabLayout() {
               },
               android: {
                 paddingBottom: bottomInset,
-                height: 57 + bottomInset,
+                height: 57 + bottomInset + androidFontHeight,
                 paddingTop: 8,
                 borderTopWidth: 1,
                 borderTopColor: '#e5e7eb',

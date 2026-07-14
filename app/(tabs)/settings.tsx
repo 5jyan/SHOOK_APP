@@ -5,10 +5,13 @@ import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
 import { router } from 'expo-router';
 import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
+  const { width, height } = useWindowDimensions();
+  const contentWidth = Math.min(width, 752);
+  const isShortScreen = height < 700;
   const { user, logout } = useAuthStore();
   const [isLoading, setIsLoading] = React.useState(false);
   const tabBarHeight = useBottomTabOverflow();
@@ -172,15 +175,24 @@ export default function SettingsScreen() {
         }
       />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(24, tabBarHeight * 0.7) }}>
-        <View style={styles.content}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            width: contentWidth,
+            paddingBottom: Math.max(32, tabBarHeight + 16),
+          },
+        ]}
+      >
+        <View style={[styles.content, isShortScreen && styles.contentCompact]}>
           {/* Settings Items */}
           <View style={styles.settingsContainer}>
             {settingsItems.map((item, index) => (
               <Pressable
                 key={index}
                 onPress={item.onPress}
-                style={styles.settingItem}
+                style={[styles.settingItem, isShortScreen && styles.settingItemCompact]}
               >
                 <Text style={styles.settingTitle}>
                   {item.title}
@@ -234,10 +246,16 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    alignSelf: 'center',
     paddingHorizontal: 16,
   },
   content: {
     paddingVertical: 24,
+  },
+  contentCompact: {
+    paddingVertical: 8,
   },
   settingsContainer: {
     marginBottom: 24,
@@ -255,6 +273,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
     marginBottom: 8,
+  },
+  settingItemCompact: {
+    paddingVertical: 8,
+    marginBottom: 4,
   },
   settingTitle: {
     fontSize: 16,

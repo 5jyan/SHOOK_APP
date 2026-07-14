@@ -17,12 +17,15 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { uiLogger } from '../src/utils/logger-enhanced';
 
 export default function SummaryDetailScreen() {
+  const { width } = useWindowDimensions();
+  const contentWidth = Math.min(width, 752);
   const params = useLocalSearchParams();
   const videoId = params.summaryId as string;
   const fromNotification = params.fromNotification === 'true';
@@ -200,8 +203,11 @@ export default function SummaryDetailScreen() {
         }
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Video Info */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={[styles.contentContainer, { width: contentWidth }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.videoInfo}>
           <Text style={styles.videoTitle}>{videoSummary.title}</Text>
           <Text style={styles.publishDate}>
@@ -261,6 +267,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
+    alignSelf: 'center',
+    paddingBottom: 24,
   },
   videoInfo: {
     padding: 16,

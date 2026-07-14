@@ -72,7 +72,11 @@ export function ChannelFilterBar({ selectedChannelId, onChannelSelect }: Channel
               >
                 <View style={[styles.thumbnailContainer, isSelected && styles.thumbnailSelected]}>
                   <Image
-                    source={{ uri: channel.youtubeChannel.thumbnail }}
+                    source={
+                      channel.youtubeChannel.thumbnail
+                        ? { uri: channel.youtubeChannel.thumbnail }
+                        : require('../../assets/images/icon.png')
+                    }
                     style={styles.thumbnail}
                     contentFit="cover"
                   />
@@ -83,6 +87,7 @@ export function ChannelFilterBar({ selectedChannelId, onChannelSelect }: Channel
                     isSelected && styles.channelNameSelected
                   ]}
                   numberOfLines={1}
+                  maxFontSizeMultiplier={1.2}
                 >
                   {channel.youtubeChannel.title}
                 </Text>
@@ -133,7 +138,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 11,
     color: '#6b7280',
-    maxWidth: 54,
+    maxWidth: 64,
     textAlign: 'center',
   },
   channelNameSelected: {

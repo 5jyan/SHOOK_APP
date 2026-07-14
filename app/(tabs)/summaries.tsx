@@ -10,10 +10,12 @@ import { uiLogger } from '@/utils/logger-enhanced';
 import { useIsFocused } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SummariesScreen() {
+  const { width } = useWindowDimensions();
+  const listWidth = Math.min(width, 752);
   uiLogger.debug('[SummariesScreen] Component mounting/re-rendering');
 
   const isFocused = useIsFocused();
@@ -241,6 +243,8 @@ export default function SummariesScreen() {
         </View>
       ) : (
         <FlatList
+          style={styles.list}
+          endFillColor="#ffffff"
           data={summaries}
           renderItem={renderSummaryCard}
           keyExtractor={(item) => item.id}
@@ -248,7 +252,11 @@ export default function SummariesScreen() {
           onEndReachedThreshold={0.5}
           contentContainerStyle={[
             styles.listContainer,
-            { paddingBottom: Math.max(16, tabBarHeight * 0.7), flexGrow: 1 }
+            {
+              width: listWidth,
+              paddingBottom: Math.max(32, tabBarHeight + 16),
+              flexGrow: 1,
+            }
           ]}
           showsVerticalScrollIndicator={false}
           ListFooterComponent={renderListFooter}
@@ -267,7 +275,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   listContainer: {
+    alignSelf: 'center',
     paddingTop: 0,
+  },
+  list: {
+    flex: 1,
+    backgroundColor: '#ffffff',
   },
   emptyStateContainer: {
     flex: 1,
