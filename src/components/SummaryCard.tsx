@@ -1,4 +1,5 @@
 import React from 'react';
+import { parseSummary } from '@/utils/summary-parser';
 import {
   Image,
   PixelRatio,
@@ -36,6 +37,10 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
   const thumbnailSize = isCompact
     ? { width: 132, height: 74 }
     : { width: 160, height: 90 };
+  const parsedSummary = parseSummary(summary.summary);
+  const summaryPreview = parsedSummary.overview[0]
+    ?? parsedSummary.sections[0]?.bullets[0]
+    ?? parsedSummary.fallback[0];
 
   const formatTimeAgo = (dateString: string): string => {
     const date = new Date(dateString);
@@ -90,6 +95,11 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
           >
             {summary.videoTitle}
           </Text>
+          {!isPending && summaryPreview && (
+            <Text style={styles.summaryPreview} numberOfLines={1} maxFontSizeMultiplier={1.35}>
+              {summaryPreview}
+            </Text>
+          )}
                     {/* Time Info */}
           <Text style={styles.timeAgo} maxFontSizeMultiplier={1.35}>
             {formatTimeAgo(summary.publishedAt)}
@@ -149,6 +159,12 @@ const styles = StyleSheet.create({
     color: '#0f0f0f',
     lineHeight: 20,
     marginBottom: 4,
+  },
+  summaryPreview: {
+    color: '#64748b',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
   },
   channelRow: {
     flexDirection: 'row',

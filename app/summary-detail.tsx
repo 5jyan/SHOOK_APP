@@ -6,6 +6,7 @@ import { useVideoSummaryDetail } from '@/hooks/useVideoSummaryDetail';
 import { transformVideoSummaryToCardData } from '@/hooks/useVideoSummariesCached';
 import { getVideoSummariesQueryKey, type CacheAwareData, videoSummariesSyncService } from '@/services/video-summaries-sync';
 import { useAuthStore } from '@/stores/auth-store';
+import { parseSummary } from '@/utils/summary-parser';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
@@ -29,6 +30,7 @@ export default function SummaryDetailScreen() {
   const params = useLocalSearchParams();
   const videoId = params.summaryId as string;
   const fromNotification = params.fromNotification === 'true';
+  const [collapsedSections, setCollapsedSections] = React.useState<Set<number>>(new Set());
 
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
@@ -142,6 +144,20 @@ export default function SummaryDetailScreen() {
     Linking.openURL(youtubeUrl);
   };
 
+  const handleOpenVideoAt = (timestampSeconds: number) => {
+    const youtubeUrl = `https://youtube.com/watch?v=${videoSummary.videoId}&t=${timestampSeconds}s`;
+    Linking.openURL(youtubeUrl);
+  };
+
+  const toggleSection = (index: number) => {
+    setCollapsedSections((current) => {
+      const next = new Set(current);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ko-KR', {
@@ -153,43 +169,119 @@ export default function SummaryDetailScreen() {
     });
   };
 
+  const renderBullets = (items: string[], keyPrefix: string) => items.map((item, index) => (
+    <View key={`${keyPrefix}-${index}`} style={styles.bulletItem}>
+      <Text style={styles.bulletPoint}>•</Text>
+      <Text style={styles.bulletText}>{item}</Text>
+    </View>
+  ));
+
   const renderFormattedSummary = (summary: string) => {
-    const lines = summary.split('\n').filter(line => line.trim() !== '');
-    
-    return lines.map((line, index) => {
-      const trimmedLine = line.trim();
-      const nextLine = lines[index + 1]?.trim();
-      const isLastBulletBeforeNumber = /^[-*•]/.test(trimmedLine) && nextLine && /^\d+\./.test(nextLine);
-      
-      // 번호 목록 (1., 2., 3. 등)
-      if (/^\d+\./.test(trimmedLine)) {
-        return (
-          <View key={index} style={styles.numberedItem}>
-            <Text style={styles.numberedText}>{trimmedLine}</Text>
+    const parsed = parseSummary(summary);
+    const hasStructuredContent = parsed.overview.length > 0 || parsed.sections.length > 0;
+
+    if (!hasStructuredContent) {
+      return renderBullets(parsed.fallback, 'fallback');
+    }
+
+    return (
+      <>
+        {parsed.overview.length > 0 && (
+          <View style={styles.overviewCard}>
+            <View style={styles.sectionEyebrowRow}>
+              <View style={styles.sectionAccent} />
+              <Text style={styles.sectionEyebrow}>SUMMARY</Text>
+            </View>
+            <Text style={styles.overviewTitle}>한눈에 보기</Text>
+            {parsed.overview.map((item, index) => (
+              <View key={`overview-${index}`} style={styles.overviewItem}>
+                <Text style={styles.overviewNumber}>{String(index + 1).padStart(2, '0')}</Text>
+                <Text style={styles.overviewText}>{item}</Text>
+              </View>
+            ))}
           </View>
-        );
-      }
-      
-      // 불렛 포인트 (-, *, • 등)
-      if (/^[-*•]/.test(trimmedLine)) {
-        return (
-          <View key={index} style={[
-            styles.bulletItem,
-            isLastBulletBeforeNumber && styles.lastBulletBeforeNumber
-          ]}>
-            <Text style={styles.bulletPoint}>•</Text>
-            <Text style={styles.bulletText}>{trimmedLine.substring(1).trim()}</Text>
+        )}
+
+        {parsed.keyFacts.length > 0 && (
+          <View style={styles.keyFactsSection}>
+            <Text style={styles.summarySectionTitle}>주요 숫자</Text>
+            <View style={styles.keyFactsWrap}>
+              {parsed.keyFacts.map((fact, index) => (
+                <View key={`fact-${index}`} style={styles.keyFactChip}>
+                  <Text style={styles.keyFactText}>{fact}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        );
-      }
-      
-      // 일반 텍스트
-      return (
-        <Text key={index} style={styles.summaryText}>
-          {trimmedLine}
-        </Text>
-      );
-    });
+        )}
+
+        {parsed.sections.length > 0 && (
+          <View style={styles.detailsSection}>
+            <View style={styles.detailsHeadingRow}>
+              <View>
+                <Text style={styles.sectionEyebrow}>DETAILS</Text>
+                <Text style={styles.detailsTitle}>핵심 내용</Text>
+              </View>
+              <Text style={styles.detailsCount}>{parsed.sections.length}개 주제</Text>
+            </View>
+            {parsed.sections.map((section, index) => {
+              const expanded = !collapsedSections.has(index);
+              return (
+                <View key={`section-${index}`} style={styles.detailCard}>
+                  <TouchableOpacity
+                    style={styles.detailHeader}
+                    onPress={() => toggleSection(index)}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${section.title} ${expanded ? '접기' : '펼치기'}`}
+                  >
+                    <View style={styles.detailNumberBadge}>
+                      <Text style={styles.detailNumber}>{String(index + 1).padStart(2, '0')}</Text>
+                    </View>
+                    <Text style={styles.detailTitle}>{section.title}</Text>
+                    <IconSymbol
+                      name={expanded ? 'chevron.up' : 'chevron.down'}
+                      size={18}
+                      color="#64748b"
+                    />
+                  </TouchableOpacity>
+                  {expanded && (
+                    <View style={styles.detailBody}>
+                      {renderBullets(section.bullets, `section-${index}`)}
+                      {section.timestampSeconds !== undefined && (
+                        <TouchableOpacity
+                          style={styles.timestampButton}
+                          onPress={() => handleOpenVideoAt(section.timestampSeconds!)}
+                          activeOpacity={0.7}
+                          accessibilityRole="link"
+                          accessibilityLabel={`${section.title} 영상에서 보기`}
+                        >
+                          <IconSymbol name="play.rectangle.fill" size={17} color="#2563eb" />
+                          <Text style={styles.timestampButtonText}>영상에서 보기</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {parsed.conclusion.length > 0 && (
+          <View style={styles.conclusionCard}>
+            <Text style={styles.summarySectionTitle}>결론</Text>
+            {renderBullets(parsed.conclusion, 'conclusion')}
+          </View>
+        )}
+
+        {parsed.fallback.length > 0 && (
+          <View style={styles.fallbackSection}>
+            {renderBullets(parsed.fallback, 'extra')}
+          </View>
+        )}
+      </>
+    );
   };
 
   return (
@@ -208,12 +300,21 @@ export default function SummaryDetailScreen() {
         contentContainerStyle={[styles.contentContainer, { width: contentWidth }]}
         showsVerticalScrollIndicator={false}
       >
+        <TouchableOpacity style={styles.hero} onPress={handleOpenVideo} activeOpacity={0.9}>
+          <Image
+            source={{ uri: cardData?.videoThumbnail }}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+          <View style={styles.heroScrim} />
+          <View style={styles.heroPlayButton}>
+            <IconSymbol name="play.rectangle.fill" size={25} color="#ffffff" />
+          </View>
+          <Text style={styles.heroAction}>YouTube에서 보기</Text>
+        </TouchableOpacity>
+
         <View style={styles.videoInfo}>
           <Text style={styles.videoTitle}>{videoSummary.title}</Text>
-          <Text style={styles.publishDate}>
-            {formatDate(videoSummary.publishedAt)}
-          </Text>
-          
           <View style={styles.channelRow}>
             <Image 
               source={{ uri: cardData?.channelThumbnail || `https://via.placeholder.com/60/4285f4/ffffff?text=C` }}
@@ -222,18 +323,8 @@ export default function SummaryDetailScreen() {
             />
             <View style={styles.channelInfo}>
               <Text style={styles.channelName}>{cardData?.channelName || 'Unknown Channel'}</Text>
+              <Text style={styles.publishDate}>{formatDate(videoSummary.publishedAt)}</Text>
             </View>
-            <TouchableOpacity 
-              onPress={handleOpenVideo} 
-              style={styles.youtubeIconButton}
-              activeOpacity={0.6}
-            >
-              <Image 
-                source={require('../assets/images/youtube_icon.png')} 
-                style={styles.youtubeIcon}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -270,86 +361,255 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     alignSelf: 'center',
-    paddingBottom: 24,
+    paddingBottom: 40,
+  },
+  hero: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#0f172a',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.28)',
+  },
+  heroPlayButton: {
+    position: 'absolute',
+    left: 20,
+    bottom: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(15, 23, 42, 0.68)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroAction: {
+    position: 'absolute',
+    left: 80,
+    bottom: 31,
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   videoInfo: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 24,
+    backgroundColor: '#ffffff',
   },
   videoTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    lineHeight: 28,
-    marginBottom: 8,
+    fontSize: 23,
+    fontWeight: '800',
+    color: '#0f172a',
+    lineHeight: 32,
+    letterSpacing: -0.4,
+    marginBottom: 18,
   },
   channelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: -6,
+    marginBottom: 0,
   },
   channelThumbnail: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
     backgroundColor: '#f1f5f9',
   },
   channelInfo: {
     flex: 1,
   },
   channelName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 2,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 3,
   },
   publishDate: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 16,
-  },
-  youtubeIconButton: {
-    padding: 8,
-    backgroundColor: 'transparent',
-    borderRadius: 0,
-    borderWidth: 0,
-  },
-  youtubeIcon: {
-    width: 32,
-    height: 32,
+    fontSize: 12,
+    color: '#94a3b8',
   },
   summarySection: {
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginLeft: 8,
-    flex: 1,
-  },
-  aiBadge: {
-    backgroundColor: '#dbeafe',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  aiBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2563eb',
+    paddingHorizontal: 20,
+    paddingTop: 28,
   },
   summaryContent: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 16,
     marginBottom: 12,
+  },
+  overviewCard: {
+    paddingBottom: 18,
+    marginBottom: 32,
+    borderBottomColor: '#e2e8f0',
+    borderBottomWidth: 1,
+  },
+  sectionEyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 7,
+  },
+  sectionAccent: {
+    width: 18,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#60a5fa',
+    marginRight: 8,
+  },
+  sectionEyebrow: {
+    color: '#3b82f6',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
+  overviewTitle: {
+    color: '#0f172a',
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    marginBottom: 18,
+  },
+  overviewItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 9,
+  },
+  overviewNumber: {
+    color: '#60a5fa',
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 23,
+    marginRight: 14,
+  },
+  overviewText: {
+    flex: 1,
+    color: '#334155',
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 25,
+  },
+  summarySectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 12,
+  },
+  keyFactsSection: {
+    marginBottom: 20,
+  },
+  keyFactsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  keyFactChip: {
+    borderBottomColor: '#e2e8f0',
+    borderBottomWidth: 1,
+    paddingVertical: 8,
+    marginRight: 14,
+  },
+  keyFactText: {
+    color: '#334155',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  detailsSection: {
+    marginBottom: 24,
+  },
+  detailsHeadingRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    paddingHorizontal: 4,
+  },
+  detailsTitle: {
+    color: '#0f172a',
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    marginTop: 4,
+  },
+  detailsCount: {
+    color: '#94a3b8',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 3,
+  },
+  detailCard: {
+    backgroundColor: '#ffffff',
+    borderBottomColor: '#e2e8f0',
+    borderBottomWidth: 1,
+    paddingBottom: 18,
+    marginBottom: 22,
+  },
+  detailHeader: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: 4,
+    backgroundColor: '#ffffff',
+  },
+  detailNumberBadge: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  detailNumber: {
+    color: '#2563eb',
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  detailTitle: {
+    flex: 1,
+    color: '#0f172a',
+    fontSize: 17,
+    fontWeight: '800',
+    lineHeight: 24,
+    marginRight: 8,
+  },
+  detailBody: {
+    backgroundColor: '#ffffff',
+    paddingLeft: 38,
+    paddingRight: 4,
+    paddingTop: 10,
+    paddingBottom: 0,
+  },
+  timestampButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 16,
+    marginTop: 2,
+    marginBottom: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
+  },
+  timestampButtonText: {
+    color: '#2563eb',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  conclusionCard: {
+    borderTopColor: '#e2e8f0',
+    borderTopWidth: 1,
+    paddingTop: 24,
+    marginBottom: 24,
+  },
+  fallbackSection: {
+    paddingVertical: 8,
   },
   summaryText: {
     fontSize: 16,
@@ -369,29 +629,23 @@ const styles = StyleSheet.create({
   },
   bulletItem: {
     flexDirection: 'row',
-    marginBottom: 6,
-    paddingLeft: 16,
+    marginBottom: 10,
+    paddingLeft: 0,
   },
   lastBulletBeforeNumber: {
     marginBottom: 16,
   },
   bulletPoint: {
-    fontSize: 16,
-    color: '#374151',
-    marginRight: 8,
+    fontSize: 15,
+    color: '#3b82f6',
+    marginRight: 10,
     fontWeight: '600',
   },
   bulletText: {
-    fontSize: 16,
-    color: '#374151',
-    lineHeight: 24,
+    fontSize: 15,
+    color: '#475569',
+    lineHeight: 23,
     flex: 1,
-  },
-  disclaimer: {
-    fontSize: 12,
-    color: '#9ca3af',
-    textAlign: 'center',
-    fontStyle: 'italic',
   },
   loadingContainer: {
     flex: 1,
