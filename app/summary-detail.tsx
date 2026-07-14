@@ -310,7 +310,6 @@ export default function SummaryDetailScreen() {
           <View style={styles.heroPlayButton}>
             <IconSymbol name="play.rectangle.fill" size={25} color="#ffffff" />
           </View>
-          <Text style={styles.heroAction}>YouTube에서 보기</Text>
         </TouchableOpacity>
 
         <View style={styles.videoInfo}>
@@ -380,22 +379,15 @@ const styles = StyleSheet.create({
   },
   heroPlayButton: {
     position: 'absolute',
-    left: 20,
-    bottom: 18,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    left: '50%',
+    top: '50%',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: 'rgba(15, 23, 42, 0.68)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  heroAction: {
-    position: 'absolute',
-    left: 80,
-    bottom: 31,
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
+    transform: [{ translateX: -28 }, { translateY: -28 }],
   },
   videoInfo: {
     paddingHorizontal: 20,
