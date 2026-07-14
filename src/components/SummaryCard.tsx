@@ -38,9 +38,10 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
     ? { width: 132, height: 74 }
     : { width: 160, height: 90 };
   const parsedSummary = parseSummary(summary.summary);
-  const summaryPreview = parsedSummary.overview[0]
+  const rawSummaryPreview = parsedSummary.overview[0]
     ?? parsedSummary.sections[0]?.bullets[0]
     ?? parsedSummary.fallback[0];
+  const summaryPreview = rawSummaryPreview?.replace(/\*\*([^*]+)\*\*/g, '$1');
 
   const formatTimeAgo = (dateString: string): string => {
     const date = new Date(dateString);

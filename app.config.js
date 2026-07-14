@@ -19,7 +19,7 @@ export default {
   expo: {
     name: "Shook",
     slug: "shook",
-    version: "1.1.1",
+    version: "1.1.2",
     orientation: "portrait",
     icon: "./assets/images/Shook.png",
     scheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
@@ -58,6 +58,10 @@ export default {
       }
     },
     android: {
+      blockedPermissions: [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       adaptiveIcon: {
         foregroundImage: "./assets/images/Shook.png",
         backgroundColor: "#ffffff"
@@ -76,6 +80,8 @@ export default {
     },
     plugins: [
       "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
       [
         "expo-notifications",
         {

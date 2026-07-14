@@ -117,7 +117,7 @@ export default function SettingsScreen() {
   const settingsItems = [
     {
       title: 'SNS 계정 연동',
-      description: 'Shook 계정을 카카오 계정와 연동합니다',
+      description: 'Shook 계정을 카카오 계정과 연동합니다',
       onPress: () => {
         router.push('/sns-link');
       },
@@ -221,20 +221,16 @@ export default function SettingsScreen() {
               </Pressable>
             )}
 
-            {/* Account Deletion Button (only for non-guest users) */}
-            {/* TODO: 카카오 로그인 기능 추가 시 활성화 (카카오 계정 사용자만 회원탈퇴 가능) */}
-            {!user?.isGuest && (
-              <Pressable
-                onPress={handleDeleteAccount}
-                disabled={isLoading}
-                style={styles.settingItem}
-              >
-                <Text style={styles.settingTitle}>회원 탈퇴</Text>
-                <Text style={styles.settingDescription}>
-                  모든 데이터가 영구적으로 삭제됩니다
-                </Text>
-              </Pressable>
-            )}
+            <Pressable
+              onPress={handleDeleteAccount}
+              disabled={isLoading}
+              style={styles.settingItem}
+            >
+              <Text style={styles.settingTitle}>회원 탈퇴</Text>
+              <Text style={styles.settingDescription}>
+                계정과 구독·알림 데이터를 영구적으로 삭제합니다
+              </Text>
+            </Pressable>
           </View>
         </View>
       </ScrollView>
