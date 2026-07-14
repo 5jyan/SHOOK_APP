@@ -17,6 +17,7 @@ export default function SettingsScreen() {
   const [isLoading, setIsLoading] = React.useState(false);
   const tabBarHeight = useBottomTabOverflow();
   const appVersion = Constants.expoConfig?.version ?? '알 수 없음';
+  const contentVersion = Constants.expoConfig?.extra?.contentVersion ?? appVersion;
 
   const handleLogout = () => {
     Alert.alert(
@@ -148,7 +149,7 @@ export default function SettingsScreen() {
       onPress: () => {
         Alert.alert(
           'Shook 앱 정보',
-          `버전: ${appVersion}\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2026 Shook. All rights reserved.`,
+          `앱 버전: ${appVersion}\n콘텐츠 버전: ${contentVersion}\n개발자: Saul Park\n문의: saulpark12@gmail.com\n\n© 2026 Shook. All rights reserved.`,
           [{ text: '확인' }]
         );
       },
