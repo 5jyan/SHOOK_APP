@@ -217,13 +217,6 @@ export default function SummaryDetailScreen() {
 
         {parsed.sections.length > 0 && (
           <View style={styles.detailsSection}>
-            <View style={styles.detailsHeadingRow}>
-              <View>
-                <Text style={styles.sectionEyebrow}>DETAILS</Text>
-                <Text style={styles.detailsTitle}>핵심 내용</Text>
-              </View>
-              <Text style={styles.detailsCount}>{parsed.sections.length}개 주제</Text>
-            </View>
             {parsed.sections.map((section, index) => {
               const expanded = !collapsedSections.has(index);
               return (
@@ -399,8 +392,8 @@ const styles = StyleSheet.create({
   },
   videoInfo: {
     paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 24,
+    paddingTop: 14,
+    paddingBottom: 18,
     backgroundColor: '#ffffff',
   },
   videoTitle: {
@@ -409,7 +402,7 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     lineHeight: 32,
     letterSpacing: -0.4,
-    marginBottom: 18,
+    marginBottom: 12,
   },
   channelRow: {
     flexDirection: 'row',
@@ -437,8 +430,8 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
   },
   summarySection: {
-    paddingHorizontal: 20,
-    paddingTop: 28,
+    paddingHorizontal: 16,
+    paddingTop: 14,
   },
   summaryContent: {
     marginBottom: 12,
@@ -521,26 +514,6 @@ const styles = StyleSheet.create({
   detailsSection: {
     marginBottom: 24,
   },
-  detailsHeadingRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-    paddingHorizontal: 4,
-  },
-  detailsTitle: {
-    color: '#0f172a',
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-    marginTop: 4,
-  },
-  detailsCount: {
-    color: '#94a3b8',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 3,
-  },
   detailCard: {
     backgroundColor: '#ffffff',
     borderBottomColor: '#e2e8f0',
@@ -557,16 +530,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   detailNumberBadge: {
-    width: 30,
-    height: 30,
+    width: 22,
+    height: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 3,
   },
   detailNumber: {
     color: '#2563eb',
     textAlign: 'center',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '800',
   },
   detailTitle: {
@@ -575,13 +548,13 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800',
     lineHeight: 24,
-    marginRight: 8,
+    marginRight: 4,
   },
   detailBody: {
     backgroundColor: '#ffffff',
-    paddingLeft: 38,
-    paddingRight: 4,
-    paddingTop: 10,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 8,
     paddingBottom: 0,
   },
   timestampButton: {
@@ -589,7 +562,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginLeft: 16,
+    marginLeft: 0,
     marginTop: 2,
     marginBottom: 8,
     paddingHorizontal: 10,
@@ -638,7 +611,7 @@ const styles = StyleSheet.create({
   bulletPoint: {
     fontSize: 15,
     color: '#3b82f6',
-    marginRight: 10,
+    marginRight: 6,
     fontWeight: '600',
   },
   bulletText: {
