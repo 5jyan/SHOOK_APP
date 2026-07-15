@@ -194,7 +194,7 @@ export default function SummaryDetailScreen() {
       part.slice(2, -2).split(/(\s+)/).forEach((token, tokenIndex) => {
         nodes.push(
           <Text key={`bold-${index}-${tokenIndex}`} style={styles.inlineBold}>
-            {token}
+            {token}{token.trim() ? '\u200A' : ''}
           </Text>,
         );
       });
@@ -602,7 +602,6 @@ const styles = StyleSheet.create({
     color: '#475569',
     lineHeight: 23,
     flex: 1,
-    paddingRight: 2,
   },
   inlineBold: {
     color: '#1e293b',
