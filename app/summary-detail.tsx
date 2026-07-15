@@ -7,6 +7,7 @@ import { transformVideoSummaryToCardData } from '@/hooks/useVideoSummariesCached
 import { getVideoSummariesQueryKey, type CacheAwareData, videoSummariesSyncService } from '@/services/video-summaries-sync';
 import { useAuthStore } from '@/stores/auth-store';
 import { parseSummary } from '@/utils/summary-parser';
+import { buildYouTubeTimestampUrl } from '@/utils/youtube-url';
 import { useQueryClient } from '@tanstack/react-query';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -146,7 +147,7 @@ export default function SummaryDetailScreen() {
   };
 
   const handleOpenVideoAt = (timestampSeconds: number) => {
-    const youtubeUrl = `https://youtube.com/watch?v=${videoSummary.videoId}&t=${timestampSeconds}s`;
+    const youtubeUrl = buildYouTubeTimestampUrl(videoSummary.videoId, timestampSeconds);
     Linking.openURL(youtubeUrl);
   };
 
@@ -207,19 +208,6 @@ export default function SummaryDetailScreen() {
           </View>
         )}
 
-        {parsed.keyFacts.length > 0 && (
-          <View style={styles.keyFactsSection}>
-            <Text style={styles.summarySectionTitle}>주요 숫자</Text>
-            <View style={styles.keyFactsWrap}>
-              {parsed.keyFacts.map((fact, index) => (
-                <View key={`fact-${index}`} style={styles.keyFactChip}>
-                  <Text style={styles.keyFactText}>{renderInlineBold(fact)}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
         {parsed.sections.length > 0 && (
           <View style={styles.detailsSection}>
             {parsed.sections.map((section, index) => {
@@ -229,28 +217,27 @@ export default function SummaryDetailScreen() {
               const displayNumber = index + 1 - (hasCoreHeading ? 1 : 0);
               return (
                 <View key={`section-${index}`} style={styles.detailCard}>
-                  <TouchableOpacity
-                    style={styles.detailHeader}
-                    onPress={() => toggleSection(index)}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${section.title} ${expanded ? '접기' : '펼치기'}`}
-                  >
-                    {!isCoreHeading && (
-                      <View style={styles.detailNumberBadge}>
-                        <Text style={styles.detailNumber}>{String(displayNumber).padStart(2, '0')}</Text>
-                      </View>
-                    )}
-                    <Text style={[styles.detailTitle, isCoreHeading && styles.coreHeadingTitle]}>
-                      {section.title}
-                    </Text>
+                  <View style={styles.detailHeader}>
+                    <TouchableOpacity
+                      style={styles.detailToggle}
+                      onPress={() => toggleSection(index)}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${section.title} ${expanded ? '접기' : '펼치기'}`}
+                    >
+                      {!isCoreHeading && (
+                        <View style={styles.detailNumberBadge}>
+                          <Text style={styles.detailNumber}>{String(displayNumber).padStart(2, '0')}</Text>
+                        </View>
+                      )}
+                      <Text style={[styles.detailTitle, isCoreHeading && styles.coreHeadingTitle]}>
+                        {section.title}
+                      </Text>
+                    </TouchableOpacity>
                     {section.timestampSeconds !== undefined && (
                       <TouchableOpacity
                         style={styles.youtubeButton}
-                        onPress={(event) => {
-                          event.stopPropagation();
-                          handleOpenVideoAt(section.timestampSeconds!);
-                        }}
+                        onPress={() => handleOpenVideoAt(section.timestampSeconds!)}
                         activeOpacity={0.65}
                         accessibilityRole="link"
                         accessibilityLabel={`${section.title} 유튜브에서 보기`}
@@ -258,12 +245,20 @@ export default function SummaryDetailScreen() {
                         <MaterialCommunityIcons name="youtube" size={20} color="#ff0000" />
                       </TouchableOpacity>
                     )}
-                    <IconSymbol
-                      name={expanded ? 'chevron.up' : 'chevron.down'}
-                      size={14}
-                      color="#64748b"
-                    />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.collapseButton}
+                      onPress={() => toggleSection(index)}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${section.title} ${expanded ? '접기' : '펼치기'}`}
+                    >
+                      <IconSymbol
+                        name={expanded ? 'chevron.up' : 'chevron.down'}
+                        size={14}
+                        color="#64748b"
+                      />
+                    </TouchableOpacity>
+                  </View>
                   {expanded && (
                     <View style={styles.detailBody}>
                       {renderBullets(section.bullets, `section-${index}`)}
@@ -367,7 +362,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     alignSelf: 'center',
-    paddingBottom: 40,
+    paddingBottom: 8,
   },
   hero: {
     width: '100%',
@@ -442,7 +437,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
   },
   summaryContent: {
-    marginBottom: 12,
+    marginBottom: 0,
   },
   overviewCard: {
     paddingBottom: 18,
@@ -481,27 +476,8 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     marginBottom: 12,
   },
-  keyFactsSection: {
-    marginBottom: 20,
-  },
-  keyFactsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  keyFactChip: {
-    borderBottomColor: '#e2e8f0',
-    borderBottomWidth: 1,
-    paddingVertical: 8,
-    marginRight: 14,
-  },
-  keyFactText: {
-    color: '#334155',
-    fontSize: 14,
-    fontWeight: '600',
-  },
   detailsSection: {
-    marginBottom: 24,
+    marginBottom: 8,
   },
   detailCard: {
     backgroundColor: '#ffffff',
@@ -517,6 +493,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 0,
     backgroundColor: '#ffffff',
+  },
+  detailToggle: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 38,
   },
   detailNumberBadge: {
     width: 24,
@@ -556,11 +538,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 2,
   },
+  collapseButton: {
+    width: 26,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   conclusionCard: {
-    borderTopColor: '#e2e8f0',
-    borderTopWidth: 1,
     paddingTop: 24,
-    marginBottom: 24,
+    marginBottom: 8,
   },
   fallbackSection: {
     paddingVertical: 8,
