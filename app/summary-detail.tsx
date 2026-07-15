@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   detailsSection: {
-    marginBottom: 8,
+    marginBottom: 0,
   },
   detailCard: {
     backgroundColor: '#ffffff',
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   conclusionCard: {
-    paddingTop: 24,
+    paddingTop: 8,
     marginBottom: 8,
   },
   fallbackSection: {
