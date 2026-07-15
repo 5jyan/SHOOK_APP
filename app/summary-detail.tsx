@@ -23,12 +23,13 @@ import {
   useWindowDimensions,
   View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { uiLogger } from '../src/utils/logger-enhanced';
 
 export default function SummaryDetailScreen() {
   const { width } = useWindowDimensions();
-  const contentWidth = Math.min(width, 752);
+  const insets = useSafeAreaInsets();
+  const contentWidth = Math.min(width - insets.left - insets.right, 752);
   const params = useLocalSearchParams();
   const videoId = params.summaryId as string;
   const fromNotification = params.fromNotification === 'true';
@@ -302,7 +303,7 @@ export default function SummaryDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ModalHeader 
         title="상세 내용"
         rightComponent={
