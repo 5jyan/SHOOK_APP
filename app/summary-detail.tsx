@@ -175,7 +175,9 @@ export default function SummaryDetailScreen() {
   const renderBullets = (items: string[], keyPrefix: string) => items.map((item, index) => (
     <View key={`${keyPrefix}-${index}`} style={styles.bulletItem}>
       <Text style={styles.bulletPoint}>•</Text>
-      <Text style={styles.bulletText}>{renderInlineBold(item)}</Text>
+      <View style={styles.bulletTextContainer}>
+        {renderInlineBold(item)}
+      </View>
     </View>
   ));
 
@@ -184,17 +186,16 @@ export default function SummaryDetailScreen() {
 
     text.split(/(\*\*[^*]+\*\*)/g).forEach((part, index) => {
       const isBold = part.startsWith('**') && part.endsWith('**');
-      if (!isBold) {
-        nodes.push(part);
-        return;
-      }
+      const content = isBold ? part.slice(2, -2) : part;
+      const tokens = content.match(/\S+\s*|\s+/g) ?? [];
 
-      // iOS can reserve a wrapped line but clip the remainder of one long
-      // nested bold span. Separate words keep every whitespace wrap point usable.
-      part.slice(2, -2).split(/(\s+)/).forEach((token, tokenIndex) => {
+      tokens.forEach((token, tokenIndex) => {
         nodes.push(
-          <Text key={`bold-${index}-${tokenIndex}`} style={styles.inlineBold}>
-            {token}{token.trim() ? '\u200A' : ''}
+          <Text
+            key={`text-${index}-${tokenIndex}`}
+            style={[styles.bulletText, isBold && styles.inlineBold]}
+          >
+            {token}
           </Text>,
         );
       });
@@ -601,7 +602,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#475569',
     lineHeight: 23,
+  },
+  bulletTextContainer: {
     flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   inlineBold: {
     color: '#1e293b',
