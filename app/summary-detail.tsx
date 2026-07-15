@@ -178,14 +178,29 @@ export default function SummaryDetailScreen() {
     </View>
   ));
 
-  const renderInlineBold = (text: string) => text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
-    const isBold = part.startsWith('**') && part.endsWith('**');
-    return (
-      <Text key={`${part}-${index}`} style={isBold ? styles.inlineBold : undefined}>
-        {isBold ? part.slice(2, -2) : part}
-      </Text>
-    );
-  });
+  const renderInlineBold = (text: string): React.ReactNode[] => {
+    const nodes: React.ReactNode[] = [];
+
+    text.split(/(\*\*[^*]+\*\*)/g).forEach((part, index) => {
+      const isBold = part.startsWith('**') && part.endsWith('**');
+      if (!isBold) {
+        nodes.push(part);
+        return;
+      }
+
+      // iOS can reserve a wrapped line but clip the remainder of one long
+      // nested bold span. Separate words keep every whitespace wrap point usable.
+      part.slice(2, -2).split(/(\s+)/).forEach((token, tokenIndex) => {
+        nodes.push(
+          <Text key={`bold-${index}-${tokenIndex}`} style={styles.inlineBold}>
+            {token}
+          </Text>,
+        );
+      });
+    });
+
+    return nodes;
+  };
 
   const renderFormattedSummary = (summary: string) => {
     const parsed = parseSummary(summary);
