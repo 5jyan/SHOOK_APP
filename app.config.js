@@ -26,14 +26,14 @@ export default {
     userInterfaceStyle: "light",
     newArchEnabled: true,
     splash: {
-      image: "./assets/images/shook_256_pad.png",
+      image: "./assets/images/shook-splash-v2.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff"
+      backgroundColor: "#fffcf7"
     },
     updates: {
       url: "https://u.expo.dev/a8839540-39ec-431e-a346-bdfdff731ecd"
     },
-    runtimeVersion: "1.1.1",
+    runtimeVersion: "1.1.2",
     assetBundlePatterns: [
       "**/*"
     ],
@@ -42,10 +42,10 @@ export default {
       bundleIdentifier: "com.shook.app",
       usesNonExemptEncryption: false,
       splash: {
-        image: "./assets/images/shook_256_pad.png",
+        image: "./assets/images/shook-splash-v2.png",
         resizeMode: "contain",
-        backgroundColor: "#ffffff",
-        tabletImage: "./assets/images/shook_256_pad.png"
+        backgroundColor: "#fffcf7",
+        tabletImage: "./assets/images/shook-splash-v2.png"
       },
       infoPlist: {
         LSApplicationQueriesSchemes: ["kakaokompassauth", "kakaolink"],
@@ -67,9 +67,9 @@ export default {
         backgroundColor: "#ffffff"
       },
       splash: {
-        image: "./assets/images/shook_256_pad.png",
+        image: "./assets/images/shook-splash-v2.png",
         resizeMode: "contain",
-        backgroundColor: "#ffffff"
+        backgroundColor: "#fffcf7"
       },
       package: "com.shook.app"
     },

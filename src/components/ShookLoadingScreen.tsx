@@ -5,7 +5,6 @@ import Animated, {
   useAnimatedStyle, 
   withRepeat, 
   withTiming,
-  interpolate,
   Easing
 } from 'react-native-reanimated';
 
@@ -37,7 +36,7 @@ export function ShookLoadingScreen({ message = '로딩 중...' }: ShookLoadingSc
       -1, // 무한 반복
       true // 역방향 반복
     );
-  }, []);
+  }, [opacity, scale]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -50,7 +49,7 @@ export function ShookLoadingScreen({ message = '로딩 중...' }: ShookLoadingSc
     <View style={styles.container}>
       <Animated.View style={[styles.logoContainer, animatedStyle]}>
         <Image 
-          source={require('../../assets/images/Shook.png')} 
+          source={require('../../assets/images/shook-splash-v2.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -63,17 +62,17 @@ export function ShookLoadingScreen({ message = '로딩 중...' }: ShookLoadingSc
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fffcf7',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
   },
   logoContainer: {
-    marginBottom: 32,
+    marginBottom: 20,
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 220,
+    height: 220,
   },
   message: {
     fontSize: 18,
