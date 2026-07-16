@@ -8,6 +8,7 @@
     "android": "npx @expo/cli start --android",
     "ios": "npx @expo/cli start --ios",
     "web": "npx @expo/cli start --web",
+    "test:auth": "node --experimental-strip-types --test src/services/auth-bootstrap.test.mjs",
     "lint": "npx @expo/cli lint"
   },
   "dependencies": {

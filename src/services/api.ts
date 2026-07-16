@@ -37,10 +37,11 @@ configLogger.info('API service configuration', {
   hasExtraConfig: !!Constants.expoConfig?.extra
 });
 
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   data: T;
   success: boolean;
   error?: string;
+  status?: number;
 }
 
 interface KakaoVerifyResponse {
@@ -126,6 +127,8 @@ class ApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    let responseStatus: number | undefined;
+
     try {
       const url = `${API_BASE_URL}${endpoint}`;
       
@@ -140,6 +143,7 @@ class ApiService {
         // Internal API이므로 상세한 응답 바디 로깅은 비활성화
         logResponseBody: false,
       });
+      responseStatus = response.status;
 
       let data;
       const contentType = response.headers.get('content-type');
@@ -206,6 +210,7 @@ class ApiService {
         data: {} as T,
         success: false,
         error: error instanceof Error ? error.message : 'Network error',
+        ...(responseStatus !== undefined ? { status: responseStatus } : {}),
       };
     }
   }

@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger, authLogger } from '@/utils/logger-enhanced';
 import { apiService } from '@/services/api';
 import { getOrCreateDeviceId, isE2EMode } from '@/services/device-id';
+import { bootstrapAuth, type BootstrapUser } from '@/services/auth-bootstrap';
 import { Image, StyleSheet, View } from 'react-native';
 
 interface ProtectedRouteProps {
@@ -12,44 +13,40 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, login } = useAuthStore();
   const [isInitializing, setIsInitializing] = useState(true);
-  const e2eAuthInitialized = useRef(false);
+  const authBootstrapStarted = useRef(false);
 
   useEffect(() => {
     async function initializeAuth() {
-      const shouldInitializeE2EAuth = isE2EMode() && !e2eAuthInitialized.current;
-      if (!isLoading && (!isAuthenticated || shouldInitializeE2EAuth)) {
-        if (shouldInitializeE2EAuth) {
-          e2eAuthInitialized.current = true;
-        }
+      if (!isLoading && !authBootstrapStarted.current) {
+        authBootstrapStarted.current = true;
         try {
-          authLogger.info('User not authenticated, creating guest account');
+          const result = await bootstrapAuth({
+            hasCachedAuth: isAuthenticated,
+            getCurrentUser: () => apiService.getCurrentUser(),
+            getDeviceId: getOrCreateDeviceId,
+            createGuestAccount: (deviceId) => apiService.createGuestAccount(deviceId),
+          });
 
-          const deviceId = await getOrCreateDeviceId();
-          authLogger.info('Device ID ready', {
-            deviceId: deviceId.substring(0, 8) + '...',
+          authLogger.info('Authentication bootstrap completed', {
+            source: result.source,
+            userId: result.user?.id,
             isE2E: isE2EMode(),
           });
 
-          // Create or login guest account
-          const guestUser = await apiService.createGuestAccount(deviceId);
-
-          authLogger.info('Guest account created/retrieved', {
-            userId: guestUser.id,
-            isGuest: guestUser.isGuest
-          });
-
-          // Auto-login as guest
-          const email = guestUser.email || undefined;
-          login({
-            id: guestUser.id.toString(),
-            username: guestUser.username,
-            role: guestUser.role,
-            isGuest: guestUser.isGuest,
-            ...(email ? { email } : {}),
-          });
+          if (result.user) {
+            const user: BootstrapUser = result.user;
+            const email = user.email || undefined;
+            login({
+              id: user.id.toString(),
+              username: user.username,
+              role: user.role,
+              ...(user.isGuest !== undefined ? { isGuest: user.isGuest } : {}),
+              ...(email ? { email } : {}),
+            });
+          }
 
         } catch (error) {
-          authLogger.error('Failed to create guest account', {
+          authLogger.error('Failed to initialize authentication', {
             error: error instanceof Error ? error.message : String(error)
           });
         } finally {
