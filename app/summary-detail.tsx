@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     transform: [{ translateX: -28 }, { translateY: -28 }],
   },
   videoInfo: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingTop: 14,
     paddingBottom: 18,
     backgroundColor: '#ffffff',
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
   detailHeader: {
     minHeight: 38,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 0,
     paddingVertical: 0,
     backgroundColor: '#ffffff',
@@ -528,12 +528,13 @@ const styles = StyleSheet.create({
   detailToggle: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     minHeight: 38,
   },
   detailNumberBadge: {
-    width: 24,
+    width: 36,
     height: 24,
+    flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 6,

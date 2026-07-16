@@ -35,8 +35,8 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
   const isCompact = width < 390;
   const fontScale = PixelRatio.getFontScale();
   const thumbnailSize = isCompact
-    ? { width: 132, height: 74 }
-    : { width: 160, height: 90 };
+    ? { width: 132, minHeight: 74 }
+    : { width: 160, minHeight: 90 };
 
   const formatTimeAgo = (dateString: string): string => {
     const date = new Date(dateString);
@@ -76,10 +76,10 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
     >
       <View style={styles.listContent}>
         {/* Video Thumbnail */}
-        <View style={styles.thumbnailContainer}>
+        <View style={[styles.thumbnailContainer, thumbnailSize]}>
           <Image 
             source={{ uri: summary.videoThumbnail }}
-            style={[styles.videoThumbnail, thumbnailSize]}
+            style={styles.videoThumbnail}
             resizeMode="cover"
           />
         </View>
@@ -132,16 +132,16 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
   },
   thumbnailContainer: {
     marginRight: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#f1f5f9',
   },
   videoThumbnail: {
-    width: 160,
-    height: 90,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    ...StyleSheet.absoluteFillObject,
   },
   textContent: {
     flex: 1,
