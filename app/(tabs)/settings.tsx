@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TEST_IDS } from '@/constants/test-ids';
 
 export default function SettingsScreen() {
   const { width, height } = useWindowDimensions();
@@ -121,6 +122,7 @@ export default function SettingsScreen() {
 
   const settingsItems = [
     {
+      testID: TEST_IDS.settings.snsLink,
       title: 'SNS 계정 연동',
       description: 'Shook 계정을 카카오 계정과 연동합니다',
       onPress: () => {
@@ -128,6 +130,7 @@ export default function SettingsScreen() {
       },
     },
     {
+      testID: TEST_IDS.settings.notifications,
       title: '알림 설정',
       description: '푸시 알림 및 알림 주기를 설정합니다',
       onPress: () => {
@@ -135,6 +138,7 @@ export default function SettingsScreen() {
       },
     },
     {
+      testID: TEST_IDS.settings.privacy,
       title: '개인정보처리방침',
       description: '개인정보 수집 및 이용에 관한 방침을 확인합니다',
       onPress: () => {
@@ -142,6 +146,7 @@ export default function SettingsScreen() {
       },
     },
     {
+      testID: TEST_IDS.settings.terms,
       title: '서비스 이용약관',
       description: '서비스 이용에 관한 약관을 확인합니다',
       onPress: () => {
@@ -149,6 +154,7 @@ export default function SettingsScreen() {
       },
     },
     {
+      testID: TEST_IDS.settings.appInfo,
       title: '앱 정보',
       description: '버전 정보 및 앱 개발자 정보를 확인합니다',
       onPress: () => {
@@ -169,7 +175,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView testID={TEST_IDS.screens.settings} style={styles.container}>
       <TabHeader
         title="설정"
         rightComponent={
@@ -184,6 +190,7 @@ export default function SettingsScreen() {
       />
 
       <ScrollView
+        testID={TEST_IDS.settings.scroll}
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
@@ -199,6 +206,7 @@ export default function SettingsScreen() {
             {settingsItems.map((item, index) => (
               <Pressable
                 key={index}
+                testID={item.testID}
                 onPress={item.onPress}
                 style={[styles.settingItem, isShortScreen && styles.settingItemCompact]}
               >
@@ -214,6 +222,7 @@ export default function SettingsScreen() {
             {/* Developer Tools Button (only for manager/tester) */}
             {hasDeveloperAccess && (
               <Pressable
+                testID={TEST_IDS.settings.developerTools}
                 onPress={developerToolsItem.onPress}
                 style={[styles.settingItem, styles.developerToolsItem]}
               >
@@ -227,6 +236,7 @@ export default function SettingsScreen() {
             )}
 
             <Pressable
+              testID={TEST_IDS.settings.deleteAccount}
               onPress={handleDeleteAccount}
               disabled={isLoading}
               style={styles.settingItem}

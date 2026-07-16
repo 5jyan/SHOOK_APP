@@ -31,6 +31,7 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TEST_IDS } from '@/constants/test-ids';
 
 export default function ChannelSearchScreen() {
   const searchInputRef = React.useRef<TextInput>(null);
@@ -178,7 +179,7 @@ export default function ChannelSearchScreen() {
     }
 
     return (
-      <View style={styles.channelItem}>
+      <View testID={TEST_IDS.channels.row(channel.channelId)} style={styles.channelItem}>
         <Image
           source={{ uri: channel.thumbnail || 'https://via.placeholder.com/60/4285f4/ffffff?text=C' }}
           style={styles.channelThumbnail}
@@ -202,6 +203,9 @@ export default function ChannelSearchScreen() {
           </View>
         </View>
         <TouchableOpacity
+          testID={TEST_IDS.channels.add(channel.channelId)}
+          accessibilityRole="button"
+          accessibilityLabel={`${channel.title} 채널 추가`}
           style={styles.heartButton}
           onPress={() => handleAddChannel(channel)}
           disabled={loadingChannelId !== null}
@@ -219,11 +223,17 @@ export default function ChannelSearchScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView testID={TEST_IDS.screens.channelSearch} style={styles.container}>
         {/* Search Header */}
         <View style={[styles.header, ]}>
           {/* Back Button */}
-          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+          <TouchableOpacity
+            testID={TEST_IDS.channels.searchBack}
+            accessibilityRole="button"
+            accessibilityLabel="채널 검색 닫기"
+            onPress={handleBackPress}
+            style={styles.backButton}
+          >
             <IconSymbol name="chevron.left" size={24} color="#374151" />
           </TouchableOpacity>
           
@@ -232,6 +242,8 @@ export default function ChannelSearchScreen() {
             <View style={styles.searchInputWrapper}>
               <IconSymbol name="magnifyingglass" size={18} color="#9ca3af" />
               <TextInput
+                testID={TEST_IDS.channels.searchInput}
+                accessibilityLabel="채널 검색어"
                 ref={searchInputRef}
                 style={styles.searchInput}
                 placeholder="채널 검색"
@@ -243,7 +255,13 @@ export default function ChannelSearchScreen() {
                 autoCorrect={false}
               />
               {searchTerm.length > 0 && (
-                <TouchableOpacity onPress={handleClearPress} style={styles.clearButton}>
+                <TouchableOpacity
+                  testID={TEST_IDS.channels.searchClear}
+                  accessibilityRole="button"
+                  accessibilityLabel="검색어 지우기"
+                  onPress={handleClearPress}
+                  style={styles.clearButton}
+                >
                   <IconSymbol name="xmark" size={16} color="#6b7280" />
                 </TouchableOpacity>
               )}

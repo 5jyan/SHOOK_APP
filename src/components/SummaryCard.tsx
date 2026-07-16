@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { TEST_IDS } from '@/constants/test-ids';
 
 interface SummaryData {
   id: string;
@@ -63,6 +64,9 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
 
   return (
     <Pressable 
+      testID={TEST_IDS.summaries.row(summary.videoId)}
+      accessibilityRole="button"
+      accessibilityLabel={`${summary.videoTitle} 요약 열기`}
       style={({ pressed }) => [
         styles.listItem,
         isPending && styles.listItemPending,

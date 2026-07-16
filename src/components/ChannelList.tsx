@@ -6,6 +6,7 @@ import { videoCacheService } from '@/services/video-cache-enhanced';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
 import { formatChannelStats } from '@/utils/number-format';
+import { TEST_IDS } from '@/constants/test-ids';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import React from 'react';
@@ -234,6 +235,9 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
 
     return (
       <Pressable
+        testID={TEST_IDS.channels.row(item.youtubeChannel.channelId)}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.youtubeChannel.title} 채널 요약 보기`}
         style={({ pressed }) => [
           styles.channelItem,
           pressed && styles.channelItemPressed
@@ -243,6 +247,9 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
       >
         {/* 우측 상단 하트 버튼 */}
         <TouchableOpacity
+          testID={TEST_IDS.channels.delete(item.youtubeChannel.channelId)}
+          accessibilityRole="button"
+          accessibilityLabel={`${item.youtubeChannel.title} 채널 삭제`}
           style={styles.heartButton}
           onPress={(e) => {
             // Prevent parent Pressable from firing
@@ -395,6 +402,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
     <View style={styles.container}>
 
       <FlatList
+        testID={TEST_IDS.channels.list}
         data={channels}
         renderItem={renderChannelItem}
         keyExtractor={(item) => item?.id?.toString() || `channel-${Date.now()}-${Math.random()}`}

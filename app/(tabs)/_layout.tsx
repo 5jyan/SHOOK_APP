@@ -9,6 +9,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { TEST_IDS } from '@/constants/test-ids';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -74,6 +75,7 @@ export default function TabLayout() {
             name="channels"
             options={{
               title: '채널',
+              tabBarButtonTestID: TEST_IDS.tabs.channels,
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="play.rectangle.fill" color={color} />,
             }}
           />
@@ -87,6 +89,7 @@ export default function TabLayout() {
             name="summaries"
             options={{
               title: '요약',
+              tabBarButtonTestID: TEST_IDS.tabs.summaries,
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="doc.text.fill" color={color} />,
             }}
           />
@@ -94,6 +97,7 @@ export default function TabLayout() {
             name="settings"
             options={{
               title: '설정',
+              tabBarButtonTestID: TEST_IDS.tabs.settings,
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="gear" color={color} />,
             }}
           />

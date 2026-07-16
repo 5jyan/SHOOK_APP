@@ -1,0 +1,41 @@
+export const TEST_IDS = {
+  screens: {
+    channels: 'screen-channels',
+    channelSearch: 'screen-channel-search',
+    summaries: 'screen-summaries',
+    summaryDetail: 'screen-summary-detail',
+    settings: 'screen-settings',
+  },
+  tabs: {
+    channels: 'tab-channels',
+    summaries: 'tab-summaries',
+    settings: 'tab-settings',
+  },
+  channels: {
+    list: 'channel-list',
+    searchOpen: 'channel-search-open',
+    searchBack: 'channel-search-back',
+    searchInput: 'channel-search-input',
+    searchClear: 'channel-search-clear',
+    row: (channelId: string) => `channel-row-${channelId}`,
+    add: (channelId: string) => `channel-add-${channelId}`,
+    delete: (channelId: string) => `channel-delete-${channelId}`,
+  },
+  summaries: {
+    list: 'summary-list',
+    row: (videoId: string) => `summary-row-${videoId}`,
+    detail: (videoId: string) => `summary-detail-${videoId}`,
+    detailScroll: 'summary-detail-scroll',
+    share: 'summary-detail-share',
+  },
+  settings: {
+    scroll: 'settings-scroll',
+    snsLink: 'settings-sns-link',
+    notifications: 'settings-notifications',
+    privacy: 'settings-privacy',
+    terms: 'settings-terms',
+    appInfo: 'settings-app-info',
+    developerTools: 'settings-developer-tools',
+    deleteAccount: 'settings-delete-account',
+  },
+} as const;

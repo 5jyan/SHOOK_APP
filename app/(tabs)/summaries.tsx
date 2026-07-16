@@ -12,6 +12,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TEST_IDS } from '@/constants/test-ids';
 
 export default function SummariesScreen() {
   const { width } = useWindowDimensions();
@@ -221,7 +222,7 @@ export default function SummariesScreen() {
   }).length === 0;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView testID={TEST_IDS.screens.summaries} style={styles.container}>
       <TabHeader title="요약 리스트" />
 
       <ChannelFilterBar
@@ -243,6 +244,7 @@ export default function SummariesScreen() {
         </View>
       ) : (
         <FlatList
+          testID={TEST_IDS.summaries.list}
           style={styles.list}
           endFillColor="#ffffff"
           data={summaries}

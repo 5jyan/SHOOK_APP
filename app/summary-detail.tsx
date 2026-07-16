@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { uiLogger } from '../src/utils/logger-enhanced';
+import { TEST_IDS } from '@/constants/test-ids';
 
 export default function SummaryDetailScreen() {
   const { width } = useWindowDimensions();
@@ -304,21 +305,33 @@ export default function SummaryDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      testID={TEST_IDS.screens.summaryDetail}
+      style={styles.container}
+      edges={['top', 'left', 'right']}
+    >
       <ModalHeader 
         title="상세 내용"
         rightComponent={
-          <TouchableOpacity onPress={handleSharePress} style={styles.shareButton}>
+          <TouchableOpacity
+            testID={TEST_IDS.summaries.share}
+            accessibilityRole="button"
+            accessibilityLabel="요약 공유"
+            onPress={handleSharePress}
+            style={styles.shareButton}
+          >
             <IconSymbol name="square.and.arrow.up" size={24} color="#374151" />
           </TouchableOpacity>
         }
       />
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={[styles.contentContainer, { width: contentWidth }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <View testID={TEST_IDS.summaries.detail(videoSummary.videoId)} style={styles.content}>
+        <ScrollView
+          testID={TEST_IDS.summaries.detailScroll}
+          style={styles.content}
+          contentContainerStyle={[styles.contentContainer, { width: contentWidth }]}
+          showsVerticalScrollIndicator={false}
+        >
         <TouchableOpacity style={styles.hero} onPress={handleOpenVideo} activeOpacity={0.9}>
           <Image
             source={{ uri: cardData?.videoThumbnail }}
@@ -357,7 +370,8 @@ export default function SummaryDetailScreen() {
           </View>
 
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }

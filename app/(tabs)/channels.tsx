@@ -4,6 +4,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useChannels } from '@/contexts/ChannelsContext';
 import { uiLogger } from '@/utils/logger-enhanced';
+import { TEST_IDS } from '@/constants/test-ids';
 import { router } from 'expo-router';
 import React from 'react';
 import { RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
@@ -36,11 +37,17 @@ export default function ChannelsScreen() {
   uiLogger.debug('[ChannelsScreen] rendering', { channelCount });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView testID={TEST_IDS.screens.channels} style={styles.container}>
       <TabHeader
         title="채널"
         rightComponent={
-          <TouchableOpacity onPress={handleSearchPress} style={styles.addButton}>
+          <TouchableOpacity
+            testID={TEST_IDS.channels.searchOpen}
+            accessibilityRole="button"
+            accessibilityLabel="채널 검색 열기"
+            onPress={handleSearchPress}
+            style={styles.addButton}
+          >
             <IconSymbol name="plus.circle.fill" size={24} color="#374151" />
           </TouchableOpacity>
         }
