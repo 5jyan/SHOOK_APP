@@ -35,16 +35,29 @@ RUN_ID="$(date +%Y%m%d-%H%M%S)"
 ARTIFACT_REL="artifacts/maestro/$RUN_ID/$PLATFORM"
 ARTIFACT_DIR="$APP_DIR/$ARTIFACT_REL"
 mkdir -p "$ARTIFACT_DIR"
+SERVER_PID=""
+E2E_BUILD_DIR=""
+
+cleanup() {
+  if [[ -n "$SERVER_PID" ]] && kill -0 "$SERVER_PID" >/dev/null 2>&1; then
+    kill "$SERVER_PID" >/dev/null 2>&1 || true
+    wait "$SERVER_PID" 2>/dev/null || true
+  fi
+  if [[ -n "$E2E_BUILD_DIR" && -d "$E2E_BUILD_DIR" ]]; then
+    rm -rf "$E2E_BUILD_DIR"
+  fi
+}
+trap cleanup EXIT INT TERM
 
 if [[ "$PLATFORM" == "android" ]]; then
   export PATH="$ANDROID_HOME/platform-tools:$PATH"
-  DEVICE_ID="${MAESTRO_DEVICE_ID:-$(adb devices | awk 'NR > 1 && $2 == "device" { print $1; exit }')}"
+  DEVICE_ID="${MAESTRO_DEVICE_ID:-$(adb devices | awk '$1 ~ /^emulator-/ && $2 == "device" { print $1; exit }')}"
   if [[ -z "$DEVICE_ID" ]]; then
-    echo "No running Android emulator found" >&2
+    echo "No running Android emulator found. Set MAESTRO_DEVICE_ID explicitly to use another device." >&2
     exit 1
   fi
-  adb -s "$DEVICE_ID" reverse "tcp:$E2E_API_PORT" "tcp:$E2E_API_PORT"
-  adb -s "$DEVICE_ID" reverse tcp:3000 "tcp:$E2E_API_PORT"
+  adb -s "$DEVICE_ID" shell settings put secure stylus_handwriting_enabled 0
+  adb -s "$DEVICE_ID" shell settings put secure show_ime_with_hard_keyboard 0
   EXCLUDE_ANDROID_FLOW=false
 else
   DEVICE_ID="${MAESTRO_DEVICE_ID:-$(xcrun simctl list devices booted -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((x["udid"] for values in d["devices"].values() for x in values if x.get("state") == "Booted"), ""))')}"
@@ -55,51 +68,59 @@ else
   EXCLUDE_ANDROID_FLOW=true
 fi
 
-if [[ "$PLATFORM" == "android" ]]; then
-  adb -s "$DEVICE_ID" shell pm path com.shook.app >/dev/null 2>&1 || {
-    echo "com.shook.app is not installed on $DEVICE_ID" >&2
-    exit 1
-  }
-else
-  xcrun simctl get_app_container "$DEVICE_ID" com.shook.app app >/dev/null 2>&1 || {
-    echo "com.shook.app is not installed on $DEVICE_ID" >&2
-    exit 1
-  }
-fi
-
 if [[ "${E2E_SKIP_BUILD:-false}" != "true" ]]; then
   export EXPO_PUBLIC_IS_LOCAL=true
   export EXPO_PUBLIC_E2E_MODE=true
   export EXPO_PUBLIC_E2E_API_PORT="$E2E_API_PORT"
   export EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY=e2e-placeholder
+  E2E_BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/shook-e2e-build.XXXXXX")"
+  rsync -a \
+    --exclude .git \
+    --exclude .env \
+    --exclude '.env.*' \
+    --exclude android \
+    --exclude ios \
+    --exclude node_modules \
+    --exclude artifacts \
+    "$APP_DIR/" "$E2E_BUILD_DIR/"
+  ln -s "$APP_DIR/node_modules" "$E2E_BUILD_DIR/node_modules"
+
   if [[ "$PLATFORM" == "android" ]]; then
-    (cd "$APP_DIR" && npx expo prebuild --platform android --no-install) >"$ARTIFACT_DIR/build.log" 2>&1
-    (cd "$APP_DIR/android" && ./gradlew app:installRelease) >>"$ARTIFACT_DIR/build.log" 2>&1
+    (cd "$E2E_BUILD_DIR" && npx expo prebuild --platform android --no-install) >"$ARTIFACT_DIR/build.log" 2>&1
+    (cd "$E2E_BUILD_DIR/android" && ./gradlew app:assembleRelease) >>"$ARTIFACT_DIR/build.log" 2>&1
+    adb -s "$DEVICE_ID" install -r "$E2E_BUILD_DIR/android/app/build/outputs/apk/release/app-release.apk" \
+      >>"$ARTIFACT_DIR/build.log" 2>&1
   else
-    IOS_DERIVED_DATA="$APP_DIR/ios/build-e2e"
+    (cd "$E2E_BUILD_DIR" && npx expo prebuild --platform ios --no-install) >"$ARTIFACT_DIR/build.log" 2>&1
+    (cd "$E2E_BUILD_DIR/ios" && pod install) >>"$ARTIFACT_DIR/build.log" 2>&1
+    IOS_DERIVED_DATA="$E2E_BUILD_DIR/ios/build-e2e"
     xcodebuild \
-      -workspace "$APP_DIR/ios/Shook.xcworkspace" \
+      -workspace "$E2E_BUILD_DIR/ios/Shook.xcworkspace" \
       -scheme Shook \
       -configuration Release \
       -sdk iphonesimulator \
       -destination "id=$DEVICE_ID" \
       -derivedDataPath "$IOS_DERIVED_DATA" \
       ONLY_ACTIVE_ARCH=YES \
-      ARCHS=arm64 \
-      build >"$ARTIFACT_DIR/build.log" 2>&1
+      ARCHS="$(uname -m)" \
+      build >>"$ARTIFACT_DIR/build.log" 2>&1
     xcrun simctl install "$DEVICE_ID" "$IOS_DERIVED_DATA/Build/Products/Release-iphonesimulator/Shook.app"
   fi
 fi
 
-SERVER_PID=""
-
-cleanup() {
-  if [[ -n "$SERVER_PID" ]] && kill -0 "$SERVER_PID" >/dev/null 2>&1; then
-    kill "$SERVER_PID" >/dev/null 2>&1 || true
-    wait "$SERVER_PID" 2>/dev/null || true
-  fi
-}
-trap cleanup EXIT INT TERM
+if [[ "$PLATFORM" == "android" ]]; then
+  adb -s "$DEVICE_ID" shell pm path com.shook.app >/dev/null 2>&1 || {
+    echo "com.shook.app is not installed on $DEVICE_ID" >&2
+    exit 1
+  }
+  adb -s "$DEVICE_ID" reverse "tcp:$E2E_API_PORT" "tcp:$E2E_API_PORT"
+  adb -s "$DEVICE_ID" reverse tcp:3000 "tcp:$E2E_API_PORT"
+else
+  xcrun simctl get_app_container "$DEVICE_ID" com.shook.app app >/dev/null 2>&1 || {
+    echo "com.shook.app is not installed on $DEVICE_ID" >&2
+    exit 1
+  }
+fi
 
 (
   cd "$SERVER_DIR"
@@ -136,7 +157,7 @@ curl --fail --silent "http://127.0.0.1:$E2E_API_PORT/api/health" >/dev/null || {
 }
 
 cd "$APP_DIR"
-MAESTRO_COMMAND=(maestro --device "$DEVICE_ID" test .maestro --config .maestro/config.yaml)
+MAESTRO_COMMAND=(maestro --device "$DEVICE_ID" test .maestro --config .maestro/config.yaml --exclude-tags=offline)
 if [[ "$EXCLUDE_ANDROID_FLOW" == true ]]; then
   MAESTRO_COMMAND+=(--exclude-tags=android-only)
 fi
@@ -149,5 +170,17 @@ MAESTRO_COMMAND+=(
 )
 "${MAESTRO_COMMAND[@]}" \
   2>&1 | tee "$ARTIFACT_DIR/console.log"
+
+kill "$SERVER_PID" >/dev/null 2>&1
+wait "$SERVER_PID" 2>/dev/null || true
+SERVER_PID=""
+
+maestro --device "$DEVICE_ID" test .maestro/flows/08-offline-cache.yaml \
+  --format junit \
+  --output "$ARTIFACT_REL/offline-report.xml" \
+  --test-output-dir "$ARTIFACT_REL" \
+  --debug-output "$ARTIFACT_REL" \
+  --flatten-debug-output \
+  2>&1 | tee -a "$ARTIFACT_DIR/console.log"
 
 echo "Maestro $PLATFORM artifacts: $ARTIFACT_DIR"

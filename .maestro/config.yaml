@@ -11,4 +11,4 @@ executionOrder:
     - 05-settings-scroll
     - 06-persistence
     - 07-android-back
-
+    - 08-offline-cache
