@@ -8,7 +8,7 @@ import { router } from 'expo-router';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { useNotificationStore } from '@/stores/notification-store';
-import { apiService, type PushTokenData, type PushTokenInfo } from './api';
+import { apiService, type PushTokenData } from './api';
 import { queryClient } from '@/lib/query-client';
 import { videoSummaryService } from '@/services/video-summary-service';
 import { getVideoSummariesQueryKey, type CacheAwareData } from '@/services/video-summaries-sync';
@@ -37,8 +37,11 @@ export class NotificationService {
   private static instance: NotificationService;
   private pushToken: string | null = null;
   private isInitialized = false;
+  private initializationPromise: Promise<void> | null = null;
   private lastHandledResponseId: string | null = null;
   private readonly DEVICE_ID_KEY = '@device_id';
+  private readonly PUSH_TOKEN_KEY = 'expo_push_token';
+  private readonly NOTIFICATIONS_ENABLED_KEY = 'push_notifications_enabled';
 
   private constructor() {}
 
@@ -71,8 +74,17 @@ export class NotificationService {
         
         // Find current device's token
         const currentDeviceToken = tokens.find(token => token.deviceId === deviceId);
-        
-        const isRegisteredInDB = currentDeviceToken && currentDeviceToken.isActive;
+        const permissions = await Notifications.getPermissionsAsync();
+        const preferenceEnabled = await this.isNotificationsEnabled();
+        const shouldRemainRegistered = permissions.granted && preferenceEnabled;
+        let isRegisteredInDB = !!currentDeviceToken?.isActive;
+
+        if (isRegisteredInDB && !shouldRemainRegistered) {
+          const unregisterResponse = await apiService.unregisterPushToken(deviceId);
+          if (unregisterResponse.success) {
+            isRegisteredInDB = false;
+          }
+        }
         
         notificationLogger.info('Backend state sync results', {
           totalTokens: tokens.length,
@@ -92,10 +104,9 @@ export class NotificationService {
         });
         
         // Update store with backend state
-        useNotificationStore.getState().setRegistered(!!isRegisteredInDB);
+        useNotificationStore.getState().setRegistered(isRegisteredInDB);
         
         // Also check system permissions to ensure UI state is correct
-        const permissions = await Notifications.getPermissionsAsync();
         useNotificationStore.getState().setPermissionStatus(permissions.status);
         
       } else {
@@ -124,8 +135,27 @@ export class NotificationService {
 
   // Initialize notification service - call this after user login
   async initialize(forceReinitialization: boolean = false): Promise<void> {
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this.performInitialization(forceReinitialization);
+    try {
+      await this.initializationPromise;
+    } finally {
+      this.initializationPromise = null;
+    }
+  }
+
+  private async performInitialization(forceReinitialization: boolean): Promise<void> {
     if (this.isInitialized && !forceReinitialization) {
       notificationLogger.debug('Already initialized, skipping...');
+      return;
+    }
+
+    if (!forceReinitialization && !(await this.isNotificationsEnabled())) {
+      notificationLogger.info('Notification registration skipped because the user disabled it');
+      useNotificationStore.getState().setRegistered(false);
       return;
     }
 
@@ -150,6 +180,7 @@ export class NotificationService {
       const permission = await this.requestPermissions();
       if (!permission.granted) {
         notificationLogger.warn('Notification permissions denied');
+        await this.unregisterWithBackend(false);
         useNotificationStore.getState().setRegistered(false, 'Notification permissions denied');
         return;
       }
@@ -194,6 +225,19 @@ export class NotificationService {
     return newId;
   }
 
+  async getDeviceIdForBackend(): Promise<string> {
+    return this.getDeviceId();
+  }
+
+  async isNotificationsEnabled(): Promise<boolean> {
+    const preference = await AsyncStorage.getItem(this.NOTIFICATIONS_ENABLED_KEY);
+    return preference !== 'false';
+  }
+
+  async setNotificationsEnabled(enabled: boolean): Promise<void> {
+    await AsyncStorage.setItem(this.NOTIFICATIONS_ENABLED_KEY, enabled ? 'true' : 'false');
+  }
+
   // Request notification permissions
   async requestPermissions(): Promise<Notifications.NotificationPermissionsStatus> {
     notificationLogger.info('Requesting notification permissions');
@@ -223,13 +267,13 @@ export class NotificationService {
   }
 
   // Get Expo push token
-  async getPushToken(): Promise<string | null> {
+  async getPushToken(forceRefresh = false): Promise<string | null> {
     notificationLogger.info('Getting push token');
     
     try {
       // Check if we have a cached token
-      const cachedToken = await AsyncStorage.getItem('expo_push_token');
-      if (cachedToken) {
+      const cachedToken = await AsyncStorage.getItem(this.PUSH_TOKEN_KEY);
+      if (cachedToken && !forceRefresh) {
         notificationLogger.debug('Using cached token');
         return cachedToken;
       }
@@ -263,7 +307,7 @@ export class NotificationService {
       });
 
       // Cache the token
-      await AsyncStorage.setItem('expo_push_token', token);
+      await AsyncStorage.setItem(this.PUSH_TOKEN_KEY, token);
 
       return token;
     } catch (error) {
@@ -339,7 +383,7 @@ export class NotificationService {
   }
 
   // Unregister push token from backend
-  async unregisterWithBackend(): Promise<boolean> {
+  async unregisterWithBackend(updatePreference = true): Promise<boolean> {
     notificationLogger.info('Unregistering push token from backend');
     
     try {
@@ -356,6 +400,9 @@ export class NotificationService {
         useNotificationStore.getState().setRegistered(false);
         // Update last sync time since we just made an API call
         useNotificationStore.getState().setLastSyncTime(Date.now());
+        if (updatePreference) {
+          await this.setNotificationsEnabled(false);
+        }
         return true;
       } else {
         notificationLogger.error('Failed to unregister push token', { error: response.error });
@@ -393,6 +440,7 @@ export class NotificationService {
       
       if (success) {
         notificationLogger.info('Force registration successful');
+        await this.setNotificationsEnabled(true);
         useNotificationStore.getState().setRegistered(true);
       } else {
         notificationLogger.warn('Force registration failed');
@@ -416,7 +464,7 @@ export class NotificationService {
     // Just clear local state
     this.pushToken = null;
     this.isInitialized = false;
-    await AsyncStorage.removeItem('expo_push_token');
+    await AsyncStorage.removeItem(this.PUSH_TOKEN_KEY);
     await AsyncStorage.removeItem('push_token_registered');
     useNotificationStore.getState().reset();
     
@@ -430,6 +478,7 @@ export class NotificationService {
     // Listener for notifications received while app is running
     const notificationListener = Notifications.addNotificationReceivedListener(notification => {
       notificationLogger.info('Notification received while app running', { notification: notification.request.content.title });
+      void Notifications.setBadgeCountAsync(0);
       
       // Handle the notification - refresh video summaries data using incremental sync
       const data = notification.request.content.data;
@@ -494,23 +543,47 @@ export class NotificationService {
 
     // Listener for when user taps on notification
     const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
-      this.handleNotificationResponse(response);
+      void this.handleNotificationResponse(response);
+    });
+
+    const pushTokenListener = Notifications.addPushTokenListener(() => {
+      void this.handlePushTokenRollover();
     });
 
     return {
       notificationListener,
       responseListener,
+      pushTokenListener,
     };
+  }
+
+  private async handlePushTokenRollover(): Promise<void> {
+    try {
+      if (!(await this.isNotificationsEnabled()) || !useAuthStore.getState().isAuthenticated) {
+        return;
+      }
+
+      const token = await this.getPushToken(true);
+      if (!token) return;
+      this.pushToken = token;
+      await this.registerWithBackend();
+    } catch (error) {
+      notificationLogger.error('Failed to register a rolled push token', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   // Remove notification listeners
   removeNotificationListeners(listeners: {
     notificationListener: Notifications.Subscription;
     responseListener: Notifications.Subscription;
+    pushTokenListener: Notifications.Subscription;
   }) {
     notificationLogger.info('Removing notification listeners');
     listeners.notificationListener.remove();
     listeners.responseListener.remove();
+    listeners.pushTokenListener.remove();
   }
 
   // Handle notification tap for both foreground/background and cold start cases
@@ -520,7 +593,11 @@ export class NotificationService {
       if (!response) {
         return;
       }
+      for (let attempt = 0; attempt < 50 && !useAuthStore.getState().isAuthenticated; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
       await this.handleNotificationResponse(response);
+      await Notifications.clearLastNotificationResponseAsync();
     } catch (error) {
       notificationLogger.error('Failed to handle initial notification response', {
         error: error instanceof Error ? error.message : String(error)
@@ -539,10 +616,12 @@ export class NotificationService {
 
     // Handle notification tap - navigate to specific summary or summaries tab
     const data = response.notification.request.content.data;
+    await Notifications.setBadgeCountAsync(0);
 
     try {
       const videoId =
-        typeof data?.videoId === 'string' || typeof data?.videoId === 'number'
+        data?.type === 'new_video_summary' &&
+        (typeof data?.videoId === 'string' || typeof data?.videoId === 'number')
           ? String(data.videoId)
           : null;
       if (videoId) {

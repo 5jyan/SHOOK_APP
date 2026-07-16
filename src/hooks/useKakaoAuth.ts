@@ -10,6 +10,7 @@ export function useKakaoAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const login = useAuthStore((state) => state.login);
+  const logout = useAuthStore((state) => state.logout);
 
   const signIn = async () => {
     try {
@@ -80,6 +81,13 @@ export function useKakaoAuth() {
       setError(null);
 
       authLogger.info('Starting Kakao sign out');
+
+      const deviceId = await notificationService.getDeviceIdForBackend();
+      const backendLogout = await apiService.logout(deviceId);
+      if (!backendLogout.success) {
+        throw new Error(backendLogout.error || '서버 로그아웃에 실패했습니다.');
+      }
+      logout();
 
       // 카카오 SDK 로그아웃
       await kakaoAuthService.signOut();

@@ -334,9 +334,10 @@ class ApiService {
     return response.data.user;
   }
 
-  async logout(): Promise<ApiResponse<{ success: boolean }>> {
+  async logout(deviceId?: string): Promise<ApiResponse<{ success: boolean }>> {
     return this.makeRequest<{ success: boolean }>('/api/logout', {
       method: 'POST',
+      body: JSON.stringify(deviceId ? { deviceId } : {}),
     });
   }
 

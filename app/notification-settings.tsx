@@ -14,23 +14,28 @@ export default function NotificationSettingsScreen() {
   const [isEnabled, setIsEnabled] = useState(isRegistered);
   const [isLoading, setIsLoading] = useState(false);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      checkPermissionStatus();
-    }, [])
-  );
-
-  const checkPermissionStatus = async () => {
+  const checkPermissionStatus = React.useCallback(async () => {
     try {
+      await notificationService.syncWithBackendState();
       const permissions = await Notifications.getPermissionsAsync();
       setPermissionStatus(permissions.status);
-      setIsEnabled(permissions.status === 'granted' && isRegistered);
+      setIsEnabled(
+        permissions.status === 'granted' &&
+        useNotificationStore.getState().isRegistered &&
+        await notificationService.isNotificationsEnabled()
+      );
     } catch (error) {
       notificationLogger.error('Failed to check permission status', {
         error: error instanceof Error ? error.message : String(error)
       });
     }
-  };
+  }, [setPermissionStatus]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void checkPermissionStatus();
+    }, [checkPermissionStatus])
+  );
 
   // Safe function to open system settings
   const openSystemSettings = async () => {
@@ -58,6 +63,7 @@ export default function NotificationSettingsScreen() {
     try {
       if (value) {
         // Enable notifications
+        await notificationService.setNotificationsEnabled(true);
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
 
@@ -69,6 +75,7 @@ export default function NotificationSettingsScreen() {
         if (finalStatus !== 'granted') {
           // 권한 거부 시 원복
           setIsEnabled(false);
+          await notificationService.setNotificationsEnabled(false);
           Alert.alert(
             '알림 권한 필요',
             '새로운 영상 알림을 받으려면 알림 권한이 필요합니다.',
@@ -80,13 +87,13 @@ export default function NotificationSettingsScreen() {
           return;
         }
 
-        await notificationService.initialize();
         const success = await notificationService.forceRegister();
 
         if (success) {
           setPermissionStatus('granted');
         } else {
           // 실패 시 원복
+          await notificationService.setNotificationsEnabled(previousValue);
           setIsEnabled(previousValue);
           Alert.alert('오류', '알림 설정에 실패했습니다.');
         }

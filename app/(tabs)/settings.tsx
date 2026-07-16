@@ -1,6 +1,7 @@
 ﻿import { TabHeader } from '@/components/AppHeader';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { apiService } from '@/services/api';
+import { notificationService } from '@/services/notification';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
 import Constants from 'expo-constants';
@@ -31,7 +32,11 @@ export default function SettingsScreen() {
           onPress: async () => {
             try {
               setIsLoading(true);
-              await apiService.logout();
+              const deviceId = await notificationService.getDeviceIdForBackend();
+              const response = await apiService.logout(deviceId);
+              if (!response.success) {
+                throw new Error(response.error || '서버 로그아웃에 실패했습니다.');
+              }
               logout();
               router.replace('/');
             } catch (error) {
