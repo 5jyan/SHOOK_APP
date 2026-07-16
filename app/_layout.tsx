@@ -8,7 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, AppStateStatus, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, AppStateStatus, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
@@ -114,10 +114,10 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (loaded) {
+    if (loaded && isAppReady) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [isAppReady, loaded]);
 
   useEffect(() => {
     // Initialize enhanced systems
@@ -216,11 +216,7 @@ export default function RootLayout() {
   }
 
   if (!isAppReady) {
-    return (
-      <View style={styles.startupContainer}>
-        <ActivityIndicator size="large" color="#4285f4" />
-      </View>
-    );
+    return null;
   }
 
   return (
@@ -257,12 +253,6 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  startupContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
-  },
   forceUpdateContainer: {
     flex: 1,
     alignItems: 'center',

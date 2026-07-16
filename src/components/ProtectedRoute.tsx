@@ -5,7 +5,7 @@ import { apiService } from '@/services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-import { ActivityIndicator, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -69,8 +69,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   if (isLoading || isInitializing) {
     uiLogger.debug('Auth loading or initializing');
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#4285f4" />
+      <View style={styles.startupPlaceholder}>
+        <Image
+          source={require('../../assets/images/shook-splash-v2.png')}
+          style={styles.startupImage}
+          resizeMode="contain"
+        />
       </View>
     );
   }
@@ -78,3 +82,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   uiLogger.debug('Auth ready, rendering protected content');
   return <>{children}</>;
 }
+
+const styles = StyleSheet.create({
+  startupPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fffcf7',
+  },
+  startupImage: {
+    width: 220,
+    height: 220,
+  },
+});
