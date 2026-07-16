@@ -48,6 +48,7 @@ export default {
         tabletImage: "./assets/images/shook-splash-v2.png"
       },
       infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
         LSApplicationQueriesSchemes: ["kakaokompassauth", "kakaolink"],
         CFBundleURLTypes: [
           {
