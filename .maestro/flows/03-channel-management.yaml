@@ -1,0 +1,47 @@
+appId: com.shook.app
+name: 03-channel-management
+tags:
+  - core
+  - mutates-db
+---
+- launchApp:
+    permissions:
+      all: deny
+- extendedWaitUntil:
+    visible:
+      id: "screen-channels"
+    timeout: 30000
+- tapOn:
+    id: "channel-search-open"
+- tapOn:
+    id: "channel-search-input"
+- inputText: "add-target"
+- extendedWaitUntil:
+    visible:
+      id: "channel-add-e2e-channel-add-target"
+    timeout: 10000
+- tapOn:
+    id: "channel-add-e2e-channel-add-target"
+- extendedWaitUntil:
+    visible: "성공"
+    timeout: 10000
+- tapOn: "확인|OK"
+- extendedWaitUntil:
+    visible:
+      id: "channel-row-e2e-channel-add-target"
+    timeout: 10000
+- tapOn:
+    id: "channel-delete-e2e-channel-add-target"
+- tapOn:
+    text: "구독 취소"
+    index: 1
+- extendedWaitUntil:
+    visible: "구독 취소 완료"
+    timeout: 10000
+- tapOn: "확인|OK"
+- extendedWaitUntil:
+    notVisible:
+      id: "channel-row-e2e-channel-add-target"
+    timeout: 10000
+- assertVisible:
+    id: "channel-row-e2e-channel-existing"

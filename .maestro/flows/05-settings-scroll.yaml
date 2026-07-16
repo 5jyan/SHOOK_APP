@@ -1,0 +1,20 @@
+appId: com.shook.app
+name: 05-settings-scroll
+tags:
+  - core
+---
+- launchApp:
+    permissions:
+      all: deny
+- tapOn:
+    id: "tab-settings"
+- assertVisible:
+    id: "screen-settings"
+- scrollUntilVisible:
+    element:
+      id: "settings-delete-account"
+    direction: DOWN
+    timeout: 10000
+- assertVisible:
+    id: "settings-delete-account"
+

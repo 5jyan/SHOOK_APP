@@ -1,0 +1,25 @@
+appId: com.shook.app
+name: 07-android-back
+tags:
+  - android-only
+---
+- launchApp:
+    permissions:
+      all: deny
+- extendedWaitUntil:
+    visible:
+      id: "screen-channels"
+    timeout: 30000
+- tapOn:
+    id: "channel-search-open"
+- assertVisible:
+    id: "screen-channel-search"
+- back
+- assertVisible:
+    id: "screen-channels"
+- back
+- assertVisible: "Exit app"
+- tapOn: "Cancel"
+- assertVisible:
+    id: "screen-channels"
+

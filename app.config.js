@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 const IS_LOCAL = process.env.EXPO_PUBLIC_IS_LOCAL === 'true';
 const IS_E2E = process.env.EXPO_PUBLIC_E2E_MODE === 'true';
+const LOCAL_API_PORT = IS_E2E ? (process.env.EXPO_PUBLIC_E2E_API_PORT || '3100') : '3000';
 
 if (!IS_LOCAL && IS_E2E) {
   throw new Error('EXPO_PUBLIC_E2E_MODE=true requires EXPO_PUBLIC_IS_LOCAL=true');
@@ -11,10 +12,10 @@ if (!IS_LOCAL && IS_E2E) {
 const getApiUrl = () => {
   if (IS_LOCAL) {
     return {
-      android: 'http://10.0.2.2:3000',
-      ios: 'http://127.0.0.1:3000',
-      web: 'http://127.0.0.1:3000',
-      default: 'http://127.0.0.1:3000'
+      android: `http://${IS_E2E ? '127.0.0.1' : '10.0.2.2'}:${LOCAL_API_PORT}`,
+      ios: `http://127.0.0.1:${LOCAL_API_PORT}`,
+      web: `http://127.0.0.1:${LOCAL_API_PORT}`,
+      default: `http://127.0.0.1:${LOCAL_API_PORT}`
     };
   }
   return process.env.EXPO_PUBLIC_API_URL_PRODUCTION;
@@ -36,6 +37,7 @@ export default {
       backgroundColor: "#fffcf7"
     },
     updates: {
+      enabled: !IS_E2E,
       url: "https://u.expo.dev/a8839540-39ec-431e-a346-bdfdff731ecd"
     },
     runtimeVersion: "1.1.2",
@@ -64,6 +66,7 @@ export default {
       }
     },
     android: {
+      usesCleartextTraffic: IS_E2E,
       blockedPermissions: [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"

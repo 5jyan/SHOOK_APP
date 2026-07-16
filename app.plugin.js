@@ -1,11 +1,11 @@
-const { withProjectBuildGradle } = require('@expo/config-plugins');
+const { withAndroidManifest, withProjectBuildGradle } = require('@expo/config-plugins');
 
 /**
  * Custom Expo config plugin to add Kakao SDK Maven repository
  * This is needed because Kakao SDK is not available in standard Maven repositories
  */
 const withKakaoMavenRepo = (config) => {
-  return withProjectBuildGradle(config, (config) => {
+  config = withProjectBuildGradle(config, (config) => {
     if (config.modResults.contents.includes('devrepo.kakao.com')) {
       return config;
     }
@@ -19,6 +19,14 @@ const withKakaoMavenRepo = (config) => {
       }
     );
 
+    return config;
+  });
+
+  return withAndroidManifest(config, (config) => {
+    const application = config.modResults.manifest.application?.[0]?.$;
+    if (application) {
+      application['android:usesCleartextTraffic'] = config.extra?.isE2E ? 'true' : 'false';
+    }
     return config;
   });
 };

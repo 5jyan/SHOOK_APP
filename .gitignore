@@ -47,3 +47,4 @@ app-example
 # Native folders (EAS will generate)
 android/
 ios/
+artifacts/maestro/

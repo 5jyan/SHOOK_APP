@@ -1,0 +1,29 @@
+appId: com.shook.app
+name: 01-smoke-navigation
+tags:
+  - core
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+    permissions:
+      all: deny
+- extendedWaitUntil:
+    visible:
+      id: "screen-channels"
+    timeout: 30000
+- assertVisible:
+    id: "channel-row-e2e-channel-existing"
+- tapOn:
+    id: "tab-summaries"
+- assertVisible:
+    id: "screen-summaries"
+- tapOn:
+    id: "tab-settings"
+- assertVisible:
+    id: "screen-settings"
+- tapOn:
+    id: "tab-channels"
+- assertVisible:
+    id: "screen-channels"
+

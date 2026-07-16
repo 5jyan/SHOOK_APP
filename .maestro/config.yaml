@@ -1,0 +1,14 @@
+appId: com.shook.app
+flows:
+  - "flows/*.yaml"
+executionOrder:
+  continueOnFailure: false
+  flowsOrder:
+    - 01-smoke-navigation
+    - 02-channel-search
+    - 03-channel-management
+    - 04-summaries
+    - 05-settings-scroll
+    - 06-persistence
+    - 07-android-back
+

@@ -1,0 +1,32 @@
+appId: com.shook.app
+name: 06-persistence
+tags:
+  - core
+---
+- launchApp:
+    permissions:
+      all: deny
+- tapOn:
+    id: "tab-summaries"
+- extendedWaitUntil:
+    visible:
+      id: "summary-row-e2e-video-completed-latest"
+    timeout: 15000
+- stopApp
+- launchApp:
+    clearState: false
+    stopApp: false
+    permissions:
+      all: deny
+- extendedWaitUntil:
+    visible:
+      id: "screen-channels"
+    timeout: 30000
+- assertVisible:
+    id: "channel-row-e2e-channel-existing"
+- tapOn:
+    id: "tab-summaries"
+- extendedWaitUntil:
+    visible:
+      id: "summary-row-e2e-video-completed-latest"
+    timeout: 15000

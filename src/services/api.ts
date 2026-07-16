@@ -27,7 +27,11 @@ const getLocalApiUrl = (localUrls: any) => {
 
 // app.config.js에서 설정한 환경별 API URL 사용
 const configApiUrl = Constants.expoConfig?.extra?.apiUrl;
-const API_BASE_URL = getLocalApiUrl(configApiUrl) || 'http://localhost:3000';
+const isE2EBuild = process.env.EXPO_PUBLIC_E2E_MODE === 'true';
+const e2eApiPort = process.env.EXPO_PUBLIC_E2E_API_PORT || '3100';
+const API_BASE_URL = isE2EBuild
+  ? `http://127.0.0.1:${e2eApiPort}`
+  : getLocalApiUrl(configApiUrl) || 'http://localhost:3000';
 
 // API 설정 로그
 configLogger.info('API service configuration', {

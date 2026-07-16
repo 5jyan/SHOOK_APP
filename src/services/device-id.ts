@@ -7,7 +7,7 @@ const DEVICE_ID_KEY = '@device_id';
 export const E2E_DEVICE_ID = 'shook-e2e-device';
 
 export function isE2EMode(): boolean {
-  return Constants.expoConfig?.extra?.isE2E === true;
+  return process.env.EXPO_PUBLIC_E2E_MODE === 'true' || Constants.expoConfig?.extra?.isE2E === true;
 }
 
 export async function getOrCreateDeviceId(): Promise<string> {
