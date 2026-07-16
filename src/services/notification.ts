@@ -5,8 +5,6 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import 'react-native-get-random-values';
-import { v4 as uuidv4 } from 'uuid';
 import { useNotificationStore } from '@/stores/notification-store';
 import { apiService, type PushTokenData } from './api';
 import { queryClient } from '@/lib/query-client';
@@ -14,6 +12,7 @@ import { videoSummaryService } from '@/services/video-summary-service';
 import { getVideoSummariesQueryKey, type CacheAwareData } from '@/services/video-summaries-sync';
 import { useAuthStore } from '@/stores/auth-store';
 import { notificationLogger } from '@/utils/logger-enhanced';
+import { getOrCreateDeviceId } from './device-id';
 
 // Configure how notifications are handled when received
 Notifications.setNotificationHandler({
@@ -39,7 +38,6 @@ export class NotificationService {
   private isInitialized = false;
   private initializationPromise: Promise<void> | null = null;
   private lastHandledResponseId: string | null = null;
-  private readonly DEVICE_ID_KEY = '@device_id';
   private readonly PUSH_TOKEN_KEY = 'expo_push_token';
   private readonly NOTIFICATIONS_ENABLED_KEY = 'push_notifications_enabled';
 
@@ -212,17 +210,7 @@ export class NotificationService {
   }
 
   private async getDeviceId(): Promise<string> {
-    const stored = await AsyncStorage.getItem(this.DEVICE_ID_KEY);
-    if (stored) {
-      return stored;
-    }
-
-    const newId = uuidv4();
-    await AsyncStorage.setItem(this.DEVICE_ID_KEY, newId);
-    notificationLogger.info('New device ID created for notifications', {
-      deviceId: newId.substring(0, 8) + '...'
-    });
-    return newId;
+    return getOrCreateDeviceId();
   }
 
   async getDeviceIdForBackend(): Promise<string> {

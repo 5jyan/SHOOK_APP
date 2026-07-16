@@ -1,37 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger, authLogger } from '@/utils/logger-enhanced';
 import { apiService } from '@/services/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import 'react-native-get-random-values';
-import { v4 as uuidv4 } from 'uuid';
+import { getOrCreateDeviceId, isE2EMode } from '@/services/device-id';
 import { Image, StyleSheet, View } from 'react-native';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-const DEVICE_ID_KEY = '@device_id';
-
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, login } = useAuthStore();
   const [isInitializing, setIsInitializing] = useState(true);
+  const e2eAuthInitialized = useRef(false);
 
   useEffect(() => {
     async function initializeAuth() {
-      if (!isLoading && !isAuthenticated) {
+      const shouldInitializeE2EAuth = isE2EMode() && !e2eAuthInitialized.current;
+      if (!isLoading && (!isAuthenticated || shouldInitializeE2EAuth)) {
+        if (shouldInitializeE2EAuth) {
+          e2eAuthInitialized.current = true;
+        }
         try {
           authLogger.info('User not authenticated, creating guest account');
 
-          // Get or create device ID
-          let deviceId = await AsyncStorage.getItem(DEVICE_ID_KEY);
-          if (!deviceId) {
-            deviceId = uuidv4();
-            await AsyncStorage.setItem(DEVICE_ID_KEY, deviceId);
-            authLogger.info('New device ID created', { deviceId: deviceId.substring(0, 8) + '...' });
-          } else {
-            authLogger.info('Existing device ID found', { deviceId: deviceId.substring(0, 8) + '...' });
-          }
+          const deviceId = await getOrCreateDeviceId();
+          authLogger.info('Device ID ready', {
+            deviceId: deviceId.substring(0, 8) + '...',
+            isE2E: isE2EMode(),
+          });
 
           // Create or login guest account
           const guestUser = await apiService.createGuestAccount(deviceId);

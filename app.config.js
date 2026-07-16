@@ -1,6 +1,11 @@
 import 'dotenv/config';
 
 const IS_LOCAL = process.env.EXPO_PUBLIC_IS_LOCAL === 'true';
+const IS_E2E = process.env.EXPO_PUBLIC_E2E_MODE === 'true';
+
+if (!IS_LOCAL && IS_E2E) {
+  throw new Error('EXPO_PUBLIC_E2E_MODE=true requires EXPO_PUBLIC_IS_LOCAL=true');
+}
 
 // API URL config
 const getApiUrl = () => {
@@ -110,6 +115,7 @@ export default {
       kakaoNativeAppKey: process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY,
       appScheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
       isLocal: IS_LOCAL,
+      isE2E: IS_E2E,
       contentVersion: "1.1.2",
       minSupportedVersion: "1.1.1",
       appStoreUrl: "https://apps.apple.com/kr/app/shook-%EC%9C%A0%ED%8A%9C%EB%B8%8C-%EC%83%88-%EC%98%81%EC%83%81-%EC%9A%94%EC%95%BD-%EC%95%8C%EB%A6%BC/id6753907638",
