@@ -132,7 +132,8 @@ export default function SettingsScreen() {
     {
       testID: TEST_IDS.settings.notifications,
       title: '알림 설정',
-      description: '푸시 알림 및 알림 주기를 설정합니다',
+      description: '푸시 알림과 알림 주기를 설정합니다',
+      descriptionLines: 1,
       onPress: () => {
         router.push('/notification-settings');
       },
@@ -175,7 +176,11 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView testID={TEST_IDS.screens.settings} style={styles.container}>
+    <SafeAreaView
+      testID={TEST_IDS.screens.settings}
+      style={styles.container}
+      edges={['top', 'left', 'right']}
+    >
       <TabHeader
         title="설정"
         rightComponent={
@@ -213,7 +218,11 @@ export default function SettingsScreen() {
                 <Text style={styles.settingTitle}>
                   {item.title}
                 </Text>
-                <Text style={styles.settingDescription}>
+                <Text
+                  style={styles.settingDescription}
+                  numberOfLines={item.descriptionLines}
+                  ellipsizeMode="tail"
+                >
                   {item.description}
                 </Text>
               </Pressable>

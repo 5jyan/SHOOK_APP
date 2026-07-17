@@ -177,7 +177,7 @@ export default function SummaryDetailScreen() {
     <View key={`${keyPrefix}-${index}`} style={styles.bulletItem}>
       <Text style={styles.bulletPoint}>•</Text>
       <View style={styles.bulletTextContainer}>
-        {renderInlineBold(item)}
+        <Text style={styles.bulletText}>{renderInlineBold(item)}</Text>
       </View>
     </View>
   ));
@@ -186,20 +186,15 @@ export default function SummaryDetailScreen() {
     const nodes: React.ReactNode[] = [];
 
     text.split(/(\*\*[^*]+\*\*)/g).forEach((part, index) => {
+      if (!part) return;
+
       const isBold = part.startsWith('**') && part.endsWith('**');
       const content = isBold ? part.slice(2, -2) : part;
-      const tokens = content.match(/\S+\s*|\s+/g) ?? [];
-
-      tokens.forEach((token, tokenIndex) => {
-        nodes.push(
-          <Text
-            key={`text-${index}-${tokenIndex}`}
-            style={[styles.bulletText, isBold && styles.inlineBold]}
-          >
-            {token}
-          </Text>,
-        );
-      });
+      nodes.push(
+        <Text key={`text-${index}`} style={isBold ? styles.inlineBold : undefined}>
+          {content}
+        </Text>,
+      );
     });
 
     return nodes;
@@ -308,7 +303,7 @@ export default function SummaryDetailScreen() {
     <SafeAreaView
       testID={TEST_IDS.screens.summaryDetail}
       style={styles.container}
-      edges={['top', 'left', 'right']}
+      edges={['top', 'bottom', 'left', 'right']}
     >
       <ModalHeader 
         title="상세 내용"
@@ -393,7 +388,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     alignSelf: 'center',
-    paddingBottom: 8,
+    paddingBottom: 24,
   },
   hero: {
     width: '100%',
@@ -532,8 +527,8 @@ const styles = StyleSheet.create({
     minHeight: 38,
   },
   detailNumberBadge: {
-    width: 36,
-    height: 24,
+    minWidth: 24,
+    minHeight: 24,
     flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'flex-start',
@@ -544,6 +539,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     fontSize: 17,
     fontWeight: '700',
+    lineHeight: 24,
   },
   detailTitle: {
     flex: 1,
@@ -620,8 +616,6 @@ const styles = StyleSheet.create({
   },
   bulletTextContainer: {
     flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
   },
   inlineBold: {
     color: '#1e293b',

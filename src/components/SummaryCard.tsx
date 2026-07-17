@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Image,
-  PixelRatio,
   Pressable,
   StyleSheet,
   Text,
@@ -31,12 +30,8 @@ interface SummaryCardProps {
 
 export function SummaryCard({ summary, onPress }: SummaryCardProps) {
   const isPending = !summary.isSummarized;
-  const { width } = useWindowDimensions();
-  const isCompact = width < 390;
-  const fontScale = PixelRatio.getFontScale();
-  const thumbnailSize = isCompact
-    ? { width: 132, minHeight: 74 }
-    : { width: 160, minHeight: 90 };
+  const { fontScale } = useWindowDimensions();
+  const thumbnailSize = { width: 160, height: 90 };
 
   const formatTimeAgo = (dateString: string): string => {
     const date = new Date(dateString);
@@ -90,25 +85,20 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
           <Text
             style={styles.videoTitle}
             numberOfLines={fontScale > 1.2 ? 3 : 2}
-            maxFontSizeMultiplier={1.35}
+            maxFontSizeMultiplier={1}
           >
             {summary.videoTitle}
           </Text>
-          {/* Time Info */}
-          <Text style={styles.timeAgo} maxFontSizeMultiplier={1.35}>
-            {formatTimeAgo(summary.publishedAt)}
-          </Text>
-
-          {/* Channel Info with Avatar */}
-          <View style={styles.channelRow}>
+          {/* Channel and time metadata */}
+          <View style={styles.metadataRow}>
             <Image 
               source={{ uri: summary.channelThumbnail }}
               style={styles.channelAvatar}
               resizeMode="cover"
             />
             
-            <Text style={styles.channelName} numberOfLines={1} maxFontSizeMultiplier={1.35}>
-              {summary.channelName}
+            <Text style={styles.metadataText} numberOfLines={1} maxFontSizeMultiplier={1}>
+              {summary.channelName.trim()} · {formatTimeAgo(summary.publishedAt)}
             </Text>
           </View>
           
@@ -122,7 +112,7 @@ const styles = StyleSheet.create({
   listItem: {
     backgroundColor: '#ffffff',
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
   },
   listItemPending: {
     opacity: 0.5,
@@ -132,10 +122,10 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'flex-start',
   },
   thumbnailContainer: {
-    marginRight: 12,
+    marginRight: 16,
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: '#f1f5f9',
@@ -148,16 +138,15 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   videoTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '400',
     color: '#0f0f0f',
-    lineHeight: 20,
-    marginBottom: 4,
+    lineHeight: 17,
+    marginBottom: 2,
   },
-  channelRow: {
+  metadataRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 2,
   },
   channelAvatar: {
     width: 18,
@@ -166,15 +155,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     marginRight: 6,
   },
-  channelName: {
+  metadataText: {
     fontSize: 12,
     color: '#606060',
     fontWeight: '400',
     flex: 1,
-  },
-  timeAgo: {
-    fontSize: 12,
-    color: '#606060',
-    marginBottom: 6,
   },
 });

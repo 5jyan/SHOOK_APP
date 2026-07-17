@@ -1,4 +1,5 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -42,11 +43,16 @@ export function AppHeader({
 
   // Modal Layout: Back button left, Title center, Optional button right
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, styles.modalHeader]}>
       {/* Left Side - Back Button */}
       <View style={styles.leftContainer}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <IconSymbol name="chevron.left" size={22} color="#374151" />
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="뒤로가기"
+          onPress={handleBackPress}
+          style={styles.backButton}
+        >
+          <MaterialIcons name="arrow-back-ios-new" size={32} color="#374151" />
         </TouchableOpacity>
       </View>
 
@@ -76,8 +82,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
+  modalHeader: {
+    paddingVertical: 4,
+  },
   leftContainer: {
-    width: 40,
+    width: 44,
     alignItems: 'flex-start',
   },
   titleContainer: {
@@ -86,7 +95,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   rightContainer: {
-    minWidth: 40,
+    minWidth: 44,
     alignItems: 'flex-end',
   },
   // Unified title style - 20px for all variants
@@ -96,7 +105,12 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 8,
+    marginLeft: -10,
   },
   placeholder: {
     width: 24,

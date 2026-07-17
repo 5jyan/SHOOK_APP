@@ -1,7 +1,8 @@
 import { useFocusEffect } from '@react-navigation/native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs, useNavigation } from 'expo-router';
 import React, { useCallback } from 'react';
-import { Alert, BackHandler, PixelRatio, Platform } from 'react-native';
+import { Alert, BackHandler, Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/HapticTab';
@@ -15,8 +16,9 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   const bottomInset = Math.max(insets.bottom, 8);
-  const androidFontHeight = Math.min(12, Math.max(0, PixelRatio.getFontScale() - 1) * 24);
+  const androidFontHeight = Math.min(12, Math.max(0, fontScale - 1) * 24);
 
   useFocusEffect(
     useCallback(() => {
@@ -76,7 +78,7 @@ export default function TabLayout() {
             options={{
               title: '채널',
               tabBarButtonTestID: TEST_IDS.tabs.channels,
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="play.rectangle.fill" color={color} />,
+              tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="youtube" color={color} />,
             }}
           />
           <Tabs.Screen

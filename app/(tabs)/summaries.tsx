@@ -186,7 +186,7 @@ export default function SummariesScreen() {
   // Show loading state only when there's no cached data to render
   if (isLoading && videoSummaries.length === 0 && !hasCachedSummaries) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4285f4" />
           <Text style={styles.loadingText}>요약을 불러오는 중...</Text>
@@ -198,7 +198,7 @@ export default function SummariesScreen() {
   // Show error state
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <EmptyState
           title="요약을 불러올 수 없습니다"
           description={`오류: ${error.message}`}
@@ -222,7 +222,11 @@ export default function SummariesScreen() {
   }).length === 0;
 
   return (
-    <SafeAreaView testID={TEST_IDS.screens.summaries} style={styles.container}>
+    <SafeAreaView
+      testID={TEST_IDS.screens.summaries}
+      style={styles.container}
+      edges={['top', 'left', 'right']}
+    >
       <TabHeader title="요약 리스트" />
 
       <ChannelFilterBar

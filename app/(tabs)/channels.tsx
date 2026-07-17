@@ -37,7 +37,11 @@ export default function ChannelsScreen() {
   uiLogger.debug('[ChannelsScreen] rendering', { channelCount });
 
   return (
-    <SafeAreaView testID={TEST_IDS.screens.channels} style={styles.container}>
+    <SafeAreaView
+      testID={TEST_IDS.screens.channels}
+      style={styles.container}
+      edges={['top', 'left', 'right']}
+    >
       <TabHeader
         title="채널"
         rightComponent={
