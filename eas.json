@@ -34,6 +34,10 @@
   },
   "submit": {
     "production": {
+      "android": {
+        "track": "production",
+        "releaseStatus": "completed"
+      },
       "ios": {
         "appleId": "aks_@naver.com",
         "ascAppId": "6740028350",
