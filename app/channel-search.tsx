@@ -145,11 +145,15 @@ export default function ChannelSearchScreen() {
 
           await videoCacheService.mergeVideos(latestVideos);
 
+          // Publish the newly cached placeholders immediately. Invalidation alone
+          // can leave the mounted summaries screen showing its still-fresh query.
+          await videoSummariesSyncService.publishCachedData(queryClient, user.id);
+
           // The summaries query may still be inside its one-minute sync throttle.
           // Mark it dirty first so an already-mounted Android tab cannot reuse
           // stale in-memory data instead of the pending videos just cached.
           await videoSummariesSyncService.markSyncNeeded(user.id);
-          await queryClient.invalidateQueries({ queryKey: ['videoSummariesCached', user.id] });
+          await queryClient.invalidateQueries({ queryKey: ['videoSummariesCached', user.id], refetchType: 'none' });
         } else {
           // New channel - video processing in background
           // Don't signal channel list change - let incremental sync handle it naturally

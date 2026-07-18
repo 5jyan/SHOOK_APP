@@ -2,6 +2,7 @@ import { useChannels } from '@/contexts/ChannelsContext';
 import { apiService, type PopularChannel, type UserChannel } from '@/services/api';
 import { popularChannelsCacheService } from '@/services/popular-channels-cache';
 import { videoCacheService } from '@/services/video-cache-enhanced';
+import { videoSummariesSyncService } from '@/services/video-summaries-sync';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
 import { formatChannelStats } from '@/utils/number-format';
@@ -186,7 +187,12 @@ export function ChannelList({ onChannelDeleted, onChannelAdded, refreshControl, 
 
         if (latestVideos.length > 0) {
           await videoCacheService.mergeVideos(latestVideos);
-          queryClient.invalidateQueries({ queryKey: ['videoSummariesCached', user?.id] });
+          await videoSummariesSyncService.publishCachedData(queryClient, user?.id);
+          await videoSummariesSyncService.markSyncNeeded(user?.id);
+          await queryClient.invalidateQueries({
+            queryKey: ['videoSummariesCached', user?.id],
+            refetchType: 'none',
+          });
         }
 
         await refreshChannels();

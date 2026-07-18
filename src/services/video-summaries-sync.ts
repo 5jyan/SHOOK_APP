@@ -111,6 +111,12 @@ export class VideoSummariesSyncService {
     return data;
   }
 
+  async publishCachedData(queryClient: QueryClient, userId?: string | null): Promise<CacheAwareData> {
+    const data = await this.getCachedData();
+    queryClient.setQueryData(getVideoSummariesQueryKey(userId), data);
+    return data;
+  }
+
   async sync({ userId, existingCursor }: SyncOptions): Promise<CacheAwareData> {
     const timerId = serviceLogger.startTimer('hybrid-cache-strategy');
     serviceLogger.info('Video summaries sync starting', { userId });

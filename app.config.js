@@ -41,12 +41,12 @@ export default {
     slug: "shook",
     version: "1.1.3",
     orientation: "portrait",
-    icon: "./assets/images/Shook.png",
+    icon: "./assets/images/Shook-app-icon.png",
     scheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
     userInterfaceStyle: "dark",
     newArchEnabled: true,
     splash: {
-      image: "./assets/images/Shook-icon-foreground.png",
+      image: "./assets/images/Shook-splash-dark.png",
       resizeMode: "contain",
       backgroundColor: "#101013"
     },
@@ -65,10 +65,10 @@ export default {
       bundleIdentifier: "com.shook.app",
       usesNonExemptEncryption: false,
       splash: {
-        image: "./assets/images/Shook-icon-foreground.png",
+        image: "./assets/images/Shook-splash-dark.png",
         resizeMode: "contain",
         backgroundColor: "#101013",
-        tabletImage: "./assets/images/Shook-icon-foreground.png"
+        tabletImage: "./assets/images/Shook-splash-dark.png"
       },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -89,11 +89,11 @@ export default {
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       adaptiveIcon: {
-        foregroundImage: "./assets/images/Shook-icon-foreground.png",
+        foregroundImage: "./assets/images/Shook-adaptive-foreground.png",
         backgroundColor: "#ffffff"
       },
       splash: {
-        image: "./assets/images/Shook-icon-foreground.png",
+        image: "./assets/images/Shook-splash-dark.png",
         resizeMode: "contain",
         backgroundColor: "#101013"
       },
@@ -111,8 +111,8 @@ export default {
       [
         "expo-splash-screen",
         {
-          image: "./assets/images/Shook-icon-foreground.png",
-          imageWidth: 180,
+          image: "./assets/images/Shook-splash-dark.png",
+          imageWidth: 140,
           resizeMode: "contain",
           backgroundColor: "#101013"
         }
