@@ -45,4 +45,4 @@ function generate(name, size, background, logoScale, opaque = true) {
 generate('Shook-app-icon.png', 1024, [255, 255, 255], 0.82);
 generate('Shook-play-store-icon.png', 512, [255, 255, 255], 0.82);
 generate('Shook-splash-dark.png', 1024, [16, 16, 19], 0.72);
-generate('Shook-adaptive-foreground.png', 1024, [0, 0, 0], 0.78, false);
+generate('Shook-adaptive-foreground.png', 1024, [0, 0, 0], 0.936, false);
