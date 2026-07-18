@@ -8,6 +8,7 @@ const KAKAO_NATIVE_APP_KEY = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY || 'ea
 const LOCAL_GOOGLE_SERVICES_FILE = './google-services.json';
 const GOOGLE_SERVICES_FILE = process.env.GOOGLE_SERVICES_JSON ||
   (existsSync(LOCAL_GOOGLE_SERVICES_FILE) ? LOCAL_GOOGLE_SERVICES_FILE : undefined);
+const RUNTIME_VERSION_OVERRIDE = process.env.EXPO_RUNTIME_VERSION_OVERRIDE;
 
 if (!IS_LOCAL && IS_E2E) {
   throw new Error('EXPO_PUBLIC_E2E_MODE=true requires EXPO_PUBLIC_IS_LOCAL=true');
@@ -53,7 +54,7 @@ export default {
       enabled: !IS_E2E,
       url: "https://u.expo.dev/a8839540-39ec-431e-a346-bdfdff731ecd"
     },
-    runtimeVersion: {
+    runtimeVersion: RUNTIME_VERSION_OVERRIDE || {
       policy: "appVersion"
     },
     assetBundlePatterns: [

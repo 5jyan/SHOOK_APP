@@ -39,6 +39,10 @@ Store 릴리스 전에는 다음을 확인한다.
 - 긴급 수정이 아니라면 단계적 rollout을 우선 검토한다.
 - 문제가 발생하면 직전 안정 업데이트로 rollback한다.
 
+이미 배포된 바이너리의 runtime이 현재 앱 버전과 다른 과거 릴리스에 긴급 OTA를 보낼
+때만 `EXPO_RUNTIME_VERSION_OVERRIDE`를 사용한다. 이 값은 해당 Store 빌드의 EAS
+build 정보에서 확인하며, 일반 빌드와 신규 Store 릴리스에서는 설정하지 않는다.
+
 ## 강제 업데이트
 
 `extra.minSupportedVersion`은 보안 문제, 서버 호환성 단절 또는 복구 불가능한 데이터
