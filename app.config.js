@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 
 const IS_LOCAL = process.env.EXPO_PUBLIC_IS_LOCAL === 'true';
 const IS_E2E = process.env.EXPO_PUBLIC_E2E_MODE === 'true';
+const IS_PREVIEW = process.env.APP_VARIANT === 'preview';
 const LOCAL_API_PORT = IS_E2E ? (process.env.EXPO_PUBLIC_E2E_API_PORT || '3100') : '3000';
 const KAKAO_NATIVE_APP_KEY = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY || 'eas-config-placeholder';
 const LOCAL_GOOGLE_SERVICES_FILE = './google-services.json';
@@ -82,7 +83,7 @@ export default {
       }
     },
     android: {
-      ...(GOOGLE_SERVICES_FILE ? { googleServicesFile: GOOGLE_SERVICES_FILE } : {}),
+      ...(!IS_PREVIEW && GOOGLE_SERVICES_FILE ? { googleServicesFile: GOOGLE_SERVICES_FILE } : {}),
       usesCleartextTraffic: IS_E2E,
       blockedPermissions: [
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -97,7 +98,7 @@ export default {
         resizeMode: "contain",
         backgroundColor: "#101013"
       },
-      package: "com.shook.app"
+      package: IS_PREVIEW ? "com.shook.app.preview" : "com.shook.app"
     },
     web: {
       bundler: "metro",
