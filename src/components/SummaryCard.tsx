@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { TEST_IDS } from '@/constants/test-ids';
-import { SummaryTheme } from '@/constants/SummaryTheme';
+import { FontScaleLimit, SummaryTheme } from '@/constants/SummaryTheme';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 interface SummaryData {
@@ -36,8 +36,8 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
   const contentWidth = Math.min(width, 752);
   const thumbnailWidth = Math.min(176, Math.max(136, contentWidth * 0.36));
   const thumbnailHeight = thumbnailWidth * 9 / 16;
-  const effectiveFontScale = Math.min(fontScale, 1.4);
-  const titleLineHeight = 17 * effectiveFontScale;
+  const effectiveFontScale = Math.min(fontScale, FontScaleLimit.content);
+  const titleLineHeight = 20 * effectiveFontScale;
   const titleHeightBudget = thumbnailHeight
     - styles.textContent.paddingTop
     - styles.videoTitle.marginBottom
@@ -107,7 +107,7 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
           <Text
             style={styles.videoTitle}
             numberOfLines={titleLines}
-            maxFontSizeMultiplier={1.4}
+            allowFontScaling={false}
           >
             {summary.videoTitle}
           </Text>
@@ -122,7 +122,7 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
             <Text
               style={[styles.metadataText, isPending && styles.metadataTextPending]}
               numberOfLines={1}
-              maxFontSizeMultiplier={1}
+              allowFontScaling={false}
             >
               {summary.channelName.trim()} · {isPending ? '요약 준비 중' : formatTimeAgo(summary.publishedAt)}
             </Text>
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '400',
     color: SummaryTheme.colors.textPrimary,
-    lineHeight: 17,
+    lineHeight: 20,
     marginBottom: 2,
   },
   metadataRow: {

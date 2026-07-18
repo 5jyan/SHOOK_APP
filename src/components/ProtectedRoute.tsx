@@ -5,6 +5,7 @@ import { apiService } from '@/services/api';
 import { getOrCreateDeviceId, isE2EMode } from '@/services/device-id';
 import { bootstrapAuth, type BootstrapUser } from '@/services/auth-bootstrap';
 import { ShookLoadingScreen } from '@/components/ShookLoadingScreen';
+import { useMarkSplashContinuityReady } from '@/contexts/SplashContinuityContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -14,6 +15,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, login } = useAuthStore();
   const [isInitializing, setIsInitializing] = useState(true);
   const authBootstrapStarted = useRef(false);
+  const markSplashContinuityReady = useMarkSplashContinuityReady();
+
+  useEffect(() => {
+    if (!isLoading && !isInitializing) {
+      markSplashContinuityReady?.();
+    }
+  }, [isInitializing, isLoading, markSplashContinuityReady]);
 
   useEffect(() => {
     async function initializeAuth() {

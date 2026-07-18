@@ -17,7 +17,6 @@ import { getOrCreateDeviceId } from './device-id';
 // Configure how notifications are handled when received
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldShowBanner: true,
     shouldShowList: true,
     shouldPlaySound: true,

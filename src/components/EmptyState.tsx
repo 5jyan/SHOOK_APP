@@ -26,8 +26,8 @@ export function EmptyState({
           />
         </View>
         
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.description}>{description}</Text>
+        <Text style={styles.title} allowFontScaling={false}>{title}</Text>
+        <Text style={styles.description} allowFontScaling={false}>{description}</Text>
         
         {action && (
           <View style={styles.actionContainer}>

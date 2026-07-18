@@ -5,6 +5,7 @@ import { apiService } from '@/services/api';
 import { channelCacheService } from '@/services/channel-cache';
 import { kakaoAuthService } from '@/services/kakao-auth';
 import { videoCacheService } from '@/services/video-cache';
+import { videoSummariesSyncService } from '@/services/video-summaries-sync';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -51,8 +52,9 @@ export default function SnsLinkScreen() {
               await channelCacheService.forceSync();
               await videoCacheService.clearCache();
               await videoCacheService.signalChannelListChanged();
+              await videoSummariesSyncService.markSyncNeeded(backendUser.id.toString());
               queryClient.removeQueries({ queryKey: ['videoSummariesCached'] });
-              queryClient.invalidateQueries({ queryKey: ['videoSummariesCached'] });
+              await queryClient.invalidateQueries({ queryKey: ['videoSummariesCached'] });
 
               Alert.alert(
                 '연동 완료',

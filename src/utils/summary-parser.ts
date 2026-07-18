@@ -14,6 +14,13 @@ export interface ParsedSummary {
 
 type SummaryMode = 'overview' | 'keyFacts' | 'sections' | 'conclusion' | 'fallback';
 
+const normalizeLine = (value: string) => value
+  .replace(/^#{1,6}\s*/, '')
+  .replace(/^\*\*(.+)\*\*$/, '$1')
+  .trim();
+
+const stripBoldMarkers = (value: string) => value.replace(/\*\*([^*]+)\*\*/g, '$1');
+
 const isOverviewHeading = (line: string) => line === '한눈에 보기';
 const isDetailsHeading = (line: string) => line === '핵심 내용';
 const isKeyFactsHeading = (line: string) =>
@@ -37,7 +44,11 @@ export function parseSummary(summary: string): ParsedSummary {
     conclusion: [],
     fallback: [],
   };
-  const lines = summary.split('\n').map((line) => line.trim()).filter(Boolean);
+  const lines = summary
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map(normalizeLine)
+    .filter(Boolean);
   let mode: SummaryMode = 'fallback';
   let currentSection: SummarySection | null = null;
 
@@ -63,9 +74,9 @@ export function parseSummary(summary: string): ParsedSummary {
       continue;
     }
 
-    const numberedMatch = line.match(/^\d+\.\s*(.+)$/);
+    const numberedMatch = line.match(/^\d{1,2}[.):]\s*(.+)$/);
     if (numberedMatch) {
-      const rawTitle = numberedMatch[1] ?? '';
+      const rawTitle = stripBoldMarkers(numberedMatch[1] ?? '');
       const timestampMatch = rawTitle.match(/\s*\[((?:\d{1,2}:)?\d{1,2}:\d{2})\]\s*$/);
       const timestampSeconds = timestampMatch?.[1]
         ? parseTimestamp(timestampMatch[1])
@@ -81,14 +92,23 @@ export function parseSummary(summary: string): ParsedSummary {
       continue;
     }
 
+    const hasBulletMarker = /^[-*•]\s*/.test(line);
     const content = line.replace(/^[-*•]\s*/, '').trim();
     if (!content) continue;
 
-    if (mode === 'overview') result.overview.push(content);
-    else if (mode === 'keyFacts') result.keyFacts.push(content);
-    else if (mode === 'conclusion') result.conclusion.push(content);
-    else if (mode === 'sections' && currentSection) currentSection.bullets.push(content);
-    else result.fallback.push(content);
+    const appendContent = (target: string[]) => {
+      if (!hasBulletMarker && target.length > 0) {
+        target[target.length - 1] = `${target[target.length - 1]} ${content}`;
+      } else {
+        target.push(content);
+      }
+    };
+
+    if (mode === 'overview') appendContent(result.overview);
+    else if (mode === 'keyFacts') appendContent(result.keyFacts);
+    else if (mode === 'conclusion') appendContent(result.conclusion);
+    else if (mode === 'sections' && currentSection) appendContent(currentSection.bullets);
+    else appendContent(result.fallback);
   }
 
   return result;

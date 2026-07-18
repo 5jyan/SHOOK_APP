@@ -65,7 +65,7 @@ export function ChannelFilterBar({ selectedChannelId, onChannelSelect }: Channel
                 <Text
                   style={[styles.channelName, isSelected && styles.channelNameSelected]}
                   numberOfLines={1}
-                  maxFontSizeMultiplier={1.2}
+                  allowFontScaling={false}
                 >
                   {channel.youtubeChannel.title}
                 </Text>
@@ -84,8 +84,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: SummaryTheme.colors.border,
   },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6, gap: 12 },
-  channelButton: { width: 66, minHeight: 82, alignItems: 'center', justifyContent: 'flex-start' },
+  scrollContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 12 },
+  channelButton: {
+    width: 66,
+    height: 78,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
   channelButtonPressed: { opacity: 0.72 },
   thumbnailContainer: {
     width: 56, height: 56, borderRadius: 28, borderWidth: 2,

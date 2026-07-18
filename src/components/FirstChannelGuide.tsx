@@ -36,8 +36,8 @@ export function FirstChannelGuide({ visible, onConfirm }: FirstChannelGuideProps
           <View style={styles.iconSurface}>
             <MaterialCommunityIcons name="check" size={22} color={SummaryTheme.colors.onAccent} />
           </View>
-          <Text style={styles.title}>채널을 추가했어요</Text>
-          <Text style={styles.description}>
+          <Text style={styles.title} allowFontScaling={false}>채널을 추가했어요</Text>
+          <Text style={styles.description} allowFontScaling={false}>
             최근 영상 최대 3개의 요약을 먼저 준비해요. 이후 새 영상도 자동으로 요약하고, 완료되면 알려드릴게요.
           </Text>
           <Pressable
@@ -46,7 +46,7 @@ export function FirstChannelGuide({ visible, onConfirm }: FirstChannelGuideProps
             onPress={onConfirm}
             style={({ pressed }) => [styles.confirmButton, pressed && styles.confirmButtonPressed]}
           >
-            <Text style={styles.confirmButtonText}>확인</Text>
+            <Text style={styles.confirmButtonText} allowFontScaling={false}>확인</Text>
           </Pressable>
         </View>
       </View>

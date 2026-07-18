@@ -8,9 +8,8 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
-import { useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, InteractionManager, Linking, Platform, Pressable, StatusBar as NativeStatusBar, StyleSheet, Text, View } from 'react-native';
-import 'react-native-gesture-handler';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, AppStateStatus, Image, InteractionManager, Linking, Platform, Pressable, StatusBar as NativeStatusBar, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -18,6 +17,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FloatingDebugButton } from '@/components/FloatingDebugButton';
 import { GlobalUIDebugger } from '@/components/GlobalUIDebugger';
 import { ChannelsProvider } from '@/contexts/ChannelsContext';
+import { SplashContinuityProvider } from '@/contexts/SplashContinuityContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { queryClient, restoreQueryClient } from '@/lib/query-client';
 import { CacheTransaction } from '@/services/cache/CacheTransaction';
@@ -40,6 +40,8 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
   const [isAppReady, setIsAppReady] = useState(false);
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
+  const markNavigationReady = useCallback(() => setIsNavigationReady(true), []);
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const hasHandledInitialNotification = useRef(false);
   const hasCompletedColdStart = useRef(false);
@@ -246,7 +248,7 @@ export default function RootLayout() {
   }, [isAppReady]);
 
   if (!loaded) {
-    return null;
+    return <BootstrapSplash />;
   }
 
   if (requiresUpdate) {
@@ -266,7 +268,7 @@ export default function RootLayout() {
   }
 
   if (!isAppReady) {
-    return null;
+    return <BootstrapSplash />;
   }
 
   return (
@@ -277,24 +279,26 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <ChannelsProvider>
             <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
-              <Stack.Screen name="+not-found" />
-              <Stack.Screen name="summary-detail" options={{ headerShown: false }} />
-              <Stack.Screen 
-                name="channel-search" 
-                options={{ 
-                  headerShown: false,
-                  animation: 'slide_from_right',
-                  animationDuration: 300
-                }} 
-              />
-              <Stack.Screen name="developer-tools" options={{ headerShown: false }} />
-              <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
-              <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
-              <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
-              <Stack.Screen name="sns-link" options={{ headerShown: false }} />
-            </Stack>
+            <SplashContinuityProvider value={markNavigationReady}>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
+                <Stack.Screen name="+not-found" />
+                <Stack.Screen name="summary-detail" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="channel-search"
+                  options={{
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                    animationDuration: 300
+                  }}
+                />
+                <Stack.Screen name="developer-tools" options={{ headerShown: false }} />
+                <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
+                <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
+                <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
+                <Stack.Screen name="sns-link" options={{ headerShown: false }} />
+              </Stack>
+            </SplashContinuityProvider>
             <StatusBar
               style="light"
               backgroundColor="#101013"
@@ -302,6 +306,7 @@ export default function RootLayout() {
             />
             <FloatingDebugButton />
             <GlobalUIDebugger />
+            {!isNavigationReady && <BootstrapSplash overlay />}
             </ThemeProvider>
           </ChannelsProvider>
         </QueryClientProvider>
@@ -310,7 +315,33 @@ export default function RootLayout() {
   );
 }
 
+function BootstrapSplash({ overlay = false }: { overlay?: boolean }) {
+  return (
+    <View style={[styles.bootstrapSplash, overlay && styles.bootstrapSplashOverlay]}>
+      <Image
+        source={require('../assets/images/Shook-icon-foreground.png')}
+        style={styles.bootstrapSplashLogo}
+        resizeMode="contain"
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  bootstrapSplash: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#101013',
+  },
+  bootstrapSplashLogo: {
+    width: 180,
+    height: 180,
+  },
+  bootstrapSplashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+  },
   root: {
     flex: 1,
     backgroundColor: '#101013',

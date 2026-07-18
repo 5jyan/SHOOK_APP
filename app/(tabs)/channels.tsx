@@ -84,7 +84,7 @@ export default function ChannelsScreen() {
             style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
           >
             <MaterialCommunityIcons name="plus" size={20} color={SummaryTheme.colors.onAccent} />
-            <Text maxFontSizeMultiplier={1.2} style={styles.addButtonText}>채널 추가</Text>
+            <Text allowFontScaling={false} style={styles.addButtonText}>채널 추가</Text>
           </Pressable>
         }
       />

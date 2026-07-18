@@ -289,27 +289,27 @@ export function ChannelList({ onChannelDeleted, onChannelAdded, refreshControl, 
             />
           ) : (
             <View style={[styles.channelThumbnail, styles.placeholderThumbnail]}>
-              <Text style={styles.placeholderText}>YT</Text>
+              <Text style={styles.placeholderText} allowFontScaling={false}>YT</Text>
             </View>
           )}
 
           <View style={styles.channelInfo}>
-            <Text style={styles.channelTitle} numberOfLines={2}>
+            <Text style={styles.channelTitle} numberOfLines={2} allowFontScaling={false}>
               {item.youtubeChannel.title || '제목 없음'}
             </Text>
             <View style={styles.channelStats}>
                 {item.youtubeChannel.subscriberCount && (
-                  <Text style={styles.subscriberCount}>
+                  <Text style={styles.subscriberCount} allowFontScaling={false}>
                     구독자 {formatChannelStats(item.youtubeChannel.subscriberCount || 0, item.youtubeChannel.videoCount || 0).subscribers}
                   </Text>
                 )}
                 {item.youtubeChannel.videoCount && (
-                  <Text style={styles.videoCount}>
+                  <Text style={styles.videoCount} allowFontScaling={false}>
                     동영상 {formatChannelStats(item.youtubeChannel.subscriberCount || 0, item.youtubeChannel.videoCount || 0).videos}개
                   </Text>
                 )}
               </View>
-            <Text style={styles.addedDate}>
+            <Text style={styles.addedDate} allowFontScaling={false}>
               {item.createdAt ? formatDate(item.createdAt) : '날짜 없음'}에 추가됨
             </Text>
           </View>
@@ -327,7 +327,7 @@ export function ChannelList({ onChannelDeleted, onChannelAdded, refreshControl, 
 
     return (
       <View style={[styles.popularSection, fullBleed && styles.popularSectionFullBleed]}>
-        <Text style={styles.popularSectionTitle}>인기 채널</Text>
+        <Text style={styles.popularSectionTitle} allowFontScaling={false}>인기 채널</Text>
         <View style={styles.popularCardsRow}>
           {popularChannels.slice(0, 3).map((channel) => {
             const isAdding = addingChannelId === channel.channelId;
@@ -343,7 +343,7 @@ export function ChannelList({ onChannelDeleted, onChannelAdded, refreshControl, 
                 accessibilityLabel={`${channel.title || '추천'} 채널 추가`}
               >
                 <View style={styles.popularBadge}>
-                  <Text style={styles.popularBadgeText}>{`TOP${channel.rank}`}</Text>
+                  <Text style={styles.popularBadgeText} allowFontScaling={false}>{`TOP${channel.rank}`}</Text>
                 </View>
                 {channel.thumbnail ? (
                   <Image
@@ -353,14 +353,14 @@ export function ChannelList({ onChannelDeleted, onChannelAdded, refreshControl, 
                   />
                 ) : (
                   <View style={[styles.popularThumbnail, styles.popularPlaceholder]}>
-                    <Text style={styles.popularPlaceholderText}>YT</Text>
+                    <Text style={styles.popularPlaceholderText} allowFontScaling={false}>YT</Text>
                   </View>
                 )}
-                <Text style={styles.popularTitle} numberOfLines={1}>
+                <Text style={styles.popularTitle} numberOfLines={1} allowFontScaling={false}>
                   {channel.title || '제목 없음'}
                 </Text>
                 {channel.subscriberCount ? (
-                  <Text style={styles.popularSubscribers}>
+                  <Text style={styles.popularSubscribers} allowFontScaling={false}>
                     구독자 {formatChannelStats(channel.subscriberCount || 0, channel.videoCount || 0).subscribers}
                   </Text>
                 ) : null}
@@ -380,6 +380,7 @@ export function ChannelList({ onChannelDeleted, onChannelAdded, refreshControl, 
           styles.myChannelsTitle,
           !showPopularSection && styles.myChannelsTitleStandalone,
         ]}
+        allowFontScaling={false}
       >
         나의 채널
       </Text>
@@ -395,9 +396,9 @@ export function ChannelList({ onChannelDeleted, onChannelAdded, refreshControl, 
   if (error) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorText} allowFontScaling={false}>{error}</Text>
         <Pressable style={styles.retryButton} onPress={refreshChannels}>
-          <Text style={styles.retryButtonText}>다시 시도</Text>
+          <Text style={styles.retryButtonText} allowFontScaling={false}>다시 시도</Text>
         </Pressable>
       </View>
     );
@@ -408,8 +409,8 @@ export function ChannelList({ onChannelDeleted, onChannelAdded, refreshControl, 
       <View style={styles.container}>
         {renderPopularSection({ fullBleed: false })}
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>추가한 채널이 없습니다</Text>
-          <Text style={styles.emptyDescription}>
+          <Text style={styles.emptyTitle} allowFontScaling={false}>추가한 채널이 없습니다</Text>
+          <Text style={styles.emptyDescription} allowFontScaling={false}>
             우측 상단의 추가 버튼을 사용하여 YouTube 채널을 추가해보세요.
           </Text>
         </View>

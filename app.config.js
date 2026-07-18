@@ -46,7 +46,7 @@ export default {
     userInterfaceStyle: "dark",
     newArchEnabled: true,
     splash: {
-      image: "./assets/images/Shook.png",
+      image: "./assets/images/Shook-icon-foreground.png",
       resizeMode: "contain",
       backgroundColor: "#101013"
     },
@@ -65,10 +65,10 @@ export default {
       bundleIdentifier: "com.shook.app",
       usesNonExemptEncryption: false,
       splash: {
-        image: "./assets/images/Shook.png",
+        image: "./assets/images/Shook-icon-foreground.png",
         resizeMode: "contain",
         backgroundColor: "#101013",
-        tabletImage: "./assets/images/Shook.png"
+        tabletImage: "./assets/images/Shook-icon-foreground.png"
       },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -93,7 +93,7 @@ export default {
         backgroundColor: "#ffffff"
       },
       splash: {
-        image: "./assets/images/Shook.png",
+        image: "./assets/images/Shook-icon-foreground.png",
         resizeMode: "contain",
         backgroundColor: "#101013"
       },
@@ -111,14 +111,10 @@ export default {
       [
         "expo-splash-screen",
         {
-          image: "./assets/images/Shook.png",
-          imageWidth: 100,
+          image: "./assets/images/Shook-icon-foreground.png",
+          imageWidth: 180,
           resizeMode: "contain",
-          backgroundColor: "#101013",
-          dark: {
-            image: "./assets/images/Shook.png",
-            backgroundColor: "#101013"
-          }
+          backgroundColor: "#101013"
         }
       ],
       [

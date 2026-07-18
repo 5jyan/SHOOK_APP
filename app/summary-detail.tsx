@@ -14,10 +14,12 @@ import React from 'react';
 import {
   Image,
   Linking,
+  Platform,
   ScrollView,
   Share,
   StyleSheet,
   Text,
+  TextProps,
   TouchableOpacity,
   useWindowDimensions,
   View
@@ -25,10 +27,38 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { uiLogger } from '../src/utils/logger-enhanced';
 import { TEST_IDS } from '@/constants/test-ids';
-import { SummaryTheme } from '@/constants/SummaryTheme';
+import { FontScaleLimit, SummaryTheme } from '@/constants/SummaryTheme';
+
+const SUMMARY_TEXT_SCALE_LIMIT = FontScaleLimit.content;
+const SUMMARY_TEXT_SCALE_MIN = 0.9;
+
+function ResponsiveSummaryText({
+  baseSize,
+  baseLineHeight,
+  style,
+  ...props
+}: TextProps & { baseSize: number; baseLineHeight?: number }) {
+  const { fontScale } = useWindowDimensions();
+  const scale = Math.min(SUMMARY_TEXT_SCALE_LIMIT, Math.max(SUMMARY_TEXT_SCALE_MIN, fontScale));
+
+  return (
+    <Text
+      {...props}
+      allowFontScaling={false}
+      lineBreakStrategyIOS="hangul-word"
+      style={[
+        style,
+        {
+          fontSize: baseSize * scale,
+          ...(baseLineHeight ? { lineHeight: baseLineHeight * scale } : {}),
+        },
+      ]}
+    />
+  );
+}
 
 export default function SummaryDetailScreen() {
-  const { width } = useWindowDimensions();
+  const { width, height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const contentWidth = Math.min(width - insets.left - insets.right, 752);
   const params = useLocalSearchParams();
@@ -173,14 +203,25 @@ export default function SummaryDetailScreen() {
     });
   };
 
-  const renderBullets = (items: string[], keyPrefix: string) => items.map((item, index) => (
-    <View key={`${keyPrefix}-${index}`} style={styles.bulletItem}>
-      <Text style={styles.bulletPoint}>•</Text>
-      <View style={styles.bulletTextContainer}>
-        <Text style={styles.bulletText}>{renderInlineBold(item)}</Text>
+  const renderBullets = (items: string[], keyPrefix: string) => items.map((item, index) => {
+    return (
+      <View
+        key={`${keyPrefix}-${index}`}
+        style={[styles.bulletItem, index === items.length - 1 && styles.bulletItemLast]}
+      >
+        <ResponsiveSummaryText baseSize={15} baseLineHeight={24} style={styles.bulletPoint}>•</ResponsiveSummaryText>
+        <View style={styles.bulletTextContainer}>
+          <ResponsiveSummaryText
+            baseSize={15}
+            baseLineHeight={24}
+            style={styles.bulletText}
+          >
+            {renderInlineBold(item)}
+          </ResponsiveSummaryText>
+        </View>
       </View>
-    </View>
-  ));
+    );
+  });
 
   const renderInlineBold = (text: string): React.ReactNode[] => {
     const nodes: React.ReactNode[] = [];
@@ -191,7 +232,7 @@ export default function SummaryDetailScreen() {
       const isBold = part.startsWith('**') && part.endsWith('**');
       const content = isBold ? part.slice(2, -2) : part;
       nodes.push(
-        <Text key={`text-${index}`} style={isBold ? styles.inlineBold : undefined}>
+        <Text key={`text-${index}`} allowFontScaling={false} style={isBold ? styles.inlineBold : undefined}>
           {content}
         </Text>,
       );
@@ -202,7 +243,10 @@ export default function SummaryDetailScreen() {
 
   const renderFormattedSummary = (summary: string) => {
     const parsed = parseSummary(summary);
-    const hasStructuredContent = parsed.overview.length > 0 || parsed.sections.length > 0;
+    const hasStructuredContent = parsed.overview.length > 0
+      || parsed.keyFacts.length > 0
+      || parsed.sections.length > 0
+      || parsed.conclusion.length > 0;
 
     if (!hasStructuredContent) {
       return renderBullets(parsed.fallback, 'fallback');
@@ -214,10 +258,21 @@ export default function SummaryDetailScreen() {
           <View style={styles.overviewCard}>
             <View style={styles.sectionEyebrowRow}>
               <View style={styles.sectionAccent} />
-              <Text style={styles.sectionEyebrow}>SUMMARY</Text>
+              <ResponsiveSummaryText baseSize={11} style={styles.sectionEyebrow}>SUMMARY</ResponsiveSummaryText>
             </View>
-            <Text style={styles.overviewTitle}>한눈에 보기</Text>
+            <ResponsiveSummaryText baseSize={24} style={styles.overviewTitle}>한눈에 보기</ResponsiveSummaryText>
             {renderBullets(parsed.overview, 'overview')}
+          </View>
+        )}
+
+        {parsed.keyFacts.length > 0 && (
+          <View style={styles.overviewCard}>
+            <View style={styles.sectionEyebrowRow}>
+              <View style={styles.sectionAccent} />
+              <ResponsiveSummaryText baseSize={11} style={styles.sectionEyebrow}>KEY FACTS</ResponsiveSummaryText>
+            </View>
+            <ResponsiveSummaryText baseSize={24} style={styles.overviewTitle}>주요 숫자</ResponsiveSummaryText>
+            {renderBullets(parsed.keyFacts, 'key-facts')}
           </View>
         )}
 
@@ -240,12 +295,23 @@ export default function SummaryDetailScreen() {
                     >
                       {!isCoreHeading && (
                         <View style={styles.detailNumberBadge}>
-                          <Text style={styles.detailNumber}>{String(displayNumber).padStart(2, '0')}</Text>
+                          <ResponsiveSummaryText
+                            baseSize={17}
+                            baseLineHeight={24}
+                            style={styles.detailNumber}
+                          >
+                            {String(displayNumber).padStart(2, '0')}
+                          </ResponsiveSummaryText>
                         </View>
                       )}
-                      <Text style={[styles.detailTitle, isCoreHeading && styles.coreHeadingTitle]}>
-                        {section.title}
-                      </Text>
+                      <View style={styles.detailTitleContainer}>
+                        <ResponsiveSummaryText
+                          baseSize={17}
+                          style={[styles.detailTitle, isCoreHeading && styles.coreHeadingTitle]}
+                        >
+                          {section.title}
+                        </ResponsiveSummaryText>
+                      </View>
                     </TouchableOpacity>
                     {section.timestampSeconds !== undefined && (
                       <TouchableOpacity
@@ -272,7 +338,7 @@ export default function SummaryDetailScreen() {
                       />
                     </TouchableOpacity>
                   </View>
-                  {expanded && (
+                  {expanded && section.bullets.length > 0 && (
                     <View style={styles.detailBody}>
                       {renderBullets(section.bullets, `section-${index}`)}
                     </View>
@@ -285,7 +351,7 @@ export default function SummaryDetailScreen() {
 
         {parsed.conclusion.length > 0 && (
           <View style={styles.conclusionCard}>
-            <Text style={styles.summarySectionTitle}>결론</Text>
+            <ResponsiveSummaryText baseSize={18} style={styles.summarySectionTitle}>결론</ResponsiveSummaryText>
             {renderBullets(parsed.conclusion, 'conclusion')}
           </View>
         )}
@@ -316,7 +382,7 @@ export default function SummaryDetailScreen() {
           <MaterialCommunityIcons name="arrow-left" size={24} color={SummaryTheme.colors.textPrimary} />
         </TouchableOpacity>
         <View style={styles.navTitleGroup}>
-          <Text style={styles.navTitle}>요약 노트</Text>
+          <ResponsiveSummaryText baseSize={17} style={styles.navTitle}>요약 노트</ResponsiveSummaryText>
         </View>
         <TouchableOpacity
           testID={TEST_IDS.summaries.share}
@@ -330,7 +396,11 @@ export default function SummaryDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      <View testID={TEST_IDS.summaries.detail(videoSummary.videoId)} style={styles.content}>
+      <View
+        key={`${width}-${height}-${fontScale}`}
+        testID={TEST_IDS.summaries.detail(videoSummary.videoId)}
+        style={styles.content}
+      >
         <ScrollView
           testID={TEST_IDS.summaries.detailScroll}
           style={styles.content}
@@ -355,7 +425,7 @@ export default function SummaryDetailScreen() {
         </TouchableOpacity>
 
         <View style={styles.videoInfo}>
-          <Text style={styles.videoTitle}>{videoSummary.title}</Text>
+          <ResponsiveSummaryText baseSize={23} style={styles.videoTitle}>{videoSummary.title}</ResponsiveSummaryText>
           <View style={styles.channelRow}>
             <Image 
               source={{ uri: cardData?.channelThumbnail || `https://via.placeholder.com/60/4285f4/ffffff?text=C` }}
@@ -363,8 +433,8 @@ export default function SummaryDetailScreen() {
               resizeMode="cover"
             />
             <View style={styles.channelInfo}>
-              <Text style={styles.channelName}>{cardData?.channelName || 'Unknown Channel'}</Text>
-              <Text style={styles.publishDate}>{formatDate(videoSummary.publishedAt)}</Text>
+              <ResponsiveSummaryText baseSize={14} style={styles.channelName}>{cardData?.channelName || 'Unknown Channel'}</ResponsiveSummaryText>
+              <ResponsiveSummaryText baseSize={12} style={styles.publishDate}>{formatDate(videoSummary.publishedAt)}</ResponsiveSummaryText>
             </View>
           </View>
         </View>
@@ -375,7 +445,7 @@ export default function SummaryDetailScreen() {
           <View style={styles.summaryContent}>
             {videoSummary.summary ? 
               renderFormattedSummary(videoSummary.summary) : 
-              <Text style={styles.summaryText}>요약이 아직 생성되지 않았습니다.</Text>
+              <ResponsiveSummaryText baseSize={16} style={styles.summaryText}>요약이 아직 생성되지 않았습니다.</ResponsiveSummaryText>
             }
           </View>
 
@@ -406,7 +476,12 @@ const styles = StyleSheet.create({
   },
   navTitleGroup: { flex: 1, alignItems: 'center' },
   navEyebrow: { color: SummaryTheme.colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 1.1 },
-  navTitle: { marginTop: 2, color: SummaryTheme.colors.textPrimary, fontSize: 17, fontWeight: '800' },
+  navTitle: {
+    marginTop: 2,
+    color: SummaryTheme.colors.textPrimary,
+    fontSize: 17,
+    fontWeight: '800',
+  },
   contentLabel: {
     color: SummaryTheme.colors.accent,
     fontSize: 10,
@@ -461,7 +536,6 @@ const styles = StyleSheet.create({
     fontSize: 23,
     fontWeight: '800',
     color: SummaryTheme.colors.textPrimary,
-    lineHeight: 32,
     letterSpacing: -0.4,
     marginBottom: 12,
   },
@@ -524,13 +598,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.5,
+    paddingRight: 8,
   },
   overviewTitle: {
     color: SummaryTheme.colors.textPrimary,
     fontSize: 24,
     fontWeight: '800',
     letterSpacing: -0.4,
-    marginBottom: 18,
+    marginBottom: 12,
   },
   summarySectionTitle: {
     fontSize: 18,
@@ -547,8 +622,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 10,
+    paddingTop: 12,
+    paddingBottom: 8,
     marginBottom: 10,
   },
   detailHeader: {
@@ -560,33 +635,41 @@ const styles = StyleSheet.create({
     backgroundColor: SummaryTheme.colors.surface,
   },
   detailToggle: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
     flexDirection: 'row',
     alignItems: 'flex-start',
     minHeight: 38,
+    minWidth: 0,
   },
   detailNumberBadge: {
-    minWidth: 24,
+    width: 34,
     minHeight: 24,
     flexShrink: 0,
-    justifyContent: 'center',
     alignItems: 'flex-start',
-    marginRight: 6,
+    marginLeft: Platform.OS === 'ios' ? 1 : 0,
+    marginRight: Platform.OS === 'ios' ? -5 : 0,
   },
   detailNumber: {
+    width: 34,
     color: SummaryTheme.colors.accent,
     textAlign: 'left',
-    fontSize: 17,
     fontWeight: '700',
-    lineHeight: 24,
+    letterSpacing: -0.8,
+  },
+  detailTitleContainer: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    marginRight: 4,
+    paddingTop: Platform.OS === 'ios' ? 2 : 0,
   },
   detailTitle: {
-    flex: 1,
     color: SummaryTheme.colors.textPrimary,
     fontSize: 17,
     fontWeight: '800',
-    lineHeight: 24,
-    marginRight: 4,
   },
   coreHeadingTitle: {
     color: SummaryTheme.colors.accent,
@@ -600,16 +683,18 @@ const styles = StyleSheet.create({
   },
   youtubeButton: {
     width: 30,
-    height: 30,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 2,
+    marginTop: 0,
   },
   collapseButton: {
     width: 26,
-    height: 30,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 0,
   },
   conclusionCard: {
     paddingHorizontal: 18,
@@ -628,7 +713,6 @@ const styles = StyleSheet.create({
   summaryText: {
     fontSize: 16,
     color: SummaryTheme.colors.textSecondary,
-    lineHeight: 24,
     marginBottom: 8,
   },
   numberedItem: {
@@ -643,8 +727,12 @@ const styles = StyleSheet.create({
   },
   bulletItem: {
     flexDirection: 'row',
-    marginBottom: 10,
+    alignItems: 'flex-start',
+    marginBottom: 8,
     paddingLeft: 0,
+  },
+  bulletItemLast: {
+    marginBottom: 0,
   },
   lastBulletBeforeNumber: {
     marginBottom: 16,
@@ -658,7 +746,6 @@ const styles = StyleSheet.create({
   bulletText: {
     fontSize: 15,
     color: SummaryTheme.colors.textSecondary,
-    lineHeight: 23,
   },
   bulletTextContainer: {
     flex: 1,

@@ -201,7 +201,7 @@ export default function SummariesScreen() {
           icon="exclamationmark.triangle"
           action={
             <View style={styles.retryButton}>
-              <Text style={styles.retryButtonText} onPress={() => refetch()}>
+              <Text style={styles.retryButtonText} onPress={() => refetch()} allowFontScaling={false}>
                 다시 시도
               </Text>
             </View>
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   titleLogo: { width: 25, height: 25 },
   listContainer: {
     alignSelf: 'center',
-    paddingTop: 0,
+    paddingTop: 4,
   },
   list: {
     flex: 1,

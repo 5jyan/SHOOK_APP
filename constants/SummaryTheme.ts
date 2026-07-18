@@ -17,3 +17,10 @@ export const SummaryTheme = {
   radius: { card: 20, media: 14, pill: 999 },
   spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 },
 } as const;
+
+// Keep Android's large system-font settings from breaking the visual hierarchy
+// while retaining a modest amount of accessibility scaling for body copy.
+export const FontScaleLimit = {
+  display: 1.1,
+  content: 1.15,
+} as const;

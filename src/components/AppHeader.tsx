@@ -35,7 +35,7 @@ export function AppHeader({
         {/* Tab Layout: Title left, Optional button right */}
         <View style={styles.tabTitleRow}>
           {titlePrefix}
-          <Text style={[styles.title, styles.tabTitle]} numberOfLines={1}>
+          <Text style={[styles.title, styles.tabTitle]} numberOfLines={1} allowFontScaling={false}>
             {title}
           </Text>
         </View>
@@ -58,7 +58,7 @@ export function AppHeader({
         >
           <MaterialIcons name="arrow-back-ios-new" size={24} color={SummaryTheme.colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.title, styles.modalTitle]} numberOfLines={1}>
+        <Text style={[styles.title, styles.modalTitle]} numberOfLines={1} allowFontScaling={false}>
           {title}
         </Text>
       </View>

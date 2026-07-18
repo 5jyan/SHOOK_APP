@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { serviceLogger } from '@/utils/logger-enhanced';
 import { formatChannelStats } from '@/utils/number-format';
 import { videoCacheService } from '@/services/video-cache-enhanced';
+import { videoSummariesSyncService } from '@/services/video-summaries-sync';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
@@ -144,8 +145,11 @@ export default function ChannelSearchScreen() {
 
           await videoCacheService.mergeVideos(latestVideos);
 
-          // Invalidate TanStack Query cache to trigger re-render
-          queryClient.invalidateQueries({ queryKey: ['videoSummariesCached', user?.id] });
+          // The summaries query may still be inside its one-minute sync throttle.
+          // Mark it dirty first so an already-mounted Android tab cannot reuse
+          // stale in-memory data instead of the pending videos just cached.
+          await videoSummariesSyncService.markSyncNeeded(user.id);
+          await queryClient.invalidateQueries({ queryKey: ['videoSummariesCached', user.id] });
         } else {
           // New channel - video processing in background
           // Don't signal channel list change - let incremental sync handle it naturally

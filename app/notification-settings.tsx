@@ -5,9 +5,10 @@ import { notificationService } from '@/services/notification';
 import { useNotificationStore } from '@/stores/notification-store';
 import { notificationLogger } from '@/utils/logger-enhanced';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { useFocusEffect } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NotificationSettingsScreen() {
@@ -45,6 +46,16 @@ export default function NotificationSettingsScreen() {
   // Safe function to open system settings
   const openSystemSettings = async () => {
     try {
+      if (Platform.OS === 'android') {
+        const applicationId = Constants.expoConfig?.android?.package;
+        if (applicationId) {
+          await Linking.sendIntent('android.settings.APP_NOTIFICATION_SETTINGS', [
+            { key: 'android.provider.extra.APP_PACKAGE', value: applicationId },
+          ]);
+          return;
+        }
+      }
+
       await Linking.openSettings();
     } catch (error) {
       notificationLogger.error('Failed to open system settings', {

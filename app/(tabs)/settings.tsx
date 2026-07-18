@@ -178,7 +178,7 @@ export default function SettingsScreen() {
         <View style={styles.content}>
           {['계정', '환경 설정', '서비스 안내'].map((section) => (
             <View key={section} style={styles.section}>
-              <Text style={styles.sectionTitle}>{section}</Text>
+              <Text style={styles.sectionTitle} allowFontScaling={false}>{section}</Text>
               <View style={styles.sectionCard}>
                 {settingsItems.filter((item) => item.section === section).map((item, index, items) => (
                   <Pressable
@@ -197,8 +197,8 @@ export default function SettingsScreen() {
                       <MaterialCommunityIcons name={item.icon} size={22} color={SummaryTheme.colors.accent} />
                     </View>
                     <View style={styles.settingCopy}>
-                      <Text style={styles.settingTitle}>{item.title}</Text>
-                      <Text style={styles.settingDescription} numberOfLines={2}>{item.description}</Text>
+                      <Text style={styles.settingTitle} allowFontScaling={false}>{item.title}</Text>
+                      <Text style={styles.settingDescription} numberOfLines={2} allowFontScaling={false}>{item.description}</Text>
                     </View>
                     <MaterialCommunityIcons name="chevron-right" size={22} color={SummaryTheme.colors.textMuted} />
                   </Pressable>
@@ -209,7 +209,7 @@ export default function SettingsScreen() {
 
           {hasDeveloperAccess && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>개발</Text>
+              <Text style={styles.sectionTitle} allowFontScaling={false}>개발</Text>
               <View style={styles.sectionCard}>
                 <Pressable
                   testID={TEST_IDS.settings.developerTools}
@@ -222,8 +222,8 @@ export default function SettingsScreen() {
                     <MaterialCommunityIcons name={developerToolsItem.icon} size={22} color={SummaryTheme.colors.textSecondary} />
                   </View>
                   <View style={styles.settingCopy}>
-                    <Text style={styles.settingTitle}>{developerToolsItem.title}</Text>
-                    <Text style={styles.settingDescription}>{developerToolsItem.description}</Text>
+                    <Text style={styles.settingTitle} allowFontScaling={false}>{developerToolsItem.title}</Text>
+                    <Text style={styles.settingDescription} allowFontScaling={false}>{developerToolsItem.description}</Text>
                   </View>
                   <MaterialCommunityIcons name="chevron-right" size={22} color={SummaryTheme.colors.textMuted} />
                 </Pressable>
@@ -232,7 +232,7 @@ export default function SettingsScreen() {
           )}
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>계정 관리</Text>
+            <Text style={styles.sectionTitle} allowFontScaling={false}>계정 관리</Text>
             <View style={styles.sectionCard}>
               <Pressable
                 testID={TEST_IDS.settings.deleteAccount}
@@ -246,15 +246,15 @@ export default function SettingsScreen() {
                   {isLoading ? <ActivityIndicator size="small" color={SummaryTheme.colors.accent} /> : <MaterialCommunityIcons name="account-remove-outline" size={22} color={SummaryTheme.colors.accent} />}
                 </View>
                 <View style={styles.settingCopy}>
-                  <Text style={styles.settingTitle}>회원 탈퇴</Text>
-                  <Text style={styles.settingDescription}>계정과 구독·알림 데이터를 영구적으로 삭제합니다</Text>
+                  <Text style={styles.settingTitle} allowFontScaling={false}>회원 탈퇴</Text>
+                  <Text style={styles.settingDescription} allowFontScaling={false}>계정과 구독·알림 데이터를 영구적으로 삭제합니다</Text>
                 </View>
                 <MaterialCommunityIcons name="chevron-right" size={22} color={SummaryTheme.colors.textMuted} />
               </Pressable>
             </View>
           </View>
 
-          <Text style={styles.versionText}>SHOOK {appVersion} · CONTENT {contentVersion}</Text>
+          <Text style={styles.versionText} allowFontScaling={false}>SHOOK {appVersion} · CONTENT {contentVersion}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
