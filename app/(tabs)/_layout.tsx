@@ -14,7 +14,7 @@ import { SummaryTheme } from '@/constants/SummaryTheme';
 export default function TabLayout() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const bottomInset = Math.max(insets.bottom, 8);
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 8);
 
   useFocusEffect(
     useCallback(() => {
@@ -53,6 +53,9 @@ export default function TabLayout() {
               fontWeight: '600',
               marginBottom: Platform.OS === 'android' ? 4 : 2,
             },
+            tabBarItemStyle: Platform.OS === 'android'
+              ? { transform: [{ translateY: -8 }] }
+              : undefined,
             tabBarStyle: Platform.select({
               ios: {
                 position: 'absolute',
