@@ -1,4 +1,5 @@
 import { ModalHeader } from '@/components/AppHeader';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 import { queryClient } from '@/lib/query-client';
 import { apiService } from '@/services/api';
 import { channelCacheService } from '@/services/channel-cache';
@@ -6,40 +7,15 @@ import { kakaoAuthService } from '@/services/kakao-auth';
 import { videoCacheService } from '@/services/video-cache';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
-import { Asset } from 'expo-asset';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SvgUri } from 'react-native-svg';
 
 export default function SnsLinkScreen() {
   const { user, login } = useAuthStore();
   const [isLinkingKakao, setIsLinkingKakao] = React.useState(false);
-  const [svgUri, setSvgUri] = React.useState<string | null>(null);
   const isKakaoLinked = !!user && user.isGuest === false;
-
-  React.useEffect(() => {
-    let isMounted = true;
-
-    const loadSvg = async () => {
-      try {
-        const asset = Asset.fromModule(require('@/assets/images/kakao_account_integration.svg'));
-        await asset.downloadAsync();
-        if (isMounted) {
-          setSvgUri(asset.localUri ?? asset.uri);
-        }
-      } catch (error) {
-        uiLogger.error('[SnsLinkScreen] Failed to load Kakao SVG', {
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    };
-
-    loadSvg();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const handleLinkKakaoAccount = () => {
     Alert.alert(
@@ -101,7 +77,7 @@ export default function SnsLinkScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <ModalHeader title="SNS 계정 연동" />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -122,7 +98,7 @@ export default function SnsLinkScreen() {
         <View style={styles.actionSection}>
           <Text style={styles.actionTitle}>연동 진행</Text>
           <Text style={styles.actionDescription}>
-            카카오 계정을 연동해 두면 다음 로그인부터 더 간편하게 이용할 수 있습니다.
+            카카오 계정 연동을 진행합니다.
           </Text>
           {isKakaoLinked ? (
             <View style={styles.linkedNotice}>
@@ -145,13 +121,10 @@ export default function SnsLinkScreen() {
                 {isLinkingKakao ? (
                   <ActivityIndicator color="#000000" />
                 ) : (
-                  <>
-                    {svgUri ? (
-                      <SvgUri uri={svgUri} width="100%" height={48} />
-                    ) : (
-                      <ActivityIndicator color="#000000" />
-                    )}
-                  </>
+                  <View style={styles.kakaoButtonContent}>
+                    <MaterialCommunityIcons name="chat" size={20} color="#191919" />
+                    <Text style={styles.kakaoButtonText}>카카오 계정으로 연동</Text>
+                  </View>
                 )}
               </Pressable>
             </>
@@ -165,7 +138,7 @@ export default function SnsLinkScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.background,
   },
   scrollView: {
     flex: 1,
@@ -179,19 +152,19 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     padding: 16,
     borderRadius: 16,
-    backgroundColor: '#f8fafc',
+    backgroundColor: SummaryTheme.colors.surface,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: SummaryTheme.colors.border,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 8,
   },
   sectionDescription: {
     fontSize: 14,
-    color: '#475569',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 20,
   },
   benefitList: {
@@ -200,30 +173,30 @@ const styles = StyleSheet.create({
   },
   benefitItem: {
     fontSize: 14,
-    color: '#1e293b',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 20,
   },
   sectionNote: {
     fontSize: 13,
-    color: '#64748b',
+    color: SummaryTheme.colors.textMuted,
     lineHeight: 18,
   },
   actionSection: {
     padding: 16,
     borderRadius: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.surface,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: SummaryTheme.colors.border,
   },
   actionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 6,
   },
   actionDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -232,9 +205,20 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: 'transparent',
+    backgroundColor: '#FEE500',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  kakaoButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+  },
+  kakaoButtonText: {
+    color: '#191919',
+    fontSize: 15,
+    fontWeight: '700',
   },
   kakaoButtonPressed: {
     opacity: 0.9,
@@ -247,19 +231,19 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: SummaryTheme.colors.accentSoft,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: SummaryTheme.colors.border,
   },
   linkedTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#0f172a',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 6,
   },
   linkedDescription: {
     fontSize: 13,
-    color: '#64748b',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 18,
   },
 });

@@ -516,8 +516,7 @@ class ApiService {
     apiLogger.info('Registering push token', {
       deviceId: tokenData.deviceId,
       platform: tokenData.platform,
-      appVersion: tokenData.appVersion,
-      tokenPreview: tokenData.token.substring(0, 20) + '...'
+      appVersion: tokenData.appVersion
     });
     
     return this.makeRequest<RegisterPushTokenResponse>('/api/push-tokens', {
@@ -577,8 +576,7 @@ class ApiService {
   async updatePushToken(tokenData: PushTokenData): Promise<ApiResponse<RegisterPushTokenResponse>> {
     apiLogger.info('Updating push token', {
       deviceId: tokenData.deviceId,
-      platform: tokenData.platform,
-      tokenPreview: tokenData.token.substring(0, 20) + '...'
+      platform: tokenData.platform
     });
     
     return this.makeRequest<RegisterPushTokenResponse>(`/api/push-tokens/${tokenData.deviceId}`, {

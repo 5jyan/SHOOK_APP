@@ -11,6 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -22,16 +23,51 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import Animated, {
-  Easing,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming
-} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TEST_IDS } from '@/constants/test-ids';
+import { SummaryTheme } from '@/constants/SummaryTheme';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+
+function SearchLoadingState({ searchTerm }: { searchTerm: string }) {
+  const dots = React.useRef([new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)]).current;
+
+  React.useEffect(() => {
+    const animations = dots.map((dot, index) => Animated.loop(
+      Animated.sequence([
+        Animated.delay(index * 120),
+        Animated.timing(dot, { toValue: 1, duration: 260, useNativeDriver: true }),
+        Animated.timing(dot, { toValue: 0, duration: 260, useNativeDriver: true }),
+        Animated.delay((2 - index) * 120),
+      ])
+    ));
+    animations.forEach((animation) => animation.start());
+    return () => animations.forEach((animation) => animation.stop());
+  }, [dots]);
+
+  return (
+    <View style={styles.loadingContainer} accessibilityRole="progressbar" accessibilityLabel={`${searchTerm} 채널 검색 중`}>
+      <View style={styles.loadingMark}>
+        <MaterialCommunityIcons name="youtube" size={27} color={SummaryTheme.colors.accent} />
+      </View>
+      <View style={styles.loadingDots}>
+        {dots.map((dot, index) => (
+          <Animated.View
+            key={index}
+            style={[
+              styles.loadingDot,
+              {
+                opacity: dot.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }),
+                transform: [{ translateY: dot.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) }],
+              },
+            ]}
+          />
+        ))}
+      </View>
+      <Text style={styles.loadingTitle}>채널을 찾고 있어요</Text>
+      <Text style={styles.loadingText}>“{searchTerm}” 검색 결과를 준비하는 중입니다</Text>
+    </View>
+  );
+}
 
 export default function ChannelSearchScreen() {
   const searchInputRef = React.useRef<TextInput>(null);
@@ -44,8 +80,6 @@ export default function ChannelSearchScreen() {
     channels,
     isLoading,
     error,
-    selectedChannel,
-    setSelectedChannel,
     clearSearch,
   } = useChannelSearch();
   
@@ -118,9 +152,14 @@ export default function ChannelSearchScreen() {
           serviceLogger.info('New channel added, will sync via incremental updates');
         }
 
-        Alert.alert('성공', `${channel.title} 채널이 추가되었습니다.`);
         await refreshChannels();
-        router.back(); // 성공 시 이전 화면으로 돌아가기
+        router.replace({
+          pathname: '/(tabs)/channels',
+          params: {
+            showChannelAddedGuide: '1',
+            addedChannelId: channel.channelId,
+          },
+        });
       } else {
         serviceLogger.error('Failed to add channel', { error: response.error, channelTitle: channel.title });
         Alert.alert('오류', response.error || '채널 추가에 실패했습니다.');
@@ -133,44 +172,6 @@ export default function ChannelSearchScreen() {
     }
   };
 
-
-  // 애니메이션 하트 컴포넌트
-  const AnimatedHeart = ({ isLoading }: { isLoading: boolean }) => {
-    const fillProgress = useSharedValue(0);
-
-    React.useEffect(() => {
-      if (isLoading) {
-        fillProgress.value = withRepeat(
-          withTiming(1, { 
-            duration: 1000, 
-            easing: Easing.inOut(Easing.ease) 
-          }),
-          -1, // 무한 반복
-          true // 역방향 반복
-        );
-      } else {
-        fillProgress.value = withTiming(0, { duration: 300 });
-      }
-    }, [isLoading]);
-
-    const animatedStyle = useAnimatedStyle(() => {
-      const opacity = interpolate(fillProgress.value, [0, 1], [0, 1]);
-      return {
-        opacity,
-      };
-    });
-
-    return (
-      <View style={styles.heartContainer}>
-        {/* 배경 하트 (회색) */}
-        <IconSymbol name="heart" size={20} color="#e5e7eb" />
-        {/* 애니메이션 하트 (빨간색) */}
-        <Animated.View style={[styles.animatedHeart, animatedStyle]}>
-          <IconSymbol name="heart.fill" size={20} color="#ef4444" />
-        </Animated.View>
-      </View>
-    );
-  };
 
   const renderChannelItem = ({ item: channel }: { item: YoutubeChannel }) => {
     // Safety check for channel data
@@ -190,12 +191,12 @@ export default function ChannelSearchScreen() {
             {channel.title || 'Unknown Channel'}
           </Text>
           <View style={styles.channelStats}>
-            {channel.subscriberCount && (
+            {!!channel.subscriberCount && (
               <Text style={styles.channelSubscribers}>
                 구독자 {formatChannelStats(channel.subscriberCount || 0, channel.videoCount || 0).subscribers}
               </Text>
             )}
-            {channel.videoCount && (
+            {!!channel.videoCount && (
               <Text style={styles.channelVideos}>
                 동영상 {formatChannelStats(channel.subscriberCount || 0, channel.videoCount || 0).videos}개
               </Text>
@@ -206,12 +207,19 @@ export default function ChannelSearchScreen() {
           testID={TEST_IDS.channels.add(channel.channelId)}
           accessibilityRole="button"
           accessibilityLabel={`${channel.title} 채널 추가`}
-          style={styles.heartButton}
+          style={[styles.addResultButton, loadingChannelId !== null && styles.addResultButtonDisabled]}
           onPress={() => handleAddChannel(channel)}
           disabled={loadingChannelId !== null}
           activeOpacity={0.6}
         >
-          <AnimatedHeart isLoading={loadingChannelId === channel.channelId} />
+          {loadingChannelId === channel.channelId ? (
+            <ActivityIndicator size="small" color={SummaryTheme.colors.onAccent} />
+          ) : (
+            <>
+              <MaterialCommunityIcons name="plus" size={17} color={SummaryTheme.colors.onAccent} />
+              <Text style={styles.addResultButtonText}>추가</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     );
@@ -224,30 +232,36 @@ export default function ChannelSearchScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <SafeAreaView testID={TEST_IDS.screens.channelSearch} style={styles.container}>
-        {/* Search Header */}
-        <View style={[styles.header, ]}>
-          {/* Back Button */}
+        <View style={styles.header}>
           <TouchableOpacity
             testID={TEST_IDS.channels.searchBack}
             accessibilityRole="button"
-            accessibilityLabel="채널 검색 닫기"
+            accessibilityLabel="뒤로가기"
             onPress={handleBackPress}
             style={styles.backButton}
           >
-            <IconSymbol name="chevron.left" size={24} color="#374151" />
+            <MaterialCommunityIcons name="arrow-left" size={24} color={SummaryTheme.colors.textPrimary} />
           </TouchableOpacity>
-          
-          {/* Search Input Container */}
-          <View style={styles.searchContainer}>
-            <View style={styles.searchInputWrapper}>
-              <IconSymbol name="magnifyingglass" size={18} color="#9ca3af" />
+
+          <View style={styles.headerTitleGroup}>
+            <Text style={styles.headerTitle}>채널 추가</Text>
+          </View>
+          <View style={styles.channelCapacity} accessibilityLabel={`채널 ${channelCount}/${maxChannels}`}>
+            <Text style={styles.channelCapacityText}>{channelCount}/{user?.role === 'manager' ? '∞' : maxChannels}</Text>
+          </View>
+        </View>
+
+        <View style={styles.searchArea}>
+          <Text style={styles.searchGuide}>YouTube 채널 이름을 입력하세요</Text>
+          <View style={styles.searchInputWrapper}>
+              <MaterialCommunityIcons name="magnify" size={22} color={SummaryTheme.colors.textMuted} />
               <TextInput
                 testID={TEST_IDS.channels.searchInput}
                 accessibilityLabel="채널 검색어"
                 ref={searchInputRef}
                 style={styles.searchInput}
-                placeholder="채널 검색"
-                placeholderTextColor="#9ca3af"
+                placeholder="예: 슈카월드"
+                placeholderTextColor={SummaryTheme.colors.textMuted}
                 value={searchTerm}
                 onChangeText={setSearchTerm}
                 returnKeyType="search"
@@ -262,10 +276,9 @@ export default function ChannelSearchScreen() {
                   onPress={handleClearPress}
                   style={styles.clearButton}
                 >
-                  <IconSymbol name="xmark" size={16} color="#6b7280" />
+                  <MaterialCommunityIcons name="close" size={18} color={SummaryTheme.colors.textSecondary} />
                 </TouchableOpacity>
               )}
-            </View>
           </View>
         </View>
 
@@ -280,7 +293,7 @@ export default function ChannelSearchScreen() {
             <IconSymbol name="magnifyingglass" size={48} color="#d1d5db" />
             <Text style={styles.emptyTitle}>채널을 검색해보세요</Text>
             <Text style={styles.emptyDescription}>
-              구독하고 싶은 YouTube 채널을 검색할 수 있습니다
+              채널을 추가하면 새 영상이 올라올 때 핵심 요약을 자동으로 준비합니다.
             </Text>
             {isChannelLimitReached && (
               <Text style={styles.limitWarning}>
@@ -295,11 +308,14 @@ export default function ChannelSearchScreen() {
           </View>
         ) : (
           <View style={styles.searchResults}>
-            {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#4285f4" />
-                <Text style={styles.loadingText}>“{searchTerm}” 검색 중...</Text>
+            {searchTerm.trim().length < 2 ? (
+              <View style={styles.minimumQueryContainer} accessibilityLiveRegion="polite">
+                <MaterialCommunityIcons name="form-textbox" size={38} color={SummaryTheme.colors.textMuted} />
+                <Text style={styles.minimumQueryTitle}>2글자 이상 입력해주세요</Text>
+                <Text style={styles.minimumQueryDescription}>채널 이름을 두 글자 이상 입력하면 검색을 시작합니다.</Text>
               </View>
+            ) : isLoading ? (
+              <SearchLoadingState searchTerm={searchTerm} />
             ) : error ? (
               <View style={styles.errorContainer}>
                 <IconSymbol name="exclamationmark.triangle" size={48} color="#ef4444" />
@@ -316,6 +332,10 @@ export default function ChannelSearchScreen() {
               </View>
             ) : (
               <View style={styles.channelListContainer}>
+                <View style={styles.resultsHeader}>
+                  <Text style={styles.resultsEyebrow}>SEARCH RESULTS</Text>
+                  <Text style={styles.resultsCount}>{Math.min(channels.length, maxSearchResults)}개 채널</Text>
+                </View>
                 {channels.slice(0, maxSearchResults).map((channel) => (
                   <View key={channel.channelId}>
                     {renderChannelItem({ item: channel })}
@@ -332,196 +352,106 @@ export default function ChannelSearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    paddingTop: 0,
-  },
+  container: { flex: 1, backgroundColor: SummaryTheme.colors.background },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    flexDirection: 'row', alignItems: 'center', minHeight: 64,
+    paddingHorizontal: 12, backgroundColor: SummaryTheme.colors.background,
   },
   backButton: {
-    marginRight: 12,
+    width: 48, height: 48, alignItems: 'center', justifyContent: 'center',
   },
-  searchContainer: {
-    flex: 1,
+  headerTitleGroup: { flex: 1, alignItems: 'center', paddingHorizontal: 8 },
+  headerEyebrow: { color: SummaryTheme.colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 1.2 },
+  headerTitle: { color: SummaryTheme.colors.textPrimary, fontSize: 17, fontWeight: '800', marginTop: 2 },
+  channelCapacity: {
+    minWidth: 48, height: 48, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: SummaryTheme.colors.accentSoft, borderRadius: 16,
   },
+  channelCapacityText: { color: SummaryTheme.colors.accent, fontSize: 13, fontWeight: '800' },
+  searchArea: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 },
+  searchGuide: { color: SummaryTheme.colors.textSecondary, fontSize: 13, fontWeight: '700', marginBottom: 8 },
   searchInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    flexDirection: 'row', alignItems: 'center', minHeight: 56,
+    backgroundColor: SummaryTheme.colors.surface, borderWidth: 1,
+    borderColor: SummaryTheme.colors.border, borderRadius: 18, paddingLeft: 16, paddingRight: 6,
   },
   searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    marginLeft: 8,
-    marginRight: 4,
-    paddingVertical: 4,
+    flex: 1, fontSize: 16, color: SummaryTheme.colors.textPrimary,
+    marginLeft: 10, paddingVertical: 12,
   },
-  clearButton: {
-    padding: 6,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-  },
-  content: {
-    flex: 1,
-  },
+  clearButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
+  content: { flex: 1 },
   emptyState: {
-    alignItems: 'center',
-    paddingTop: 40,
-    paddingHorizontal: 32,
+    alignItems: 'center', marginHorizontal: 16, marginTop: 8,
+    paddingHorizontal: 24, paddingVertical: 32, backgroundColor: SummaryTheme.colors.surface,
+    borderWidth: 1, borderColor: SummaryTheme.colors.border, borderRadius: SummaryTheme.radius.card,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#374151',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: 20, fontWeight: '800', color: SummaryTheme.colors.textPrimary,
+    marginTop: 16, marginBottom: 8,
   },
   emptyDescription: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 24,
+    fontSize: 16, color: SummaryTheme.colors.textSecondary, textAlign: 'center', lineHeight: 24,
   },
-  searchResults: {
-    flex: 1,
+  searchResults: { flex: 1 },
+  minimumQueryContainer: {
+    alignItems: 'center', marginHorizontal: 16, marginTop: 8, paddingHorizontal: 24, paddingVertical: 32,
+    backgroundColor: SummaryTheme.colors.surface, borderWidth: 1,
+    borderColor: SummaryTheme.colors.border, borderRadius: SummaryTheme.radius.card,
   },
-  searchingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginTop: 32,
+  minimumQueryTitle: {
+    marginTop: 14, color: SummaryTheme.colors.textPrimary, fontSize: 18, fontWeight: '800', textAlign: 'center',
   },
-  channelList: {
-    paddingVertical: 8,
+  minimumQueryDescription: {
+    marginTop: 7, color: SummaryTheme.colors.textSecondary, fontSize: 14, lineHeight: 21, textAlign: 'center',
   },
-  channelListContainer: {
-    paddingVertical: 8,
+  channelListContainer: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
+  resultsHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 36, marginBottom: 6,
   },
+  resultsEyebrow: { color: SummaryTheme.colors.accent, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  resultsCount: { color: SummaryTheme.colors.textSecondary, fontSize: 13, fontWeight: '700' },
   channelItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
+    flexDirection: 'row', alignItems: 'center', minHeight: 78, padding: 12, marginBottom: 10,
+    backgroundColor: SummaryTheme.colors.surface, borderWidth: 1,
+    borderColor: SummaryTheme.colors.border, borderRadius: 18,
   },
-  channelThumbnail: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-  },
-  channelInfo: {
-    flex: 1,
-    marginLeft: 12,
-    marginRight: 8,
-  },
+  channelThumbnail: { width: 52, height: 52, borderRadius: 18, backgroundColor: SummaryTheme.colors.pending },
+  channelInfo: { flex: 1, marginLeft: 12, marginRight: 8 },
   channelTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 2,
+    fontSize: 16, fontWeight: '700', color: SummaryTheme.colors.textPrimary, marginBottom: 5,
   },
-  channelStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  channelStats: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  channelSubscribers: { fontSize: 13, color: SummaryTheme.colors.textMuted },
+  channelVideos: { fontSize: 13, color: SummaryTheme.colors.textMuted },
+  addResultButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3,
+    minWidth: 68, minHeight: 44, paddingHorizontal: 12,
+    backgroundColor: SummaryTheme.colors.accent, borderRadius: 14,
   },
-  channelSubscribers: {
-    fontSize: 13,
-    color: '#9ca3af',
+  addResultButtonDisabled: { opacity: 0.55 },
+  addResultButtonText: { color: SummaryTheme.colors.onAccent, fontSize: 14, fontWeight: '800' },
+  loadingContainer: { alignItems: 'center', paddingTop: 48, paddingHorizontal: 24 },
+  loadingMark: {
+    width: 64, height: 64, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: SummaryTheme.colors.accentSoft, borderRadius: 22,
   },
-  channelVideos: {
-    fontSize: 13,
-    color: '#9ca3af',
-  },
-  heartButton: {
-    padding: 8,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingTop: 60,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginTop: 16,
-  },
-  errorContainer: {
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 32,
-  },
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#ef4444',
-    marginTop: 16,
-    marginBottom: 8,
-  },
+  loadingDots: { height: 18, flexDirection: 'row', alignItems: 'flex-end', gap: 7, marginTop: 18 },
+  loadingDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: SummaryTheme.colors.accent },
+  loadingTitle: { marginTop: 10, color: SummaryTheme.colors.textPrimary, fontSize: 18, fontWeight: '800' },
+  loadingText: { fontSize: 14, color: SummaryTheme.colors.textSecondary, marginTop: 6, textAlign: 'center' },
+  errorContainer: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 },
+  errorTitle: { fontSize: 20, fontWeight: '700', color: '#ef4444', marginTop: 16, marginBottom: 8 },
   errorDescription: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 24,
+    fontSize: 16, color: SummaryTheme.colors.textSecondary, textAlign: 'center', lineHeight: 24,
   },
-  noResultsContainer: {
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 32,
-  },
+  noResultsContainer: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 },
   noResultsTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#374151',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: 20, fontWeight: '700', color: SummaryTheme.colors.textPrimary, marginTop: 16, marginBottom: 8,
   },
   noResultsDescription: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 24,
+    fontSize: 16, color: SummaryTheme.colors.textSecondary, textAlign: 'center', lineHeight: 24,
   },
-  limitWarning: {
-    fontSize: 14,
-    color: '#f59e0b',
-    textAlign: 'center',
-    marginTop: 16,
-    fontWeight: '500',
-  },
-  managerInfo: {
-    fontSize: 14,
-    color: '#10b981',
-    textAlign: 'center',
-    marginTop: 16,
-    fontWeight: '500',
-  },
-  heartContainer: {
-    position: 'relative',
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  animatedHeart: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  limitWarning: { fontSize: 14, color: '#b86f00', textAlign: 'center', marginTop: 16, fontWeight: '700' },
+  managerInfo: { fontSize: 14, color: '#16845b', textAlign: 'center', marginTop: 16, fontWeight: '700' },
 });

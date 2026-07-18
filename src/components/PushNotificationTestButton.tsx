@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useNotificationStore } from '@/stores/notification-store';
 import { apiService } from '@/services/api';
 import { notificationLogger } from '@/utils/logger-enhanced';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 
 export function PushNotificationTestButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -96,27 +97,27 @@ export function PushNotificationTestButton() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: SummaryTheme.colors.border,
     marginBottom: 8,
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 8,
   },
   description: {
     fontSize: 14,
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
     marginBottom: 12,
     lineHeight: 20,
   },
   button: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: SummaryTheme.colors.pressed,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: '#ffffff',
+    color: SummaryTheme.colors.textPrimary,
     fontSize: 14,
     fontWeight: '600',
   },

@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator } from 'rea
 import { apiService } from '@/services/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { serviceLogger } from '@/utils/logger-enhanced';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 
 export function ManualMonitoringButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -81,7 +82,7 @@ export function ManualMonitoringButton() {
       >
         <View style={styles.buttonContent}>
           {isLoading ? (
-            <ActivityIndicator size="small" color="#ffffff" style={styles.icon} />
+            <ActivityIndicator size="small" color={SummaryTheme.colors.textPrimary} style={styles.icon} />
           ) : (
             <Text style={styles.icon}>▶️</Text>
           )}
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   button: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: SummaryTheme.colors.pressed,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -137,32 +138,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    color: '#ffffff',
+    color: SummaryTheme.colors.textPrimary,
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
   description: {
-    color: '#e0e7ff',
+    color: SummaryTheme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },
   warningContainer: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: SummaryTheme.colors.surface,
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#f59e0b',
+    borderColor: SummaryTheme.colors.border,
   },
   warningTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#92400e',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 8,
   },
   warningText: {
     fontSize: 12,
-    color: '#92400e',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 16,
   },
 });

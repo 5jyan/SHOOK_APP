@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { IconSymbol } from '../../components/ui/IconSymbol';
 import { AdvancedUIDebugger } from './AdvancedUIDebugger';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 
 export const AdvancedUIDebuggerButton: React.FC = () => {
   const [showDebugger, setShowDebugger] = useState(false);
@@ -28,7 +29,7 @@ export const AdvancedUIDebuggerButton: React.FC = () => {
         activeOpacity={0.7}
       >
         <View style={styles.iconContainer}>
-          <IconSymbol name="grid" size={20} color="#3b82f6" />
+          <IconSymbol name="grid" size={20} color={SummaryTheme.colors.textPrimary} />
         </View>
         <View style={styles.textContainer}>
           <Text style={styles.title}>고급 UI 디버거</Text>
@@ -37,7 +38,7 @@ export const AdvancedUIDebuggerButton: React.FC = () => {
           </Text>
         </View>
         <View style={styles.arrowContainer}>
-          <IconSymbol name="chevron.right" size={16} color="#9ca3af" />
+          <IconSymbol name="chevron.right" size={16} color={SummaryTheme.colors.textMuted} />
         </View>
       </TouchableOpacity>
       
@@ -56,9 +57,9 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
+    backgroundColor: SummaryTheme.colors.surface,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: SummaryTheme.colors.border,
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -67,7 +68,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#dbeafe',
+    backgroundColor: SummaryTheme.colors.pressed,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -77,12 +78,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 4,
   },
   description: {
     fontSize: 14,
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 20,
   },
   arrowContainer: {

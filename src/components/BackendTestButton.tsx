@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { apiService } from '@/services/api';
 import { serviceLogger } from '@/utils/logger-enhanced';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 
 export function BackendTestButton() {
   const [testing, setTesting] = useState(false);
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   button: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: SummaryTheme.colors.pressed,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#ffffff',
+    color: SummaryTheme.colors.textPrimary,
     fontSize: 16,
     fontWeight: '500',
     textAlign: 'center',
@@ -81,12 +82,12 @@ const styles = StyleSheet.create({
   resultContainer: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: SummaryTheme.colors.surface,
     borderRadius: 8,
   },
   resultText: {
     fontSize: 14,
-    color: '#374151',
+    color: SummaryTheme.colors.textSecondary,
     fontFamily: 'monospace',
   },
 });

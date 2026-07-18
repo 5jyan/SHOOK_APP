@@ -20,10 +20,14 @@ export const TEST_IDS = {
     row: (channelId: string) => `channel-row-${channelId}`,
     add: (channelId: string) => `channel-add-${channelId}`,
     delete: (channelId: string) => `channel-delete-${channelId}`,
+    popular: (channelId: string) => `popular-channel-${channelId}`,
   },
   summaries: {
     list: 'summary-list',
+    channelFilter: (channelId: string, selected = false) =>
+      `summary-channel-filter-${channelId}${selected ? '-selected' : ''}`,
     row: (videoId: string) => `summary-row-${videoId}`,
+    pendingIcon: (videoId: string) => `summary-pending-icon-${videoId}`,
     detail: (videoId: string) => `summary-detail-${videoId}`,
     detailScroll: 'summary-detail-scroll',
     share: 'summary-detail-share',

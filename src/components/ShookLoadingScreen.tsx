@@ -1,60 +1,60 @@
+import { SummaryTheme } from '@/constants/SummaryTheme';
 import React from 'react';
-import { View, Image, Text, StyleSheet } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withRepeat, 
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
   withTiming,
-  Easing
 } from 'react-native-reanimated';
 
 interface ShookLoadingScreenProps {
   message?: string;
 }
 
-export function ShookLoadingScreen({ message = '로딩 중...' }: ShookLoadingScreenProps) {
-  const opacity = useSharedValue(0.3);
-  const scale = useSharedValue(0.9);
+function LoadingBar({ delay, height }: { delay: number; height: number }) {
+  const progress = useSharedValue(0);
 
   React.useEffect(() => {
-    // 부드러운 페이드 인/아웃 애니메이션
-    opacity.value = withRepeat(
-      withTiming(1, {
-        duration: 1000,
-        easing: Easing.inOut(Easing.ease),
-      }),
-      -1, // 무한 반복
-      true // 역방향 반복
+    progress.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 460, easing: Easing.out(Easing.cubic) }),
+          withTiming(0, { duration: 460, easing: Easing.in(Easing.cubic) }),
+        ),
+        -1,
+      ),
     );
+  }, [delay, progress]);
 
-    // 살짝 확대/축소 애니메이션
-    scale.value = withRepeat(
-      withTiming(1.05, {
-        duration: 1200,
-        easing: Easing.inOut(Easing.ease),
-      }),
-      -1, // 무한 반복
-      true // 역방향 반복
-    );
-  }, [opacity, scale]);
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: 0.35 + progress.value * 0.65,
+    transform: [{ scaleY: 0.62 + progress.value * 0.38 }],
+  }));
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value,
-      transform: [{ scale: scale.value }],
-    };
-  });
+  return <Animated.View style={[styles.bar, { height }, animatedStyle]} />;
+}
 
+export function ShookLoadingScreen({ message = '잠시만 기다려주세요' }: ShookLoadingScreenProps) {
   return (
-    <View style={styles.container}>
-      <Animated.View style={[styles.logoContainer, animatedStyle]}>
-        <Image 
-          source={require('../../assets/images/shook-splash-v2.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </Animated.View>
+    <View
+      style={styles.container}
+      accessibilityRole="progressbar"
+      accessibilityLabel={message}
+    >
+      <View style={styles.loaderSurface}>
+        <View style={styles.bars}>
+          <LoadingBar delay={0} height={18} />
+          <LoadingBar delay={130} height={28} />
+          <LoadingBar delay={260} height={22} />
+        </View>
+      </View>
       <Text style={styles.message}>{message}</Text>
+      <Text style={styles.supportingText}>콘텐츠를 준비하고 있어요</Text>
     </View>
   );
 }
@@ -62,22 +62,47 @@ export function ShookLoadingScreen({ message = '로딩 중...' }: ShookLoadingSc
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fffcf7',
+    minHeight: 240,
+    backgroundColor: SummaryTheme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
   },
-  logoContainer: {
+  loaderSurface: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    backgroundColor: SummaryTheme.colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: SummaryTheme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
   },
-  logo: {
-    width: 220,
-    height: 220,
+  bars: {
+    height: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  bar: {
+    width: 5,
+    borderRadius: 3,
+    backgroundColor: SummaryTheme.colors.textPrimary,
   },
   message: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#6b7280',
+    color: SummaryTheme.colors.textPrimary,
+    fontSize: 17,
+    lineHeight: 24,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
+  supportingText: {
+    marginTop: 6,
+    color: SummaryTheme.colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
     textAlign: 'center',
   },
 });

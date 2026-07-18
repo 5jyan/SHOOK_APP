@@ -1,4 +1,5 @@
 import { ModalHeader } from '@/components/AppHeader';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { notificationService } from '@/services/notification';
 import { useNotificationStore } from '@/stores/notification-store';
@@ -16,14 +17,18 @@ export default function NotificationSettingsScreen() {
 
   const checkPermissionStatus = React.useCallback(async () => {
     try {
-      await notificationService.syncWithBackendState();
+      const didSync = await notificationService.syncWithBackendState();
       const permissions = await Notifications.getPermissionsAsync();
-      setPermissionStatus(permissions.status);
-      setIsEnabled(
-        permissions.status === 'granted' &&
-        useNotificationStore.getState().isRegistered &&
-        await notificationService.isNotificationsEnabled()
-      );
+      const isAllowed = notificationService.areNotificationsAllowed(permissions);
+      setPermissionStatus(isAllowed ? 'granted' : permissions.status);
+
+      if (didSync) {
+        setIsEnabled(
+          isAllowed &&
+          useNotificationStore.getState().isRegistered &&
+          await notificationService.isNotificationsEnabled()
+        );
+      }
     } catch (error) {
       notificationLogger.error('Failed to check permission status', {
         error: error instanceof Error ? error.message : String(error)
@@ -64,15 +69,13 @@ export default function NotificationSettingsScreen() {
       if (value) {
         // Enable notifications
         await notificationService.setNotificationsEnabled(true);
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
+        let permissions = await Notifications.getPermissionsAsync();
 
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
+        if (!notificationService.areNotificationsAllowed(permissions)) {
+          permissions = await notificationService.requestPermissions();
         }
 
-        if (finalStatus !== 'granted') {
+        if (!notificationService.areNotificationsAllowed(permissions)) {
           // 권한 거부 시 원복
           setIsEnabled(false);
           await notificationService.setNotificationsEnabled(false);
@@ -108,6 +111,7 @@ export default function NotificationSettingsScreen() {
       }
     } catch (error) {
       // 에러 시 원복
+      await notificationService.setNotificationsEnabled(previousValue).catch(() => undefined);
       setIsEnabled(previousValue);
       notificationLogger.error('Toggle notifications error', {
         error: error instanceof Error ? error.message : String(error)
@@ -132,13 +136,21 @@ export default function NotificationSettingsScreen() {
                 구독한 채널의 새 영상을 알려드려요
               </Text>
             </View>
-            <Switch
-              value={isEnabled}
-              onValueChange={handleToggleNotifications}
-              disabled={isLoading}
-              trackColor={{ false: '#e5e5e5', true: '#4285f4' }}
-              thumbColor={isEnabled ? '#ffffff' : '#ffffff'}
-            />
+            <View style={styles.toggleControl}>
+              <Switch
+                value={isEnabled}
+                onValueChange={handleToggleNotifications}
+                disabled={isLoading}
+                accessibilityLabel="새 영상 알림"
+                accessibilityState={{ checked: isEnabled, disabled: isLoading }}
+                trackColor={{ false: SummaryTheme.colors.pressed, true: SummaryTheme.colors.accent }}
+                thumbColor={isEnabled ? SummaryTheme.colors.onAccent : SummaryTheme.colors.textMuted}
+                ios_backgroundColor={SummaryTheme.colors.pressed}
+              />
+              <Text style={[styles.toggleStatus, isEnabled && styles.toggleStatusEnabled]}>
+                {isEnabled ? '켜짐' : '꺼짐'}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -146,7 +158,7 @@ export default function NotificationSettingsScreen() {
         {permissionStatus !== 'granted' && (
           <View style={styles.warningSection}>
             <View style={styles.warningContent}>
-              <IconSymbol name="exclamationmark.triangle" size={20} color="#f59e0b" />
+              <IconSymbol name="exclamationmark.triangle" size={20} color={SummaryTheme.colors.textPrimary} />
               <View style={styles.warningText}>
                 <Text style={styles.warningTitle}>알림 권한이 필요해요</Text>
                 <Text style={styles.warningDescription}>
@@ -159,7 +171,7 @@ export default function NotificationSettingsScreen() {
               onPress={openSystemSettings}
             >
               <Text style={styles.settingsButtonText}>설정으로 이동</Text>
-              <IconSymbol name="chevron.right" size={16} color="#666666" />
+              <IconSymbol name="chevron.right" size={16} color={SummaryTheme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
         )}
@@ -176,7 +188,7 @@ export default function NotificationSettingsScreen() {
                 기기 설정에서 자세한 알림 옵션을 변경할 수 있어요
               </Text>
             </View>
-            <IconSymbol name="chevron.right" size={20} color="#9ca3af" />
+            <IconSymbol name="chevron.right" size={20} color={SummaryTheme.colors.textMuted} />
           </TouchableOpacity>
         </View>
 
@@ -197,13 +209,13 @@ export default function NotificationSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: SummaryTheme.colors.background,
   },
   scrollView: {
     flex: 1,
   },
   section: {
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.surface,
     marginTop: 16,
     paddingHorizontal: 16,
   },
@@ -212,25 +224,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: SummaryTheme.colors.border,
   },
   settingInfo: {
     flex: 1,
     marginRight: 16,
   },
+  toggleControl: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  toggleStatus: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: SummaryTheme.colors.textMuted,
+  },
+  toggleStatusEnabled: {
+    color: SummaryTheme.colors.textPrimary,
+  },
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 20,
   },
   warningSection: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: SummaryTheme.colors.accentSoft,
     marginTop: 16,
     marginHorizontal: 16,
     borderRadius: 12,
@@ -248,29 +272,29 @@ const styles = StyleSheet.create({
   warningTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#92400e',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 4,
   },
   warningDescription: {
     fontSize: 14,
-    color: '#a16207',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 20,
   },
   settingsButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.pressed,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#d97706',
+    borderColor: SummaryTheme.colors.border,
   },
   settingsButtonText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#d97706',
+    color: SummaryTheme.colors.textPrimary,
     marginRight: 8,
   },
   infoSection: {
@@ -281,12 +305,12 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 12,
   },
   infoText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 22,
   },
 });

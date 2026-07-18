@@ -2,24 +2,24 @@ import { TabHeader } from '@/components/AppHeader';
 import { ChannelFilterBar } from '@/components/ChannelFilterBar';
 import { EmptyState } from '@/components/EmptyState';
 import { SummaryCard } from '@/components/SummaryCard';
+import { ShookLoadingScreen } from '@/components/ShookLoadingScreen';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useChannels } from '@/contexts/ChannelsContext';
 import { SummaryCardData, transformVideoSummaryToCardData, useVideoSummariesCached } from '@/hooks/useVideoSummariesCached';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
-import { useIsFocused } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TEST_IDS } from '@/constants/test-ids';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 
 export default function SummariesScreen() {
   const { width } = useWindowDimensions();
   const listWidth = Math.min(width, 752);
   uiLogger.debug('[SummariesScreen] Component mounting/re-rendering');
 
-  const isFocused = useIsFocused();
   const params = useLocalSearchParams();
   const fromNotification = params.fromNotification === 'true';
   const { user } = useAuthStore();
@@ -37,7 +37,6 @@ export default function SummariesScreen() {
     cacheData,
     cachePrimed,
     queryState,
-    removeChannelVideos,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
@@ -166,7 +165,7 @@ export default function SummariesScreen() {
     if (isFetchingNextPage) {
       return (
         <View style={styles.footerLoading}>
-          <ActivityIndicator size="small" color="#4285f4" />
+          <ActivityIndicator size="small" color={SummaryTheme.colors.accent} />
         </View>
       );
     }
@@ -187,10 +186,7 @@ export default function SummariesScreen() {
   if (isLoading && videoSummaries.length === 0 && !hasCachedSummaries) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4285f4" />
-          <Text style={styles.loadingText}>요약을 불러오는 중...</Text>
-        </View>
+        <ShookLoadingScreen message="요약을 불러오는 중..." />
       </SafeAreaView>
     );
   }
@@ -227,7 +223,10 @@ export default function SummariesScreen() {
       style={styles.container}
       edges={['top', 'left', 'right']}
     >
-      <TabHeader title="요약 리스트" />
+      <TabHeader
+        title="요약 리스트"
+        titlePrefix={<Image source={require('../../assets/images/Shook.png')} style={styles.titleLogo} resizeMode="contain" />}
+      />
 
       <ChannelFilterBar
         selectedChannelId={selectedChannelId}
@@ -250,7 +249,7 @@ export default function SummariesScreen() {
         <FlatList
           testID={TEST_IDS.summaries.list}
           style={styles.list}
-          endFillColor="#ffffff"
+          endFillColor={SummaryTheme.colors.background}
           data={summaries}
           renderItem={renderSummaryCard}
           keyExtractor={(item) => item.id}
@@ -267,7 +266,12 @@ export default function SummariesScreen() {
           showsVerticalScrollIndicator={false}
           ListFooterComponent={renderListFooter}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[SummaryTheme.colors.accent]}
+              tintColor={SummaryTheme.colors.accent}
+            />
           }
         />
       )}
@@ -278,30 +282,21 @@ export default function SummariesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.background,
   },
+  titleLogo: { width: 25, height: 25 },
   listContainer: {
     alignSelf: 'center',
     paddingTop: 0,
   },
   list: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.background,
   },
   emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#6b7280',
   },
   footerLoading: {
     paddingVertical: 16,
@@ -309,14 +304,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   retryButton: {
-    backgroundColor: '#4285f4',
+    backgroundColor: SummaryTheme.colors.accent,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: SummaryTheme.colors.onAccent,
     fontSize: 16,
     fontWeight: '600',
   },

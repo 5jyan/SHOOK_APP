@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { apiService, type VideoSummary } from '@/services/api';
 import { videoCacheService } from '@/services/video-cache';
@@ -61,9 +62,47 @@ interface SyncOptions {
 interface BackgroundSyncOptions extends SyncOptions {
   queryClient?: QueryClient;
   reason?: string;
+  force?: boolean;
 }
 
 export class VideoSummariesSyncService {
+  private readonly minSyncIntervalMs = 60_000;
+  private readonly syncStateKeyPrefix = 'video_summaries_sync_state';
+  private inFlightSyncs = new Map<string, Promise<CacheAwareData>>();
+
+  private getSyncStateKey(userId: string): string {
+    return `${this.syncStateKeyPrefix}:${userId}`;
+  }
+
+  private async getSyncState(userId: string): Promise<{ lastCheckedAt: number; dirty: boolean }> {
+    try {
+      const rawState = await AsyncStorage.getItem(this.getSyncStateKey(userId));
+      if (!rawState) {
+        return { lastCheckedAt: 0, dirty: false };
+      }
+      const state = JSON.parse(rawState) as Partial<{ lastCheckedAt: number; dirty: boolean }>;
+      return {
+        lastCheckedAt: typeof state.lastCheckedAt === 'number' ? state.lastCheckedAt : 0,
+        dirty: state.dirty === true,
+      };
+    } catch (error) {
+      serviceLogger.warn('Failed to read video summary sync state', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return { lastCheckedAt: 0, dirty: false };
+    }
+  }
+
+  private async saveSyncState(userId: string, state: { lastCheckedAt: number; dirty: boolean }): Promise<void> {
+    await AsyncStorage.setItem(this.getSyncStateKey(userId), JSON.stringify(state));
+  }
+
+  async markSyncNeeded(userId?: string | null): Promise<void> {
+    if (!userId) return;
+    const state = await this.getSyncState(userId);
+    await this.saveSyncState(userId, { ...state, dirty: true });
+  }
+
   async getCachedData(): Promise<CacheAwareData> {
     const cachedVideos = await videoCacheService.getCachedVideos();
     const cacheStats = await videoCacheService.getCacheStats();
@@ -229,6 +268,55 @@ export class VideoSummariesSyncService {
     }
 
     return result;
+  }
+
+  async syncIfNeeded({
+    userId,
+    existingCursor,
+    queryClient,
+    reason,
+    force = false,
+  }: BackgroundSyncOptions): Promise<CacheAwareData> {
+    if (!userId) {
+      return this.getCachedData();
+    }
+
+    const existingSync = this.inFlightSyncs.get(userId);
+    if (existingSync) {
+      serviceLogger.debug('Joining video summaries sync already in progress', { reason });
+      return existingSync;
+    }
+
+    const state = await this.getSyncState(userId);
+    const syncStartedDuringStateCheck = this.inFlightSyncs.get(userId);
+    if (syncStartedDuringStateCheck) {
+      serviceLogger.debug('Joining video summaries sync started during state check', { reason });
+      return syncStartedDuringStateCheck;
+    }
+    const elapsedMs = Date.now() - state.lastCheckedAt;
+    if (!force && !state.dirty && elapsedMs < this.minSyncIntervalMs) {
+      serviceLogger.debug('Skipping recent video summaries sync', { reason, elapsedMs });
+      return queryClient?.getQueryData<CacheAwareData>(getVideoSummariesQueryKey(userId))
+        ?? this.getCachedData();
+    }
+
+    const syncPromise = this.syncInBackground({
+      userId,
+      existingCursor,
+      ...(queryClient ? { queryClient } : {}),
+      ...(reason ? { reason } : {}),
+    });
+    this.inFlightSyncs.set(userId, syncPromise);
+
+    try {
+      const result = await syncPromise;
+      await this.saveSyncState(userId, { lastCheckedAt: Date.now(), dirty: false });
+      return result;
+    } finally {
+      if (this.inFlightSyncs.get(userId) === syncPromise) {
+        this.inFlightSyncs.delete(userId);
+      }
+    }
   }
 }
 

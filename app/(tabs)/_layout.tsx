@@ -8,12 +8,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HapticTab } from '@/components/HapticTab';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { TEST_IDS } from '@/constants/test-ids';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
@@ -47,29 +45,33 @@ export default function TabLayout() {
     <ProtectedRoute>
       <Tabs
           screenOptions={{
-            tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+            tabBarActiveTintColor: SummaryTheme.colors.textPrimary,
+            tabBarInactiveTintColor: SummaryTheme.colors.textMuted,
             headerShown: false,
             tabBarButton: HapticTab,
             tabBarStyle: Platform.select({
               ios: {
                 position: 'absolute',
+                backgroundColor: SummaryTheme.colors.surface,
                 paddingBottom: bottomInset,
-                height: 62 + bottomInset,
+                height: 50 + bottomInset,
                 borderTopWidth: 1,
-                borderTopColor: '#e5e7eb',
+                borderTopColor: SummaryTheme.colors.border,
               },
               android: {
+                backgroundColor: SummaryTheme.colors.surface,
                 paddingBottom: bottomInset,
                 height: 57 + bottomInset + androidFontHeight,
                 paddingTop: 8,
                 borderTopWidth: 1,
-                borderTopColor: '#e5e7eb',
+                borderTopColor: SummaryTheme.colors.border,
               },
               default: {
+                backgroundColor: SummaryTheme.colors.surface,
                 paddingBottom: bottomInset,
-                height: 57 + bottomInset,
+                height: 53 + bottomInset,
                 borderTopWidth: 1,
-                borderTopColor: '#e5e7eb',
+                borderTopColor: SummaryTheme.colors.border,
               },
             }),
           }}>

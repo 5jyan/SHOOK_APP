@@ -1,5 +1,6 @@
 ﻿import { AdvancedUIDebuggerButton } from '@/components/AdvancedUIDebuggerButton';
 import { ModalHeader } from '@/components/AppHeader';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 import { BackendTestButton } from '@/components/BackendTestButton';
 import { CacheStatsButton } from '@/components/CacheStatsButton';
 import { ForceCacheResetButton } from '@/components/ForceCacheResetButton';
@@ -51,7 +52,7 @@ export default function DeveloperToolsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.background,
   },
   scrollView: {
     flex: 1,
@@ -62,7 +63,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 16,
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 24,
     marginBottom: 32,
     textAlign: 'center',
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 12,
   },
 });

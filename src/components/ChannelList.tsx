@@ -1,4 +1,3 @@
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useChannels } from '@/contexts/ChannelsContext';
 import { apiService, type PopularChannel, type UserChannel } from '@/services/api';
 import { popularChannelsCacheService } from '@/services/popular-channels-cache';
@@ -7,6 +6,9 @@ import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
 import { formatChannelStats } from '@/utils/number-format';
 import { TEST_IDS } from '@/constants/test-ids';
+import { SummaryTheme } from '@/constants/SummaryTheme';
+import { ShookLoadingScreen } from '@/components/ShookLoadingScreen';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import React from 'react';
@@ -26,11 +28,12 @@ import {
 
 interface ChannelListProps {
   onChannelDeleted?: (channelId: string) => void;
+  onChannelAdded?: (channelId: string) => void;
   refreshControl?: React.ReactElement<RefreshControlProps>;
   tabBarHeight?: number;
 }
 
-export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0 }: ChannelListProps) {
+export function ChannelList({ onChannelDeleted, onChannelAdded, refreshControl, tabBarHeight = 0 }: ChannelListProps) {
   const { width } = useWindowDimensions();
   const { channels, isLoading, error, deleteChannel, refreshChannels, channelCount } = useChannels();
   const { user } = useAuthStore();
@@ -186,8 +189,8 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
           queryClient.invalidateQueries({ queryKey: ['videoSummariesCached', user?.id] });
         }
 
-        Alert.alert('추가 완료', `${channelTitle} 채널을 추가했어요.`);
         await refreshChannels();
+        onChannelAdded?.(channel.channelId);
       } else {
         Alert.alert('오류', response.error || '채널 추가에 실패했습니다.');
       }
@@ -209,7 +212,19 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
     }
 
     if (subscribedChannelIds.has(channel.channelId)) {
-      Alert.alert('이미 추가됨', '이미 구독 중인 채널입니다.');
+      Alert.alert('이미 추가됨', '이미 추가한 채널입니다.');
+      return;
+    }
+
+    if (user.isGuest === true && user.role !== 'tester' && user.role !== 'manager' && channelCount >= 1) {
+      Alert.alert(
+        '계정 연동이 필요해요',
+        '게스트 계정은 채널 1개까지 추가할 수 있어요. 계정을 연동하면 채널을 더 추가할 수 있습니다.',
+        [
+          { text: '취소', style: 'cancel' },
+          { text: '계정 연동', onPress: () => router.push('/sns-link') },
+        ],
+      );
       return;
     }
 
@@ -243,14 +258,13 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
           pressed && styles.channelItemPressed
         ]}
         onPress={() => handleChannelPress(item)}
-        android_ripple={{ color: '#e5e7eb', borderless: false }}
+        android_ripple={{ color: SummaryTheme.colors.pressed, borderless: false }}
       >
-        {/* 우측 상단 하트 버튼 */}
         <TouchableOpacity
           testID={TEST_IDS.channels.delete(item.youtubeChannel.channelId)}
           accessibilityRole="button"
-          accessibilityLabel={`${item.youtubeChannel.title} 채널 삭제`}
-          style={styles.heartButton}
+          accessibilityLabel={`${item.youtubeChannel.title} 채널 구독 취소`}
+          style={styles.removeButton}
           onPress={(e) => {
             // Prevent parent Pressable from firing
             e.stopPropagation();
@@ -259,7 +273,11 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
           disabled={deletingChannelId === item.youtubeChannel.channelId}
           activeOpacity={0.6}
         >
-          <IconSymbol name="heart.fill" size={20} color="#ef4444" />
+          {deletingChannelId === item.youtubeChannel.channelId ? (
+            <ActivityIndicator size="small" color={SummaryTheme.colors.textMuted} />
+          ) : (
+            <MaterialCommunityIcons name="minus-circle-outline" size={22} color={SummaryTheme.colors.textMuted} />
+          )}
         </TouchableOpacity>
 
         <View style={styles.channelContent}>
@@ -295,6 +313,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
               {item.createdAt ? formatDate(item.createdAt) : '날짜 없음'}에 추가됨
             </Text>
           </View>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={SummaryTheme.colors.textMuted} />
         </View>
       </Pressable>
     );
@@ -315,10 +334,13 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
             return (
               <TouchableOpacity
                 key={channel.channelId}
+                testID={TEST_IDS.channels.popular(channel.channelId)}
                 style={[styles.popularCard, isAdding && styles.popularCardDisabled]}
                 onPress={() => handleAddPopularChannel(channel)}
                 activeOpacity={0.7}
                 disabled={isAdding}
+                accessibilityRole="button"
+                accessibilityLabel={`${channel.title || '추천'} 채널 추가`}
               >
                 <View style={styles.popularBadge}>
                   <Text style={styles.popularBadgeText}>{`TOP${channel.rank}`}</Text>
@@ -366,10 +388,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
 
   if (isLoading && channels.length === 0) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4285f4" />
-        <Text style={styles.loadingText}>채널 목록을 불러오는 중...</Text>
-      </View>
+      <ShookLoadingScreen message="채널 목록을 불러오는 중..." />
     );
   }
 
@@ -389,7 +408,7 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
       <View style={styles.container}>
         {renderPopularSection({ fullBleed: false })}
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>구독 중인 채널이 없습니다</Text>
+          <Text style={styles.emptyTitle}>추가한 채널이 없습니다</Text>
           <Text style={styles.emptyDescription}>
             우측 상단의 추가 버튼을 사용하여 YouTube 채널을 추가해보세요.
           </Text>
@@ -424,18 +443,19 @@ export function ChannelList({ onChannelDeleted, refreshControl, tabBarHeight = 0
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: SummaryTheme.colors.background,
   },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
+    borderBottomColor: SummaryTheme.colors.border,
+    backgroundColor: SummaryTheme.colors.background,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: SummaryTheme.colors.textPrimary,
   },
   listContainer: {
     alignSelf: 'center',
@@ -449,26 +469,34 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   popularSection: {
-    marginBottom: 10,
+    marginBottom: 18,
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 16,
-    backgroundColor: '#f3f4f6',
+    paddingTop: 16,
+    paddingBottom: 18,
+    backgroundColor: SummaryTheme.colors.background,
   },
   popularSectionFullBleed: {
     marginHorizontal: -16,
   },
+  popularSectionEyebrow: {
+    color: SummaryTheme.colors.accent,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    marginBottom: 4,
+  },
   popularSectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: '800',
+    color: SummaryTheme.colors.textPrimary,
+    marginBottom: 14,
+    letterSpacing: -0.3,
   },
   myChannelsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: '800',
+    color: SummaryTheme.colors.textPrimary,
+    marginBottom: 14,
   },
   myChannelsTitleStandalone: {
     marginTop: 16,
@@ -479,37 +507,36 @@ const styles = StyleSheet.create({
   },
   popularCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    paddingVertical: 12,
+    backgroundColor: SummaryTheme.colors.accentSoft,
+    borderRadius: 18,
+    paddingVertical: 14,
     paddingHorizontal: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: SummaryTheme.colors.border,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
     elevation: 1,
   },
   popularCardDisabled: {
     opacity: 0.6,
   },
   popularBadge: {
-    borderWidth: 1,
-    borderColor: '#818cf8',
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
     marginBottom: 8,
+    backgroundColor: SummaryTheme.colors.accentSoft,
   },
   popularBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#6366f1',
+    color: SummaryTheme.colors.accent,
   },
   popularThumbnail: {
     width: 44,
@@ -518,77 +545,76 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   popularPlaceholder: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: SummaryTheme.colors.pending,
     justifyContent: 'center',
     alignItems: 'center',
   },
   popularPlaceholderText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
   },
   popularTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#111827',
+    color: SummaryTheme.colors.textPrimary,
     textAlign: 'center',
     marginBottom: 4,
   },
   popularSubscribers: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: SummaryTheme.colors.textMuted,
     textAlign: 'center',
   },
   channelItem: {
     position: 'relative',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: SummaryTheme.colors.surface,
+    borderRadius: SummaryTheme.radius.card,
+    padding: 18,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: SummaryTheme.colors.border,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 1,
     },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 14,
+    elevation: 2,
   },
   channelItemPressed: {
-    backgroundColor: '#f9fafb',
-    transform: [{ scale: 0.98 }],
-    opacity: 0.8,
+    backgroundColor: SummaryTheme.colors.pressed,
+    opacity: 0.82,
   },
   channelContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   channelThumbnail: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     marginRight: 16,
   },
   placeholderThumbnail: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: SummaryTheme.colors.pending,
     justifyContent: 'center',
     alignItems: 'center',
   },
   placeholderText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
   },
   channelInfo: {
     flex: 1,
   },
   channelTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
+    fontSize: 17,
+    fontWeight: '800',
+    color: SummaryTheme.colors.textPrimary,
+    marginBottom: 6,
   },
   channelStats: {
     flexDirection: 'row',
@@ -598,33 +624,25 @@ const styles = StyleSheet.create({
   },
   subscriberCount: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: SummaryTheme.colors.textSecondary,
   },
   videoCount: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: SummaryTheme.colors.textSecondary,
   },
   addedDate: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: SummaryTheme.colors.textMuted,
   },
-  heartButton: {
+  removeButton: {
     position: 'absolute',
-    top: 8,
-    right: 12,
+    top: 6,
+    right: 6,
     zIndex: 1,
-    padding: 8,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    width: 44,
+    height: 44,
     alignItems: 'center',
-    padding: 32,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginTop: 16,
+    justifyContent: 'center',
   },
   errorContainer: {
     flex: 1,
@@ -639,13 +657,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: '#4285f4',
+    backgroundColor: SummaryTheme.colors.accent,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: SummaryTheme.colors.onAccent,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -658,12 +676,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 8,
   },
   emptyDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },

@@ -23,9 +23,19 @@ tags:
 - tapOn:
     id: "channel-add-e2e-channel-add-target"
 - extendedWaitUntil:
-    visible: "성공"
+    visible:
+      id: "first-channel-guide"
     timeout: 10000
-- tapOn: "확인|OK"
+- tapOn:
+    id: "first-channel-guide-confirm"
+- extendedWaitUntil:
+    visible:
+      id: "screen-summaries"
+    timeout: 10000
+- assertVisible:
+    id: "summary-channel-filter-e2e-channel-add-target-selected"
+- tapOn:
+    id: "tab-channels"
 - extendedWaitUntil:
     visible:
       id: "channel-row-e2e-channel-add-target"

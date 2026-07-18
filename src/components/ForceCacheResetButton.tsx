@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { videoCacheService } from '@/services/video-cache-enhanced';
 import { cacheLogger } from '@/utils/logger-enhanced';
 import { useQueryClient } from '@tanstack/react-query';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 
 export function ForceCacheResetButton() {
   const [isResetting, setIsResetting] = useState(false);
@@ -77,7 +78,7 @@ export function ForceCacheResetButton() {
     >
       <View style={styles.content}>
         {isResetting ? (
-          <ActivityIndicator size="small" color="#ffffff" />
+          <ActivityIndicator size="small" color={SummaryTheme.colors.textPrimary} />
         ) : (
           <>
             <Text style={styles.emoji}>🔥</Text>
@@ -96,7 +97,7 @@ export function ForceCacheResetButton() {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#dc2626',
+    backgroundColor: SummaryTheme.colors.pressed,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -118,11 +119,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 4,
   },
   description: {
     fontSize: 14,
-    color: '#fecaca',
+    color: SummaryTheme.colors.textSecondary,
   },
 });

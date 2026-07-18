@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { kakaoAuthService } from '@/services/kakao-auth';
 import { apiService } from '@/services/api';
+import { getOrCreateDeviceId } from '@/services/device-id';
 import { useAuthStore } from '@/stores/auth-store';
 import { authLogger } from '@/utils/logger-enhanced';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { notificationService } from '@/services/notification';
 
 export function useKakaoAuth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -47,17 +47,6 @@ export function useKakaoAuth() {
       // 4. 채널 변경 플래그 초기화 (첫 로그인) - 제거하거나 타임스탬프 0으로 설정
       await AsyncStorage.removeItem('channel_list_changed');
 
-      // 5. 푸시 알림 초기화
-      try {
-        await notificationService.initialize();
-        authLogger.info('Notifications initialized after Kakao login');
-      } catch (notifError) {
-        authLogger.error('Failed to initialize notifications', {
-          error: notifError instanceof Error ? notifError.message : String(notifError),
-        });
-        // 알림 초기화 실패는 로그인 성공에 영향 없음
-      }
-
       authLogger.info('Kakao authentication flow completed successfully');
     } catch (err) {
       const errorMessage =
@@ -82,7 +71,7 @@ export function useKakaoAuth() {
 
       authLogger.info('Starting Kakao sign out');
 
-      const deviceId = await notificationService.getDeviceIdForBackend();
+      const deviceId = await getOrCreateDeviceId();
       const backendLogout = await apiService.logout(deviceId);
       if (!backendLogout.success) {
         throw new Error(backendLogout.error || '서버 로그아웃에 실패했습니다.');

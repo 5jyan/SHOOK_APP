@@ -8,6 +8,8 @@ import {
   View,
 } from 'react-native';
 import { TEST_IDS } from '@/constants/test-ids';
+import { SummaryTheme } from '@/constants/SummaryTheme';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 interface SummaryData {
   id: string;
@@ -30,8 +32,18 @@ interface SummaryCardProps {
 
 export function SummaryCard({ summary, onPress }: SummaryCardProps) {
   const isPending = !summary.isSummarized;
-  const { fontScale } = useWindowDimensions();
-  const thumbnailSize = { width: 160, height: 90 };
+  const { width, fontScale } = useWindowDimensions();
+  const contentWidth = Math.min(width, 752);
+  const thumbnailWidth = Math.min(176, Math.max(136, contentWidth * 0.36));
+  const thumbnailHeight = thumbnailWidth * 9 / 16;
+  const effectiveFontScale = Math.min(fontScale, 1.4);
+  const titleLineHeight = 17 * effectiveFontScale;
+  const titleHeightBudget = thumbnailHeight
+    - styles.textContent.paddingTop
+    - styles.videoTitle.marginBottom
+    - styles.channelAvatar.height;
+  const titleLines = Math.max(1, Math.min(3, Math.floor(titleHeightBudget / titleLineHeight)));
+  const thumbnailSize = { width: thumbnailWidth, height: thumbnailHeight };
 
   const formatTimeAgo = (dateString: string): string => {
     const date = new Date(dateString);
@@ -61,7 +73,7 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
     <Pressable 
       testID={TEST_IDS.summaries.row(summary.videoId)}
       accessibilityRole="button"
-      accessibilityLabel={`${summary.videoTitle} 요약 열기`}
+      accessibilityLabel={`${summary.videoTitle}${isPending ? ', 요약 준비 중' : ', 요약 열기'}`}
       style={({ pressed }) => [
         styles.listItem,
         isPending && styles.listItemPending,
@@ -77,6 +89,16 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
             style={styles.videoThumbnail}
             resizeMode="cover"
           />
+          {isPending && (
+            <View
+              testID={TEST_IDS.summaries.pendingIcon(summary.videoId)}
+              style={styles.pendingThumbnailOverlay}
+            >
+              <View style={styles.pendingIconSurface}>
+                <MaterialCommunityIcons name="timer-sand" size={22} color={SummaryTheme.colors.textPrimary} />
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Content */}
@@ -84,8 +106,8 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
           {/* Video Title */}
           <Text
             style={styles.videoTitle}
-            numberOfLines={fontScale > 1.2 ? 3 : 2}
-            maxFontSizeMultiplier={1}
+            numberOfLines={titleLines}
+            maxFontSizeMultiplier={1.4}
           >
             {summary.videoTitle}
           </Text>
@@ -97,8 +119,12 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
               resizeMode="cover"
             />
             
-            <Text style={styles.metadataText} numberOfLines={1} maxFontSizeMultiplier={1}>
-              {summary.channelName.trim()} · {formatTimeAgo(summary.publishedAt)}
+            <Text
+              style={[styles.metadataText, isPending && styles.metadataTextPending]}
+              numberOfLines={1}
+              maxFontSizeMultiplier={1}
+            >
+              {summary.channelName.trim()} · {isPending ? '요약 준비 중' : formatTimeAgo(summary.publishedAt)}
             </Text>
           </View>
           
@@ -110,7 +136,7 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
 
 const styles = StyleSheet.create({
   listItem: {
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.background,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
@@ -118,7 +144,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   listItemPressed: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: SummaryTheme.colors.pressed,
   },
   listContent: {
     flexDirection: 'row',
@@ -128,10 +154,26 @@ const styles = StyleSheet.create({
     marginRight: 16,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: SummaryTheme.colors.pending,
   },
   videoThumbnail: {
     ...StyleSheet.absoluteFillObject,
+  },
+  pendingThumbnailOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(16, 16, 19, 0.48)',
+  },
+  pendingIconSurface: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: 'rgba(23, 23, 28, 0.88)',
+    borderWidth: 1,
+    borderColor: SummaryTheme.colors.border,
   },
   textContent: {
     flex: 1,
@@ -140,7 +182,7 @@ const styles = StyleSheet.create({
   videoTitle: {
     fontSize: 15,
     fontWeight: '400',
-    color: '#0f0f0f',
+    color: SummaryTheme.colors.textPrimary,
     lineHeight: 17,
     marginBottom: 2,
   },
@@ -152,13 +194,16 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: SummaryTheme.colors.pending,
     marginRight: 6,
   },
   metadataText: {
     fontSize: 12,
-    color: '#606060',
+    color: SummaryTheme.colors.textSecondary,
     fontWeight: '400',
     flex: 1,
+  },
+  metadataTextPending: {
+    color: SummaryTheme.colors.textPrimary,
   },
 });

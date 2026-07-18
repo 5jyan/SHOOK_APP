@@ -4,7 +4,7 @@ import { uiLogger, authLogger } from '@/utils/logger-enhanced';
 import { apiService } from '@/services/api';
 import { getOrCreateDeviceId, isE2EMode } from '@/services/device-id';
 import { bootstrapAuth, type BootstrapUser } from '@/services/auth-bootstrap';
-import { Image, StyleSheet, View } from 'react-native';
+import { ShookLoadingScreen } from '@/components/ShookLoadingScreen';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -62,30 +62,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (isLoading || isInitializing) {
     uiLogger.debug('Auth loading or initializing');
-    return (
-      <View style={styles.startupPlaceholder}>
-        <Image
-          source={require('../../assets/images/shook-splash-v2.png')}
-          style={styles.startupImage}
-          resizeMode="contain"
-        />
-      </View>
-    );
+    return <ShookLoadingScreen message="앱을 준비하는 중..." />;
   }
 
   uiLogger.debug('Auth ready, rendering protected content');
   return <>{children}</>;
 }
-
-const styles = StyleSheet.create({
-  startupPlaceholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fffcf7',
-  },
-  startupImage: {
-    width: 220,
-    height: 220,
-  },
-});

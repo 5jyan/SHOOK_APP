@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, Modal } from 'react-native';
 import { videoCacheService } from '@/services/video-cache';
 import { uiLogger } from '@/utils/logger-enhanced';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 
 export function CacheStatsButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -172,27 +173,27 @@ export function CacheStatsButton() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: SummaryTheme.colors.border,
     marginBottom: 8,
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 8,
   },
   description: {
     fontSize: 14,
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
     marginBottom: 12,
     lineHeight: 20,
   },
   button: {
-    backgroundColor: '#6b7280',
+    backgroundColor: SummaryTheme.colors.pressed,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: '#ffffff',
+    color: SummaryTheme.colors.textPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -214,28 +215,28 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: SummaryTheme.colors.background,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: SummaryTheme.colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: SummaryTheme.colors.textPrimary,
   },
   closeButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   closeButtonText: {
-    color: '#3b82f6',
+    color: SummaryTheme.colors.textSecondary,
     fontSize: 16,
     fontWeight: '500',
   },
@@ -243,26 +244,26 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   statCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: SummaryTheme.colors.border,
   },
   statLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
     marginBottom: 4,
   },
   statValue: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: SummaryTheme.colors.textPrimary,
   },
   statSubValue: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: SummaryTheme.colors.textMuted,
     marginTop: 2,
   },
 });

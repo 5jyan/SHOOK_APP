@@ -1,4 +1,5 @@
 import { ModalHeader } from '@/components/AppHeader';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -137,7 +138,7 @@ export default function PrivacyPolicyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.background,
   },
   scrollView: {
     flex: 1,
@@ -151,11 +152,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: SummaryTheme.colors.border,
   },
   metaText: {
     fontSize: 14,
-    color: '#666666',
+    color: SummaryTheme.colors.textMuted,
   },
   section: {
     marginBottom: 24,
@@ -163,18 +164,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 12,
   },
   text: {
     fontSize: 14,
-    color: '#555555',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 20,
     marginBottom: 8,
   },
   subText: {
     fontSize: 14,
-    color: '#666666',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 20,
     marginLeft: 12,
   },
@@ -182,17 +183,17 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: SummaryTheme.colors.border,
   },
   footerText: {
     fontSize: 13,
-    color: '#888888',
+    color: SummaryTheme.colors.textMuted,
     lineHeight: 18,
     marginBottom: 12,
   },
   copyright: {
     fontSize: 12,
-    color: '#aaaaaa',
+    color: SummaryTheme.colors.textMuted,
     textAlign: 'center',
   },
 });

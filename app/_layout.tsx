@@ -3,15 +3,17 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { QueryClientProvider } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
+import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
 import { useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, AppStateStatus, InteractionManager, Linking, Platform, Pressable, StatusBar as NativeStatusBar, StyleSheet, Text, View } from 'react-native';
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { FloatingDebugButton } from '@/components/FloatingDebugButton';
 import { GlobalUIDebugger } from '@/components/GlobalUIDebugger';
@@ -21,6 +23,12 @@ import { queryClient, restoreQueryClient } from '@/lib/query-client';
 import { CacheTransaction } from '@/services/cache/CacheTransaction';
 import { notificationService } from '@/services/notification';
 import { videoCacheService } from '@/services/video-cache-enhanced';
+import {
+  type CacheAwareData,
+  getVideoSummariesQueryKey,
+  videoSummariesSyncService,
+} from '@/services/video-summaries-sync';
+import { useAuthStore } from '@/stores/auth-store';
 import { configLogger } from '@/utils/logger-enhanced';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -34,26 +42,32 @@ export default function RootLayout() {
   const [isAppReady, setIsAppReady] = useState(false);
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const hasHandledInitialNotification = useRef(false);
+  const hasCompletedColdStart = useRef(false);
+  const isUpdateCheckInFlight = useRef(false);
+  const isSummarySyncInFlight = useRef(false);
   const currentVersion = Constants.expoConfig?.version || '0.0.0';
   const minSupportedVersion = Constants.expoConfig?.extra?.minSupportedVersion as string | undefined;
   const appStoreUrl = Constants.expoConfig?.extra?.appStoreUrl as string | undefined;
   const playStoreUrl = Constants.expoConfig?.extra?.playStoreUrl as string | undefined;
   const checkForUpdates = async () => {
+    if (__DEV__ || isUpdateCheckInFlight.current) {
+      return;
+    }
+
+    isUpdateCheckInFlight.current = true;
     try {
-      // Only check in production builds
-      if (!__DEV__) {
-        const update = await Updates.checkForUpdateAsync();
-        if (update.isAvailable) {
-          configLogger.info('Update available, downloading...');
-          await Updates.fetchUpdateAsync();
-          configLogger.info('Update downloaded, reloading app...');
-          await Updates.reloadAsync();
-        }
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        configLogger.info('Update available, downloading in background...');
+        await Updates.fetchUpdateAsync();
+        configLogger.info('Update downloaded; it will be applied on the next app launch');
       }
     } catch (error) {
       configLogger.error('Update check failed', {
         error: error instanceof Error ? error.message : String(error)
       });
+    } finally {
+      isUpdateCheckInFlight.current = false;
     }
   };
 
@@ -97,13 +111,44 @@ export default function RootLayout() {
     }
   };
 
+  const syncSummariesOnForeground = async () => {
+    const userId = useAuthStore.getState().user?.id;
+    if (!userId || isSummarySyncInFlight.current) {
+      return;
+    }
+
+    isSummarySyncInFlight.current = true;
+    try {
+      const queryKey = getVideoSummariesQueryKey(userId);
+      const existingData = queryClient.getQueryData<CacheAwareData>(queryKey);
+      await videoSummariesSyncService.syncIfNeeded({
+        userId,
+        existingCursor: existingData?.nextCursor,
+        queryClient,
+        reason: 'app_foreground',
+      });
+    } catch (error) {
+      configLogger.error('Failed to sync summaries after app foreground', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      isSummarySyncInFlight.current = false;
+    }
+  };
+
   // Auto-update on app foreground (background -> active)
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       // App moved from background to foreground
-      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+      if (
+        hasCompletedColdStart.current &&
+        appState.current === 'background' &&
+        nextAppState === 'active'
+      ) {
+        void Notifications.setBadgeCountAsync(0);
         configLogger.info('App foregrounded, checking for updates');
-        checkForUpdates();
+        void checkForUpdates();
+        void syncSummariesOnForeground();
       }
       appState.current = nextAppState;
     });
@@ -165,10 +210,15 @@ export default function RootLayout() {
       // Restore persisted queries
       await restoreQueryClient();
 
-      // Check for OTA updates on cold start too
-      await checkForUpdates();
-
+      hasCompletedColdStart.current = true;
+      void Notifications.setBadgeCountAsync(0);
       setIsAppReady(true);
+
+      // Do not block the first screen on a network request. Download available
+      // updates after initial rendering and let Expo apply them next launch.
+      InteractionManager.runAfterInteractions(() => {
+        void checkForUpdates();
+      });
     };
     
     // Setup notification listeners
@@ -220,10 +270,13 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <ChannelsProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <GestureHandlerRootView
+      style={[styles.root, Platform.OS === 'android' && styles.androidRoot]}
+    >
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <ChannelsProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
               <Stack.Screen name="+not-found" />
@@ -242,17 +295,29 @@ export default function RootLayout() {
               <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
               <Stack.Screen name="sns-link" options={{ headerShown: false }} />
             </Stack>
-            <StatusBar style="dark" />
+            <StatusBar
+              style="light"
+              backgroundColor="#101013"
+              translucent={false}
+            />
             <FloatingDebugButton />
             <GlobalUIDebugger />
-          </ThemeProvider>
-        </ChannelsProvider>
-      </QueryClientProvider>
+            </ThemeProvider>
+          </ChannelsProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#101013',
+  },
+  androidRoot: {
+    paddingTop: NativeStatusBar.currentHeight ?? 24,
+  },
   forceUpdateContainer: {
     flex: 1,
     alignItems: 'center',

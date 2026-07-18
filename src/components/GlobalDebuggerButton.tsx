@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useDebuggerStore } from '@/stores/debugger-store';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 
 export const GlobalDebuggerButton: React.FC = () => {
   const { isActive, toggleDebugger } = useDebuggerStore();
@@ -23,7 +24,7 @@ export const GlobalDebuggerButton: React.FC = () => {
           <MaterialIcons 
             name={isActive ? "visibility" : "visibility-off"} 
             size={20} 
-            color={isActive ? "#ffffff" : "#6366f1"} 
+            color={SummaryTheme.colors.textPrimary}
           />
         </View>
         <View style={styles.textContainer}>
@@ -52,7 +53,7 @@ export const GlobalDebuggerButton: React.FC = () => {
           <MaterialIcons 
             name={isActive ? "toggle-on" : "toggle-off"} 
             size={24} 
-            color={isActive ? "#10b981" : "#9ca3af"} 
+            color={isActive ? SummaryTheme.colors.textPrimary : SummaryTheme.colors.textMuted}
           />
         </View>
       </TouchableOpacity>
@@ -67,27 +68,27 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f9ff',
+    backgroundColor: SummaryTheme.colors.surface,
     borderWidth: 2,
-    borderColor: '#bae6fd',
+    borderColor: SummaryTheme.colors.border,
     borderRadius: 12,
     padding: 16,
     gap: 12,
   },
   activeButton: {
-    backgroundColor: '#1e40af',
-    borderColor: '#1e40af',
+    backgroundColor: SummaryTheme.colors.pressed,
+    borderColor: SummaryTheme.colors.textMuted,
   },
   iconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#dbeafe',
+    backgroundColor: SummaryTheme.colors.pressed,
     justifyContent: 'center',
     alignItems: 'center',
   },
   activeIconContainer: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: SummaryTheme.colors.textMuted,
   },
   textContainer: {
     flex: 1,
@@ -95,19 +96,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 4,
   },
   activeTitle: {
-    color: '#ffffff',
+    color: SummaryTheme.colors.textPrimary,
   },
   description: {
     fontSize: 14,
-    color: '#6b7280',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 20,
   },
   activeDescription: {
-    color: '#e5e7eb',
+    color: SummaryTheme.colors.textSecondary,
   },
   statusText: {
     fontSize: 12,

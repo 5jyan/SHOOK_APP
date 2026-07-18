@@ -1,55 +1,25 @@
-﻿import { TabHeader } from '@/components/AppHeader';
+﻿import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { TabHeader } from '@/components/AppHeader';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 import { apiService } from '@/services/api';
-import { notificationService } from '@/services/notification';
 import { useAuthStore } from '@/stores/auth-store';
 import { uiLogger } from '@/utils/logger-enhanced';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TEST_IDS } from '@/constants/test-ids';
 
 export default function SettingsScreen() {
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const contentWidth = Math.min(width, 752);
-  const isShortScreen = height < 700;
   const { user, logout } = useAuthStore();
   const [isLoading, setIsLoading] = React.useState(false);
   const tabBarHeight = useBottomTabOverflow();
   const appVersion = Constants.expoConfig?.version ?? '알 수 없음';
   const contentVersion = Constants.expoConfig?.extra?.contentVersion ?? appVersion;
-
-  const handleLogout = () => {
-    Alert.alert(
-      '로그아웃',
-      '정말 로그아웃하시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '로그아웃',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setIsLoading(true);
-              const deviceId = await notificationService.getDeviceIdForBackend();
-              const response = await apiService.logout(deviceId);
-              if (!response.success) {
-                throw new Error(response.error || '서버 로그아웃에 실패했습니다.');
-              }
-              logout();
-              router.replace('/');
-            } catch (error) {
-              console.error('Logout error:', error);
-            } finally {
-              setIsLoading(false);
-            }
-          },
-        },
-      ]
-    );
-  };
 
   const handleDeveloperToolsPress = () => {
     router.push('/developer-tools');
@@ -122,6 +92,8 @@ export default function SettingsScreen() {
 
   const settingsItems = [
     {
+      section: '계정',
+      icon: 'account-circle-outline' as const,
       testID: TEST_IDS.settings.snsLink,
       title: 'SNS 계정 연동',
       description: 'Shook 계정을 카카오 계정과 연동합니다',
@@ -130,6 +102,8 @@ export default function SettingsScreen() {
       },
     },
     {
+      section: '환경 설정',
+      icon: 'bell-outline' as const,
       testID: TEST_IDS.settings.notifications,
       title: '알림 설정',
       description: '푸시 알림과 알림 주기를 설정합니다',
@@ -139,6 +113,8 @@ export default function SettingsScreen() {
       },
     },
     {
+      section: '서비스 안내',
+      icon: 'shield-account-outline' as const,
       testID: TEST_IDS.settings.privacy,
       title: '개인정보처리방침',
       description: '개인정보 수집 및 이용에 관한 방침을 확인합니다',
@@ -147,6 +123,8 @@ export default function SettingsScreen() {
       },
     },
     {
+      section: '서비스 안내',
+      icon: 'file-document-outline' as const,
       testID: TEST_IDS.settings.terms,
       title: '서비스 이용약관',
       description: '서비스 이용에 관한 약관을 확인합니다',
@@ -155,6 +133,8 @@ export default function SettingsScreen() {
       },
     },
     {
+      section: '서비스 안내',
+      icon: 'information-outline' as const,
       testID: TEST_IDS.settings.appInfo,
       title: '앱 정보',
       description: '버전 정보 및 앱 개발자 정보를 확인합니다',
@@ -170,6 +150,7 @@ export default function SettingsScreen() {
 
   // Developer tools item (only for manager/tester)
   const developerToolsItem = {
+    icon: 'tools' as const,
     title: '개발자 도구',
     description: '개발 및 테스트를 위한 도구들입니다',
     onPress: handleDeveloperToolsPress,
@@ -181,18 +162,7 @@ export default function SettingsScreen() {
       style={styles.container}
       edges={['top', 'left', 'right']}
     >
-      <TabHeader
-        title="설정"
-        rightComponent={
-          // TODO: 카카오 로그인 기능 추가 시 활성화 (카카오 계정 사용자만 로그아웃 가능)
-          // {!user?.isGuest && (
-          //   <TouchableOpacity onPress={handleLogout} disabled={isLoading} style={styles.logoutButton}>
-          //     <IconSymbol name="rectangle.portrait.and.arrow.right" size={24} color="#374151" />
-          //   </TouchableOpacity>
-          // )}
-          undefined
-        }
-      />
+      <TabHeader title="설정" />
 
       <ScrollView
         testID={TEST_IDS.settings.scroll}
@@ -205,57 +175,86 @@ export default function SettingsScreen() {
           },
         ]}
       >
-        <View style={[styles.content, isShortScreen && styles.contentCompact]}>
-          {/* Settings Items */}
-          <View style={styles.settingsContainer}>
-            {settingsItems.map((item, index) => (
-              <Pressable
-                key={index}
-                testID={item.testID}
-                onPress={item.onPress}
-                style={[styles.settingItem, isShortScreen && styles.settingItemCompact]}
-              >
-                <Text style={styles.settingTitle}>
-                  {item.title}
-                </Text>
-                <Text
-                  style={styles.settingDescription}
-                  numberOfLines={item.descriptionLines}
-                  ellipsizeMode="tail"
-                >
-                  {item.description}
-                </Text>
-              </Pressable>
-            ))}
-            
-            {/* Developer Tools Button (only for manager/tester) */}
-            {hasDeveloperAccess && (
-              <Pressable
-                testID={TEST_IDS.settings.developerTools}
-                onPress={developerToolsItem.onPress}
-                style={[styles.settingItem, styles.developerToolsItem]}
-              >
-                <Text style={styles.settingTitle}>
-                  {developerToolsItem.title}
-                </Text>
-                <Text style={styles.settingDescription}>
-                  {developerToolsItem.description}
-                </Text>
-              </Pressable>
-            )}
+        <View style={styles.content}>
+          {['계정', '환경 설정', '서비스 안내'].map((section) => (
+            <View key={section} style={styles.section}>
+              <Text style={styles.sectionTitle}>{section}</Text>
+              <View style={styles.sectionCard}>
+                {settingsItems.filter((item) => item.section === section).map((item, index, items) => (
+                  <Pressable
+                    key={item.title}
+                    testID={item.testID}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${item.title}, ${item.description}`}
+                    onPress={item.onPress}
+                    style={({ pressed }) => [
+                      styles.settingItem,
+                      index < items.length - 1 && styles.settingItemDivider,
+                      pressed && styles.settingItemPressed,
+                    ]}
+                  >
+                    <View style={styles.settingIcon}>
+                      <MaterialCommunityIcons name={item.icon} size={22} color={SummaryTheme.colors.accent} />
+                    </View>
+                    <View style={styles.settingCopy}>
+                      <Text style={styles.settingTitle}>{item.title}</Text>
+                      <Text style={styles.settingDescription} numberOfLines={2}>{item.description}</Text>
+                    </View>
+                    <MaterialCommunityIcons name="chevron-right" size={22} color={SummaryTheme.colors.textMuted} />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ))}
 
-            <Pressable
-              testID={TEST_IDS.settings.deleteAccount}
-              onPress={handleDeleteAccount}
-              disabled={isLoading}
-              style={styles.settingItem}
-            >
-              <Text style={styles.settingTitle}>회원 탈퇴</Text>
-              <Text style={styles.settingDescription}>
-                계정과 구독·알림 데이터를 영구적으로 삭제합니다
-              </Text>
-            </Pressable>
+          {hasDeveloperAccess && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>개발</Text>
+              <View style={styles.sectionCard}>
+                <Pressable
+                  testID={TEST_IDS.settings.developerTools}
+                  accessibilityRole="button"
+                  accessibilityLabel="개발자 도구"
+                  onPress={developerToolsItem.onPress}
+                  style={({ pressed }) => [styles.settingItem, pressed && styles.settingItemPressed]}
+                >
+                  <View style={[styles.settingIcon, styles.developerIcon]}>
+                    <MaterialCommunityIcons name={developerToolsItem.icon} size={22} color={SummaryTheme.colors.textSecondary} />
+                  </View>
+                  <View style={styles.settingCopy}>
+                    <Text style={styles.settingTitle}>{developerToolsItem.title}</Text>
+                    <Text style={styles.settingDescription}>{developerToolsItem.description}</Text>
+                  </View>
+                  <MaterialCommunityIcons name="chevron-right" size={22} color={SummaryTheme.colors.textMuted} />
+                </Pressable>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>계정 관리</Text>
+            <View style={styles.sectionCard}>
+              <Pressable
+                testID={TEST_IDS.settings.deleteAccount}
+                accessibilityRole="button"
+                accessibilityLabel="회원 탈퇴, 계정과 모든 데이터를 영구적으로 삭제"
+                onPress={handleDeleteAccount}
+                disabled={isLoading}
+                style={({ pressed }) => [styles.settingItem, pressed && styles.settingItemPressed, isLoading && styles.disabledItem]}
+              >
+                <View style={styles.settingIcon}>
+                  {isLoading ? <ActivityIndicator size="small" color={SummaryTheme.colors.accent} /> : <MaterialCommunityIcons name="account-remove-outline" size={22} color={SummaryTheme.colors.accent} />}
+                </View>
+                <View style={styles.settingCopy}>
+                  <Text style={styles.settingTitle}>회원 탈퇴</Text>
+                  <Text style={styles.settingDescription}>계정과 구독·알림 데이터를 영구적으로 삭제합니다</Text>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" size={22} color={SummaryTheme.colors.textMuted} />
+              </Pressable>
+            </View>
           </View>
+
+          <Text style={styles.versionText}>SHOOK {appVersion} · CONTENT {contentVersion}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -263,60 +262,32 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    alignSelf: 'center',
-    paddingHorizontal: 16,
-  },
-  content: {
-    paddingVertical: 24,
-  },
-  contentCompact: {
-    paddingVertical: 8,
-  },
-  settingsContainer: {
-    marginBottom: 24,
-  },
+  container: { flex: 1, backgroundColor: SummaryTheme.colors.background },
+  scrollView: { flex: 1 },
+  scrollContent: { alignSelf: 'center', paddingHorizontal: 16 },
+  content: { paddingTop: 4, paddingBottom: 16 },
+  section: { marginTop: 24 },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
+    color: SummaryTheme.colors.textSecondary, fontSize: 13, fontWeight: '800', marginLeft: 4, marginBottom: 9,
   },
-  settingItem: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginBottom: 8,
+  sectionCard: {
+    overflow: 'hidden', backgroundColor: SummaryTheme.colors.surface, borderWidth: 1,
+    borderColor: SummaryTheme.colors.border, borderRadius: SummaryTheme.radius.card,
   },
-  settingItemCompact: {
-    paddingVertical: 8,
-    marginBottom: 4,
+  settingItem: { minHeight: 76, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12 },
+  settingItemDivider: { borderBottomWidth: 1, borderBottomColor: SummaryTheme.colors.border },
+  settingItemPressed: { backgroundColor: SummaryTheme.colors.pressed },
+  disabledItem: { opacity: 0.55 },
+  settingIcon: {
+    width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: SummaryTheme.colors.accentSoft,
   },
-  settingTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  settingDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  developerToolsItem: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#f59e0b',
-    backgroundColor: '#fffbeb',
-  },
-  logoutButton: {
-    padding: 4,
+  settingCopy: { flex: 1, marginHorizontal: 12 },
+  settingTitle: { fontSize: 16, fontWeight: '700', color: SummaryTheme.colors.textPrimary, marginBottom: 3 },
+  settingDescription: { fontSize: 13, color: SummaryTheme.colors.textSecondary, lineHeight: 18 },
+  developerIcon: { backgroundColor: SummaryTheme.colors.pressed },
+  versionText: {
+    color: SummaryTheme.colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.4,
+    textAlign: 'center', marginTop: 24,
   },
 });

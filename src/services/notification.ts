@@ -1,15 +1,15 @@
 // Notification service for Expo Push Notifications
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useNotificationStore } from '@/stores/notification-store';
 import { apiService, type PushTokenData } from './api';
+import { PushRegistrationCoordinator } from './push-registration-coordinator';
 import { queryClient } from '@/lib/query-client';
 import { videoSummaryService } from '@/services/video-summary-service';
-import { getVideoSummariesQueryKey, type CacheAwareData } from '@/services/video-summaries-sync';
+import { getVideoSummariesQueryKey, type CacheAwareData, videoSummariesSyncService } from '@/services/video-summaries-sync';
 import { useAuthStore } from '@/stores/auth-store';
 import { notificationLogger } from '@/utils/logger-enhanced';
 import { getOrCreateDeviceId } from './device-id';
@@ -37,9 +37,13 @@ export class NotificationService {
   private pushToken: string | null = null;
   private isInitialized = false;
   private initializationPromise: Promise<void> | null = null;
+  private initializationRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  private initializationRetryAttempt = 0;
+  private registrationCoordinator = new PushRegistrationCoordinator();
   private lastHandledResponseId: string | null = null;
   private readonly PUSH_TOKEN_KEY = 'expo_push_token';
   private readonly NOTIFICATIONS_ENABLED_KEY = 'push_notifications_enabled';
+  private readonly ANDROID_CHANNEL_ID = 'default';
 
   private constructor() {}
 
@@ -51,7 +55,7 @@ export class NotificationService {
   }
 
   // Check current registration status from DB and sync with local state
-  async syncWithBackendState(): Promise<void> {
+  async syncWithBackendState(): Promise<boolean> {
     const syncId = Math.random().toString(36).substr(2, 9);
     notificationLogger.info(`🔄 Syncing notification state with backend [${syncId}]`);
     
@@ -74,7 +78,7 @@ export class NotificationService {
         const currentDeviceToken = tokens.find(token => token.deviceId === deviceId);
         const permissions = await Notifications.getPermissionsAsync();
         const preferenceEnabled = await this.isNotificationsEnabled();
-        const shouldRemainRegistered = permissions.granted && preferenceEnabled;
+        const shouldRemainRegistered = this.areNotificationsAllowed(permissions) && preferenceEnabled;
         let isRegisteredInDB = !!currentDeviceToken?.isActive;
 
         if (isRegisteredInDB && !shouldRemainRegistered) {
@@ -105,7 +109,11 @@ export class NotificationService {
         useNotificationStore.getState().setRegistered(isRegisteredInDB);
         
         // Also check system permissions to ensure UI state is correct
-        useNotificationStore.getState().setPermissionStatus(permissions.status);
+        useNotificationStore.getState().setPermissionStatus(
+          this.areNotificationsAllowed(permissions) ? 'granted' : permissions.status
+        );
+
+        return true;
         
       } else {
         notificationLogger.warn('Failed to fetch backend token status or invalid data format', { 
@@ -115,15 +123,15 @@ export class NotificationService {
           isArray: Array.isArray(response.data),
           data: response.data
         });
-        // If we can't get backend state, assume not registered
-        useNotificationStore.getState().setRegistered(false);
+        // Keep the last known registration state when the backend is temporarily unavailable.
+        return false;
       }
     } catch (error) {
       notificationLogger.error('Error syncing with backend state', {
         error: error instanceof Error ? error.message : String(error)
       });
-      // On error, assume not registered for safety
-      useNotificationStore.getState().setRegistered(false);
+      // Keep the last known registration state when the backend is temporarily unavailable.
+      return false;
     } finally {
       // Update last sync time regardless of success or failure
       useNotificationStore.getState().setLastSyncTime(Date.now());
@@ -167,16 +175,9 @@ export class NotificationService {
     try {
       notificationLogger.info('Initializing notification service');
       
-      // Check if device supports push notifications
-      if (!Device.isDevice) {
-        notificationLogger.warn('Push notifications only work on physical devices');
-        useNotificationStore.getState().setRegistered(false, 'Push notifications only work on physical devices');
-        return;
-      }
-
       // Request permissions
       const permission = await this.requestPermissions();
-      if (!permission.granted) {
+      if (!this.areNotificationsAllowed(permission)) {
         notificationLogger.warn('Notification permissions denied');
         await this.unregisterWithBackend(false);
         useNotificationStore.getState().setRegistered(false, 'Notification permissions denied');
@@ -187,26 +188,66 @@ export class NotificationService {
       const token = await this.getPushToken();
       if (token) {
         this.pushToken = token;
-        notificationLogger.info('Successfully initialized with token', { tokenPreview: token.substring(0, 20) + '...' });
+        notificationLogger.info('Successfully initialized with push token');
         
         notificationLogger.debug('Calling registerWithBackend');
         // Register with backend (this will now handle duplicates properly)
         const success = await this.registerWithBackend();
         notificationLogger.debug('registerWithBackend completed', { success });
         useNotificationStore.getState().setRegistered(success, success ? null : 'Registration failed');
+        this.isInitialized = success;
+        if (success) {
+          this.cancelInitializationRetry();
+        } else {
+          this.scheduleInitializationRetry();
+        }
 
       } else {
         useNotificationStore.getState().setRegistered(false, 'Could not get push token');
+        this.scheduleInitializationRetry();
       }
-
-      this.isInitialized = true;
     } catch (error) {
       notificationLogger.error('Failed to initialize', { error: error instanceof Error ? error.message : String(error) });
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       useNotificationStore.getState().setRegistered(false, errorMessage);
+      this.scheduleInitializationRetry();
     } finally {
       useNotificationStore.getState().setRegistering(false);
     }
+  }
+
+  private scheduleInitializationRetry(): void {
+    if (this.initializationRetryTimer || this.initializationRetryAttempt >= 3) {
+      return;
+    }
+
+    const retryDelays = [5_000, 30_000, 120_000];
+    const delay = retryDelays[this.initializationRetryAttempt];
+    this.initializationRetryAttempt += 1;
+    notificationLogger.info('Scheduling push registration retry', {
+      attempt: this.initializationRetryAttempt,
+      delayMs: delay,
+    });
+
+    this.initializationRetryTimer = setTimeout(() => {
+      this.initializationRetryTimer = null;
+      if (!useAuthStore.getState().isAuthenticated) {
+        return;
+      }
+      void this.initialize().catch((error) => {
+        notificationLogger.error('Push registration retry failed', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+    }, delay);
+  }
+
+  private cancelInitializationRetry(): void {
+    if (this.initializationRetryTimer) {
+      clearTimeout(this.initializationRetryTimer);
+      this.initializationRetryTimer = null;
+    }
+    this.initializationRetryAttempt = 0;
   }
 
   private async getDeviceId(): Promise<string> {
@@ -226,16 +267,42 @@ export class NotificationService {
     await AsyncStorage.setItem(this.NOTIFICATIONS_ENABLED_KEY, enabled ? 'true' : 'false');
   }
 
+  private async ensureAndroidNotificationChannel(): Promise<void> {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+
+    await Notifications.setNotificationChannelAsync(this.ANDROID_CHANNEL_ID, {
+      name: '새 영상 알림',
+      importance: Notifications.AndroidImportance.HIGH,
+      sound: 'default',
+      vibrationPattern: [0, 250, 250, 250],
+    });
+  }
+
+  areNotificationsAllowed(permissions: Notifications.NotificationPermissionsStatus): boolean {
+    if (permissions.granted) {
+      return true;
+    }
+
+    return Platform.OS === 'ios' && (
+      permissions.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL ||
+      permissions.ios?.status === Notifications.IosAuthorizationStatus.EPHEMERAL
+    );
+  }
+
   // Request notification permissions
   async requestPermissions(): Promise<Notifications.NotificationPermissionsStatus> {
     notificationLogger.info('Requesting notification permissions');
     
     try {
+      await this.ensureAndroidNotificationChannel();
+
       // First check existing permissions
       let permissions = await Notifications.getPermissionsAsync();
       notificationLogger.debug('Current permissions', { permissions });
 
-      if (!permissions.granted) {
+      if (!this.areNotificationsAllowed(permissions)) {
         // Request permissions if not granted
         permissions = await Notifications.requestPermissionsAsync({
           ios: {
@@ -259,6 +326,8 @@ export class NotificationService {
     notificationLogger.info('Getting push token');
     
     try {
+      await this.ensureAndroidNotificationChannel();
+
       // Check if we have a cached token
       const cachedToken = await AsyncStorage.getItem(this.PUSH_TOKEN_KEY);
       if (cachedToken && !forceRefresh) {
@@ -289,10 +358,7 @@ export class NotificationService {
         projectId,
       })).data;
 
-      notificationLogger.info('Successfully generated push token', {
-        tokenPreview: token.substring(0, 20) + '...',
-        usedFallback
-      });
+      notificationLogger.info('Successfully generated push token', { usedFallback });
 
       // Cache the token
       await AsyncStorage.setItem(this.PUSH_TOKEN_KEY, token);
@@ -330,16 +396,27 @@ export class NotificationService {
   }
 
   // Register push token with backend (simplified - let backend handle duplicates)
-  async registerWithBackend(): Promise<boolean> {
-    notificationLogger.info('Registering push token with backend');
-    
-    try {
-      const tokenInfo = await this.getTokenInfo();
-      if (!tokenInfo) {
-        notificationLogger.warn('No token info available for registration');
-        return false;
-      }
+  async registerWithBackend(force = false): Promise<boolean> {
+    const tokenInfo = await this.getTokenInfo();
+    if (!tokenInfo) {
+      notificationLogger.warn('No token info available for registration');
+      return false;
+    }
 
+    const userId = useAuthStore.getState().user?.id ?? 'unknown';
+    const signature = [userId, tokenInfo.deviceId, tokenInfo.token].join(':');
+
+    return this.registrationCoordinator.run(
+      signature,
+      () => this.performBackendRegistration(tokenInfo),
+      force
+    );
+  }
+
+  private async performBackendRegistration(tokenInfo: PushNotificationToken): Promise<boolean> {
+    notificationLogger.info('Registering push token with backend');
+
+    try {
       const tokenData: PushTokenData = {
         token: tokenInfo.token,
         deviceId: tokenInfo.deviceId,
@@ -348,7 +425,6 @@ export class NotificationService {
       };
 
       notificationLogger.debug('Sending token to backend', {
-        tokenPreview: tokenInfo.token.substring(0, 20) + '...',
         deviceId: tokenInfo.deviceId,
         platform: tokenInfo.platform
       });
@@ -380,6 +456,8 @@ export class NotificationService {
       
       if (response.success) {
         notificationLogger.info('Successfully unregistered push token from backend');
+        this.cancelInitializationRetry();
+        this.registrationCoordinator.reset();
         // Clear registration status
         await AsyncStorage.removeItem('push_token_registered');
         // Reset initialization state so user can re-enable later
@@ -424,10 +502,12 @@ export class NotificationService {
       }
 
       // Register with backend regardless of current state
-      const success = await this.registerWithBackend();
+      const success = await this.registerWithBackend(true);
       
       if (success) {
         notificationLogger.info('Force registration successful');
+        this.isInitialized = true;
+        this.cancelInitializationRetry();
         await this.setNotificationsEnabled(true);
         useNotificationStore.getState().setRegistered(true);
       } else {
@@ -452,6 +532,8 @@ export class NotificationService {
     // Just clear local state
     this.pushToken = null;
     this.isInitialized = false;
+    this.cancelInitializationRetry();
+    this.registrationCoordinator.reset();
     await AsyncStorage.removeItem(this.PUSH_TOKEN_KEY);
     await AsyncStorage.removeItem('push_token_registered');
     useNotificationStore.getState().reset();
@@ -477,6 +559,25 @@ export class NotificationService {
           channelId: data.channelId,
           channelName: data.channelName
         });
+
+        const userId = useAuthStore.getState().user?.id;
+        if (userId) {
+          const queryKey = getVideoSummariesQueryKey(userId);
+          const existingData = queryClient.getQueryData<CacheAwareData>(queryKey);
+          void videoSummariesSyncService.markSyncNeeded(userId)
+            .then(() => videoSummariesSyncService.syncIfNeeded({
+              userId,
+              existingCursor: existingData?.nextCursor,
+              queryClient,
+              reason: 'foreground_push',
+              force: true,
+            }))
+            .catch((error) => {
+              notificationLogger.error('Failed to sync summaries after foreground push', {
+                error: error instanceof Error ? error.message : String(error),
+              });
+            });
+        }
 
         if (data.videoId) {
           videoSummaryService.fetchSummaryById(String(data.videoId)).then((summary) => {
@@ -614,6 +715,20 @@ export class NotificationService {
           : null;
       if (videoId) {
         notificationLogger.info('Handling notification tap for video', { videoId });
+
+        const userId = useAuthStore.getState().user?.id;
+        if (userId) {
+          const queryKey = getVideoSummariesQueryKey(userId);
+          const existingData = queryClient.getQueryData<CacheAwareData>(queryKey);
+          await videoSummariesSyncService.markSyncNeeded(userId);
+          void videoSummariesSyncService.syncIfNeeded({
+            userId,
+            existingCursor: existingData?.nextCursor,
+            queryClient,
+            reason: 'notification_tap',
+            force: true,
+          });
+        }
 
         // Navigate to summaries tab first, then push detail for a smoother UX
         notificationLogger.info('Navigating to summaries tab before summary detail', { videoId });

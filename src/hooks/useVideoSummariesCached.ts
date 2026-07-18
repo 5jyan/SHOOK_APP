@@ -36,12 +36,20 @@ export const useVideoSummariesCached = (options: UseVideoSummariesCachedOptions 
         serviceLogger.info('Skipping initial network sync; using cached summaries only');
         return videoSummariesSyncService.getCachedData();
       }
-      return videoSummariesSyncService.sync({ userId: user?.id, existingCursor: nextCursor });
+      return videoSummariesSyncService.syncIfNeeded({
+        userId: user?.id,
+        existingCursor: nextCursor,
+        queryClient,
+        reason: 'summaries_screen_mount',
+      });
     },
     staleTime: 2 * 60 * 1000, // 2 minutes (reduced since we have local cache)
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
-    refetchOnMount: options.refetchOnMount ?? true, // Always revalidate on mount (SWR)
+    // A push can arrive shortly after the last sync, while React Query still
+    // considers the persisted cache fresh. Revalidate whenever this screen
+    // mounts so opening the app also picks up the new summary.
+    refetchOnMount: options.refetchOnMount === false ? false : 'always',
     retry: 2, // Reduced retries since we have fallback
     enabled: true,
   });

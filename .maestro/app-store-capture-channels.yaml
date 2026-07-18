@@ -1,0 +1,29 @@
+appId: com.shook.app
+---
+- tapOn:
+    point: "9%,10%"
+- extendedWaitUntil:
+    visible:
+      id: "tab-channels"
+    timeout: 15000
+- tapOn:
+    id: "tab-channels"
+- extendedWaitUntil:
+    visible:
+      id: "screen-channels"
+    timeout: 15000
+- takeScreenshot: "docs/app-store/candidate/raw-04-channels"
+- tapOn:
+    id: "channel-search-open"
+- extendedWaitUntil:
+    visible:
+      id: "screen-channel-search"
+    timeout: 10000
+- tapOn:
+    id: "channel-search-input"
+- inputText: "슈카"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "슈카월드"
+    timeout: 15000
+- takeScreenshot: "docs/app-store/candidate/raw-03-search"

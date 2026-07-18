@@ -1,4 +1,3 @@
-import { ModalHeader } from '@/components/AppHeader';
 import { ShookLoadingScreen } from '@/components/ShookLoadingScreen';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useUserChannelsCached } from '@/hooks/useUserChannelsCached';
@@ -26,6 +25,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { uiLogger } from '../src/utils/logger-enhanced';
 import { TEST_IDS } from '@/constants/test-ids';
+import { SummaryTheme } from '@/constants/SummaryTheme';
 
 export default function SummaryDetailScreen() {
   const { width } = useWindowDimensions();
@@ -305,20 +305,30 @@ export default function SummaryDetailScreen() {
       style={styles.container}
       edges={['top', 'bottom', 'left', 'right']}
     >
-      <ModalHeader 
-        title="상세 내용"
-        rightComponent={
-          <TouchableOpacity
-            testID={TEST_IDS.summaries.share}
-            accessibilityRole="button"
-            accessibilityLabel="요약 공유"
-            onPress={handleSharePress}
-            style={styles.shareButton}
-          >
-            <IconSymbol name="square.and.arrow.up" size={24} color="#374151" />
-          </TouchableOpacity>
-        }
-      />
+      <View style={styles.detailNav}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="뒤로가기"
+          onPress={handleBackPress}
+          style={styles.navButton}
+          activeOpacity={0.65}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color={SummaryTheme.colors.textPrimary} />
+        </TouchableOpacity>
+        <View style={styles.navTitleGroup}>
+          <Text style={styles.navTitle}>요약 노트</Text>
+        </View>
+        <TouchableOpacity
+          testID={TEST_IDS.summaries.share}
+          accessibilityRole="button"
+          accessibilityLabel="요약 공유"
+          onPress={handleSharePress}
+          style={styles.navButton}
+          activeOpacity={0.65}
+        >
+          <IconSymbol name="square.and.arrow.up" size={22} color={SummaryTheme.colors.textPrimary} />
+        </TouchableOpacity>
+      </View>
 
       <View testID={TEST_IDS.summaries.detail(videoSummary.videoId)} style={styles.content}>
         <ScrollView
@@ -327,15 +337,20 @@ export default function SummaryDetailScreen() {
           contentContainerStyle={[styles.contentContainer, { width: contentWidth }]}
           showsVerticalScrollIndicator={false}
         >
-        <TouchableOpacity style={styles.hero} onPress={handleOpenVideo} activeOpacity={0.9}>
+        <TouchableOpacity
+          style={styles.hero}
+          onPress={handleOpenVideo}
+          activeOpacity={0.86}
+          accessibilityRole="link"
+          accessibilityLabel={`${videoSummary.title} 유튜브에서 보기`}
+        >
           <Image
             source={{ uri: cardData?.videoThumbnail }}
             style={styles.heroImage}
             resizeMode="cover"
           />
-          <View style={styles.heroScrim} />
           <View style={styles.heroPlayButton}>
-            <IconSymbol name="play.rectangle.fill" size={25} color="#ffffff" />
+            <MaterialCommunityIcons name="play" size={28} color={SummaryTheme.colors.white} />
           </View>
         </TouchableOpacity>
 
@@ -374,36 +389,51 @@ export default function SummaryDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.background,
   },
-  shareButton: {
-    width: 24,
-    height: 24,
+  detailNav: {
+    minHeight: 64,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: SummaryTheme.colors.background,
+  },
+  navButton: {
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 4
+  },
+  navTitleGroup: { flex: 1, alignItems: 'center' },
+  navEyebrow: { color: SummaryTheme.colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 1.1 },
+  navTitle: { marginTop: 2, color: SummaryTheme.colors.textPrimary, fontSize: 17, fontWeight: '800' },
+  contentLabel: {
+    color: SummaryTheme.colors.accent,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.3,
+    marginBottom: 8,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
     alignSelf: 'center',
-    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   hero: {
     width: '100%',
     aspectRatio: 16 / 9,
-    backgroundColor: '#0f172a',
+    marginTop: 8,
+    borderRadius: SummaryTheme.radius.card,
+    backgroundColor: SummaryTheme.colors.textPrimary,
     position: 'relative',
     overflow: 'hidden',
   },
   heroImage: {
     width: '100%',
     height: '100%',
-  },
-  heroScrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.28)',
   },
   heroPlayButton: {
     position: 'absolute',
@@ -412,23 +442,25 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(15, 23, 42, 0.68)',
+    backgroundColor: SummaryTheme.colors.scrim,
     justifyContent: 'center',
     alignItems: 'center',
     transform: [{ translateX: -28 }, { translateY: -28 }],
   },
   videoInfo: {
-    paddingHorizontal: 12,
-    paddingTop: 14,
-    paddingBottom: 18,
-    backgroundColor: '#ffffff',
-    borderBottomColor: '#e2e8f0',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginTop: 12,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 14,
+    backgroundColor: SummaryTheme.colors.surface,
+    borderRadius: SummaryTheme.radius.card,
+    borderWidth: 1,
+    borderColor: SummaryTheme.colors.border,
   },
   videoTitle: {
     fontSize: 23,
     fontWeight: '800',
-    color: '#0f172a',
+    color: SummaryTheme.colors.textPrimary,
     lineHeight: 32,
     letterSpacing: -0.4,
     marginBottom: 12,
@@ -443,7 +475,7 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     marginRight: 10,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: SummaryTheme.colors.pending,
   },
   channelInfo: {
     flex: 1,
@@ -451,25 +483,29 @@ const styles = StyleSheet.create({
   channelName: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#334155',
+    color: SummaryTheme.colors.textSecondary,
     marginBottom: 3,
   },
   publishDate: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: SummaryTheme.colors.textMuted,
   },
   summarySection: {
-    paddingHorizontal: 12,
-    paddingTop: 14,
+    paddingTop: 12,
   },
   summaryContent: {
     marginBottom: 0,
   },
   overviewCard: {
-    paddingBottom: 18,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 12,
     marginBottom: 12,
-    borderBottomColor: '#e2e8f0',
+    borderRadius: SummaryTheme.radius.card,
+    backgroundColor: SummaryTheme.colors.accentSoft,
+    borderColor: SummaryTheme.colors.border,
     borderBottomWidth: 1,
+    borderWidth: 1,
   },
   sectionEyebrowRow: {
     flexDirection: 'row',
@@ -480,17 +516,17 @@ const styles = StyleSheet.create({
     width: 18,
     height: 3,
     borderRadius: 2,
-    backgroundColor: '#60a5fa',
+    backgroundColor: SummaryTheme.colors.accent,
     marginRight: 8,
   },
   sectionEyebrow: {
-    color: '#3b82f6',
+    color: SummaryTheme.colors.accent,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.5,
   },
   overviewTitle: {
-    color: '#0f172a',
+    color: SummaryTheme.colors.textPrimary,
     fontSize: 24,
     fontWeight: '800',
     letterSpacing: -0.4,
@@ -499,18 +535,21 @@ const styles = StyleSheet.create({
   summarySectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a',
+    color: SummaryTheme.colors.textPrimary,
     marginBottom: 12,
   },
   detailsSection: {
     marginBottom: 0,
   },
   detailCard: {
-    backgroundColor: '#ffffff',
-    borderBottomColor: '#e2e8f0',
-    borderBottomWidth: 1,
-    paddingBottom: 12,
-    marginBottom: 8,
+    backgroundColor: SummaryTheme.colors.surface,
+    borderColor: SummaryTheme.colors.border,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 10,
+    marginBottom: 10,
   },
   detailHeader: {
     minHeight: 38,
@@ -518,7 +557,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingHorizontal: 0,
     paddingVertical: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.surface,
   },
   detailToggle: {
     flex: 1,
@@ -535,7 +574,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   detailNumber: {
-    color: '#2563eb',
+    color: SummaryTheme.colors.accent,
     textAlign: 'left',
     fontSize: 17,
     fontWeight: '700',
@@ -543,17 +582,17 @@ const styles = StyleSheet.create({
   },
   detailTitle: {
     flex: 1,
-    color: '#0f172a',
+    color: SummaryTheme.colors.textPrimary,
     fontSize: 17,
     fontWeight: '800',
     lineHeight: 24,
     marginRight: 4,
   },
   coreHeadingTitle: {
-    color: '#2563eb',
+    color: SummaryTheme.colors.accent,
   },
   detailBody: {
-    backgroundColor: '#ffffff',
+    backgroundColor: SummaryTheme.colors.surface,
     paddingLeft: 0,
     paddingRight: 0,
     paddingTop: 4,
@@ -573,15 +612,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   conclusionCard: {
-    paddingTop: 8,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 12,
+    marginTop: 2,
     marginBottom: 8,
+    borderRadius: SummaryTheme.radius.card,
+    borderWidth: 1,
+    borderColor: SummaryTheme.colors.border,
+    backgroundColor: SummaryTheme.colors.surface,
   },
   fallbackSection: {
     paddingVertical: 8,
   },
   summaryText: {
     fontSize: 16,
-    color: '#374151',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 24,
     marginBottom: 8,
   },
@@ -591,7 +637,7 @@ const styles = StyleSheet.create({
   },
   numberedText: {
     fontSize: 16,
-    color: '#374151',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 24,
     fontWeight: 'bold',
   },
@@ -605,20 +651,20 @@ const styles = StyleSheet.create({
   },
   bulletPoint: {
     fontSize: 15,
-    color: '#3b82f6',
+    color: SummaryTheme.colors.accent,
     marginRight: 6,
     fontWeight: '600',
   },
   bulletText: {
     fontSize: 15,
-    color: '#475569',
+    color: SummaryTheme.colors.textSecondary,
     lineHeight: 23,
   },
   bulletTextContainer: {
     flex: 1,
   },
   inlineBold: {
-    color: '#1e293b',
+    color: SummaryTheme.colors.textPrimary,
     fontWeight: '800',
   },
   loadingContainer: {
@@ -629,17 +675,17 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#6b7280',
+    color: SummaryTheme.colors.textMuted,
   },
   retryButton: {
-    backgroundColor: '#4285f4',
+    backgroundColor: SummaryTheme.colors.accent,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: SummaryTheme.colors.onAccent,
     fontSize: 16,
     fontWeight: '600',
   },
