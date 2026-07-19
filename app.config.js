@@ -46,11 +46,6 @@ export default {
     scheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
     userInterfaceStyle: "dark",
     newArchEnabled: true,
-    splash: {
-      image: "./assets/images/Shook-splash-dark.png",
-      resizeMode: "contain",
-      backgroundColor: "#101013"
-    },
     updates: {
       enabled: !IS_E2E,
       url: "https://u.expo.dev/a8839540-39ec-431e-a346-bdfdff731ecd"
@@ -65,12 +60,6 @@ export default {
       supportsTablet: false,
       bundleIdentifier: "com.shook.app",
       usesNonExemptEncryption: false,
-      splash: {
-        image: "./assets/images/Shook-splash-dark.png",
-        resizeMode: "contain",
-        backgroundColor: "#101013",
-        tabletImage: "./assets/images/Shook-splash-dark.png"
-      },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         LSApplicationQueriesSchemes: ["kakaokompassauth", "kakaolink"],
@@ -93,11 +82,6 @@ export default {
         foregroundImage: "./assets/images/Shook-adaptive-foreground.png",
         backgroundColor: "#ffffff"
       },
-      splash: {
-        image: "./assets/images/Shook-splash-dark.png",
-        resizeMode: "contain",
-        backgroundColor: "#101013"
-      },
       package: IS_PREVIEW ? "com.shook.app.preview" : "com.shook.app"
     },
     web: {
@@ -112,8 +96,8 @@ export default {
       [
         "expo-splash-screen",
         {
-          image: "./assets/images/Shook-splash-dark.png",
-          imageWidth: 140,
+          image: "./assets/images/Shook-icon-foreground.png",
+          imageWidth: 180,
           resizeMode: "contain",
           backgroundColor: "#101013"
         }
