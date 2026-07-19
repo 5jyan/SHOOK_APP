@@ -7,9 +7,8 @@ import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import * as Updates from 'expo-updates';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, Image, InteractionManager, Linking, Platform, Pressable, StatusBar as NativeStatusBar, StyleSheet, Text, View } from 'react-native';
+import { AppState, AppStateStatus, Image, Linking, Platform, Pressable, StatusBar as NativeStatusBar, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -45,34 +44,11 @@ export default function RootLayout() {
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const hasHandledInitialNotification = useRef(false);
   const hasCompletedColdStart = useRef(false);
-  const isUpdateCheckInFlight = useRef(false);
   const isSummarySyncInFlight = useRef(false);
   const currentVersion = Constants.expoConfig?.version || '0.0.0';
   const minSupportedVersion = Constants.expoConfig?.extra?.minSupportedVersion as string | undefined;
   const appStoreUrl = Constants.expoConfig?.extra?.appStoreUrl as string | undefined;
   const playStoreUrl = Constants.expoConfig?.extra?.playStoreUrl as string | undefined;
-  const checkForUpdates = async () => {
-    if (__DEV__ || isUpdateCheckInFlight.current) {
-      return;
-    }
-
-    isUpdateCheckInFlight.current = true;
-    try {
-      const update = await Updates.checkForUpdateAsync();
-      if (update.isAvailable) {
-        configLogger.info('Update available, downloading in background...');
-        await Updates.fetchUpdateAsync();
-        configLogger.info('Update downloaded; it will be applied on the next app launch');
-      }
-    } catch (error) {
-      configLogger.error('Update check failed', {
-        error: error instanceof Error ? error.message : String(error)
-      });
-    } finally {
-      isUpdateCheckInFlight.current = false;
-    }
-  };
-
   const compareVersions = (a: string, b: string) => {
     const aParts = a.split('.').map(Number);
     const bParts = b.split('.').map(Number);
@@ -148,8 +124,6 @@ export default function RootLayout() {
         nextAppState === 'active'
       ) {
         void Notifications.setBadgeCountAsync(0);
-        configLogger.info('App foregrounded, checking for updates');
-        void checkForUpdates();
         void syncSummariesOnForeground();
       }
       appState.current = nextAppState;
@@ -215,12 +189,6 @@ export default function RootLayout() {
       hasCompletedColdStart.current = true;
       void Notifications.setBadgeCountAsync(0);
       setIsAppReady(true);
-
-      // Do not block the first screen on a network request. Download available
-      // updates after initial rendering and let Expo apply them next launch.
-      InteractionManager.runAfterInteractions(() => {
-        void checkForUpdates();
-      });
     };
     
     // Setup notification listeners
