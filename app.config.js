@@ -79,7 +79,7 @@ export default {
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       adaptiveIcon: {
-        foregroundImage: "./assets/images/Shook-adaptive-foreground.png",
+        foregroundImage: "./assets/images/Shook-icon-foreground.png",
         backgroundColor: "#ffffff"
       },
       package: IS_PREVIEW ? "com.shook.app.preview" : "com.shook.app"
@@ -97,7 +97,7 @@ export default {
         "expo-splash-screen",
         {
           image: "./assets/images/Shook-icon-foreground.png",
-          imageWidth: 180,
+          imageWidth: 240,
           resizeMode: "contain",
           backgroundColor: "#101013"
         }
