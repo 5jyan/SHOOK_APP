@@ -11,6 +11,7 @@
     "test:auth": "node --experimental-strip-types --test src/services/auth-bootstrap.test.mjs",
     "test:push-registration": "node --experimental-strip-types --test src/services/push-registration-coordinator.test.mjs",
     "test:selectors": "node --experimental-strip-types --test constants/test-ids.test.mjs",
+    "test:text-layout": "node --experimental-strip-types --test src/utils/ios-wrapped-text-fix.test.mjs",
     "e2e:android": "bash scripts/e2e/run-maestro.sh android",
     "e2e:ios": "bash scripts/e2e/run-maestro.sh ios",
     "lint": "npx @expo/cli lint"

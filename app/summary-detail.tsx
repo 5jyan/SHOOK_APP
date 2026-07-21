@@ -6,6 +6,7 @@ import { transformVideoSummaryToCardData } from '@/hooks/useVideoSummariesCached
 import { getVideoSummariesQueryKey, type CacheAwareData, videoSummariesSyncService } from '@/services/video-summaries-sync';
 import { useAuthStore } from '@/stores/auth-store';
 import { parseSummary } from '@/utils/summary-parser';
+import { getWrappedTextHeightEpsilon, shouldCompensateWrappedText } from '@/utils/ios-wrapped-text-fix';
 import { buildYouTubeTimestampUrl } from '@/utils/youtube-url';
 import { useQueryClient } from '@tanstack/react-query';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -14,6 +15,7 @@ import React from 'react';
 import {
   Image,
   Linking,
+  PixelRatio,
   Platform,
   ScrollView,
   Share,
@@ -31,26 +33,44 @@ import { FontScaleLimit, SummaryTheme } from '@/constants/SummaryTheme';
 
 const SUMMARY_TEXT_SCALE_LIMIT = FontScaleLimit.content;
 const SUMMARY_TEXT_SCALE_MIN = 0.9;
+const IOS_WRAPPED_TEXT_HEIGHT_EPSILON = getWrappedTextHeightEpsilon(PixelRatio.get());
 
 function ResponsiveSummaryText({
   baseSize,
   baseLineHeight,
   style,
+  onTextLayout,
   ...props
 }: TextProps & { baseSize: number; baseLineHeight?: number }) {
   const { fontScale } = useWindowDimensions();
   const scale = Math.min(SUMMARY_TEXT_SCALE_LIMIT, Math.max(SUMMARY_TEXT_SCALE_MIN, fontScale));
+  const [didWrap, setDidWrap] = React.useState(false);
+
+  const handleTextLayout: NonNullable<TextProps['onTextLayout']> = (event) => {
+    // RN 0.81 Fabric can round a wrapped iOS Text measurement one physical
+    // pixel too short, clipping the final visual line (facebook/react-native#53450).
+    // Match the upstream native fix (#57535) by adding that pixel only after
+    // TextKit reports multiple lines. Remove this when the RN fix ships here.
+    if (shouldCompensateWrappedText(Platform.OS, event.nativeEvent.lines.length)) {
+      setDidWrap(true);
+    }
+    onTextLayout?.(event);
+  };
 
   return (
     <Text
       {...props}
       allowFontScaling={false}
       lineBreakStrategyIOS="hangul-word"
+      onTextLayout={handleTextLayout}
       style={[
         style,
         {
           fontSize: baseSize * scale,
           ...(baseLineHeight ? { lineHeight: baseLineHeight * scale } : {}),
+          ...(Platform.OS === 'ios' && didWrap
+            ? { paddingBottom: IOS_WRAPPED_TEXT_HEIGHT_EPSILON }
+            : {}),
         },
       ]}
     />
@@ -627,7 +647,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   detailHeader: {
-    minHeight: 38,
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 0,
@@ -640,7 +659,6 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    minHeight: 38,
     minWidth: 0,
   },
   detailNumberBadge: {
@@ -678,7 +696,7 @@ const styles = StyleSheet.create({
     backgroundColor: SummaryTheme.colors.surface,
     paddingLeft: 0,
     paddingRight: 0,
-    paddingTop: 4,
+    paddingTop: 10,
     paddingBottom: 0,
   },
   youtubeButton: {
