@@ -59,6 +59,7 @@ export default {
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.shook.app",
+      buildNumber: "15",
       usesNonExemptEncryption: false,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
