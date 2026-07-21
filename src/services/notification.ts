@@ -38,6 +38,8 @@ export class NotificationService {
   private initializationPromise: Promise<void> | null = null;
   private initializationRetryTimer: ReturnType<typeof setTimeout> | null = null;
   private initializationRetryAttempt = 0;
+  private pushTokenRequestPromise: Promise<string | null> | null = null;
+  private isHandlingPushTokenRollover = false;
   private registrationCoordinator = new PushRegistrationCoordinator();
   private lastHandledResponseId: string | null = null;
   private readonly PUSH_TOKEN_KEY = 'expo_push_token';
@@ -322,6 +324,19 @@ export class NotificationService {
 
   // Get Expo push token
   async getPushToken(forceRefresh = false): Promise<string | null> {
+    if (this.pushTokenRequestPromise) {
+      return this.pushTokenRequestPromise;
+    }
+
+    this.pushTokenRequestPromise = this.fetchPushToken(forceRefresh);
+    try {
+      return await this.pushTokenRequestPromise;
+    } finally {
+      this.pushTokenRequestPromise = null;
+    }
+  }
+
+  private async fetchPushToken(forceRefresh: boolean): Promise<string | null> {
     notificationLogger.info('Getting push token');
     
     try {
@@ -635,6 +650,9 @@ export class NotificationService {
     });
 
     const pushTokenListener = Notifications.addPushTokenListener(() => {
+      if (this.pushTokenRequestPromise || this.isHandlingPushTokenRollover) {
+        return;
+      }
       void this.handlePushTokenRollover();
     });
 
@@ -646,6 +664,11 @@ export class NotificationService {
   }
 
   private async handlePushTokenRollover(): Promise<void> {
+    if (this.isHandlingPushTokenRollover) {
+      return;
+    }
+
+    this.isHandlingPushTokenRollover = true;
     try {
       if (!(await this.isNotificationsEnabled()) || !useAuthStore.getState().isAuthenticated) {
         return;
@@ -659,6 +682,8 @@ export class NotificationService {
       notificationLogger.error('Failed to register a rolled push token', {
         error: error instanceof Error ? error.message : String(error),
       });
+    } finally {
+      this.isHandlingPushTokenRollover = false;
     }
   }
 

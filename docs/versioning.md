@@ -50,7 +50,7 @@ build 정보에서 확인하며, 일반 빌드와 신규 Store 릴리스에서�
 
 ## 현재 기준
 
-- 앱 버전: `1.1.3`
+- 앱 버전: `1.1.5`
 - production 채널: Store 사용자 대상
 - preview 채널: production 배포 전 내부 확인 대상
 - runtime 정책: `appVersion`

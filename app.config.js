@@ -40,7 +40,7 @@ export default {
   expo: {
     name: "Shook",
     slug: "shook",
-    version: "1.1.4",
+    version: "1.1.5",
     orientation: "portrait",
     icon: "./assets/images/Shook-app-icon.png",
     scheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
