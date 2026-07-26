@@ -40,7 +40,7 @@ export default {
   expo: {
     name: "Shook",
     slug: "shook",
-    version: "1.1.5",
+    version: "1.1.6",
     orientation: "portrait",
     icon: "./assets/images/Shook-app-icon.png",
     scheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
@@ -48,7 +48,12 @@ export default {
     newArchEnabled: true,
     updates: {
       enabled: !IS_E2E,
-      url: "https://u.expo.dev/a8839540-39ec-431e-a346-bdfdff731ecd"
+      url: "https://u.expo.dev/a8839540-39ec-431e-a346-bdfdff731ecd",
+      // Keep the production channel in native config even for local/Xcode builds.
+      // EAS Build also injects this header, but Store archives must not depend on it.
+      requestHeaders: {
+        "expo-channel-name": "production"
+      }
     },
     runtimeVersion: RUNTIME_VERSION_OVERRIDE || {
       policy: "appVersion"
@@ -59,7 +64,7 @@ export default {
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.shook.app",
-      buildNumber: "15",
+      buildNumber: "16",
       usesNonExemptEncryption: false,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,

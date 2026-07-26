@@ -21,8 +21,11 @@ Store 릴리스 전에는 다음을 확인한다.
 1. 변경 성격에 따라 `MAJOR`, `MINOR`, `PATCH` 중 하나를 올린다.
 2. `app.config.js`와 `package.json`의 버전을 일치시킨다.
 3. `runtimeVersion`은 `appVersion` 정책에서 새 앱 버전으로 자동 결정되게 한다.
-4. 앱 검증 후 `app-vX.Y.Z` 형식의 Git 태그를 만든다.
-5. 릴리스 노트에 사용자 영향과 필요한 서버 호환성을 기록한다.
+4. release 바이너리의 update request header가 `expo-channel-name=production`인지
+   확인한다. 로컬/Xcode 빌드에서도 이 값은 `app.config.js`의 네이티브 설정으로
+   유지한다.
+5. 앱 검증 후 `app-vX.Y.Z` 형식의 Git 태그를 만든다.
+6. 릴리스 노트에 사용자 영향과 필요한 서버 호환성을 기록한다.
 
 네이티브 의존성, Expo config plugin, 권한, entitlement, 네이티브 리소스 또는 네이티브
 빌드 설정이 바뀌면 OTA만 배포하지 않고 새 Store 빌드를 만든다.
@@ -50,7 +53,7 @@ build 정보에서 확인하며, 일반 빌드와 신규 Store 릴리스에서�
 
 ## 현재 기준
 
-- 앱 버전: `1.1.5`
+- 앱 버전: `1.1.6`
 - production 채널: Store 사용자 대상
 - preview 채널: production 배포 전 내부 확인 대상
 - runtime 정책: `appVersion`

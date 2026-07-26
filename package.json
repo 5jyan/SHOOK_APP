@@ -1,7 +1,7 @@
 {
   "name": "shook_app",
   "main": "expo-router/entry",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "scripts": {
     "start": "npx @expo/cli start --port 19003",
     "start:tunnel": "npx @expo/cli start --port 19003 --tunnel",
