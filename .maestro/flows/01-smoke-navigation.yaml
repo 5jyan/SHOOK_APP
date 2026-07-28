@@ -8,6 +8,9 @@ tags:
     clearKeychain: true
     permissions:
       all: deny
+- tapOn:
+    text: "허용 안 함"
+    optional: true
 - extendedWaitUntil:
     visible:
       id: "screen-channels"
@@ -26,4 +29,3 @@ tags:
     id: "tab-channels"
 - assertVisible:
     id: "screen-channels"
-

@@ -171,6 +171,12 @@ MAESTRO_COMMAND+=(
 "${MAESTRO_COMMAND[@]}" \
   2>&1 | tee "$ARTIFACT_DIR/console.log"
 
+if [[ "$PLATFORM" == "ios" ]]; then
+  WRAPPED_TEXT_SCREENSHOT="$ARTIFACT_DIR/screenshots/ios-wrapped-final-line.png"
+  xcrun swift "$APP_DIR/scripts/e2e/assert-ios-wrapped-text.swift" "$WRAPPED_TEXT_SCREENSHOT" \
+    2>&1 | tee -a "$ARTIFACT_DIR/console.log"
+fi
+
 kill "$SERVER_PID" >/dev/null 2>&1
 wait "$SERVER_PID" 2>/dev/null || true
 SERVER_PID=""

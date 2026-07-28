@@ -23,4 +23,5 @@ test('builds deterministic domain IDs instead of list-index IDs', () => {
   assert.equal(TEST_IDS.channels.delete('e2e-channel-existing'), 'channel-delete-e2e-channel-existing');
   assert.equal(TEST_IDS.summaries.row('e2e-video-completed-latest'), 'summary-row-e2e-video-completed-latest');
   assert.equal(TEST_IDS.summaries.detail('e2e-video-completed-latest'), 'summary-detail-e2e-video-completed-latest');
+  assert.equal(TEST_IDS.summaries.bulletText('section-4', 1), 'summary-bullet-section-4-1-text');
 });

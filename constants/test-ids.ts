@@ -31,6 +31,7 @@ export const TEST_IDS = {
     detail: (videoId: string) => `summary-detail-${videoId}`,
     detailScroll: 'summary-detail-scroll',
     share: 'summary-detail-share',
+    bulletText: (scope: string, index: number) => `summary-bullet-${scope}-${index}-text`,
   },
   settings: {
     scroll: 'settings-scroll',

@@ -6,7 +6,7 @@ import { transformVideoSummaryToCardData } from '@/hooks/useVideoSummariesCached
 import { getVideoSummariesQueryKey, type CacheAwareData, videoSummariesSyncService } from '@/services/video-summaries-sync';
 import { useAuthStore } from '@/stores/auth-store';
 import { parseSummary } from '@/utils/summary-parser';
-import { getWrappedTextHeightEpsilon, shouldCompensateWrappedText } from '@/utils/ios-wrapped-text-fix';
+import { getIOSMeasuredTextMinHeight } from '@/utils/ios-wrapped-text-fix';
 import { buildYouTubeTimestampUrl } from '@/utils/youtube-url';
 import { useQueryClient } from '@tanstack/react-query';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -15,7 +15,6 @@ import React from 'react';
 import {
   Image,
   Linking,
-  PixelRatio,
   Platform,
   ScrollView,
   Share,
@@ -33,28 +32,35 @@ import { FontScaleLimit, SummaryTheme } from '@/constants/SummaryTheme';
 
 const SUMMARY_TEXT_SCALE_LIMIT = FontScaleLimit.content;
 const SUMMARY_TEXT_SCALE_MIN = 0.9;
-const IOS_WRAPPED_TEXT_HEIGHT_EPSILON = getWrappedTextHeightEpsilon(PixelRatio.get());
 
 function ResponsiveSummaryText({
   baseSize,
   baseLineHeight,
+  measurementKey = '',
   style,
-  onTextLayout,
+  onLayout,
   ...props
-}: TextProps & { baseSize: number; baseLineHeight?: number }) {
+}: TextProps & { baseSize: number; baseLineHeight?: number; measurementKey?: string }) {
   const { fontScale } = useWindowDimensions();
   const scale = Math.min(SUMMARY_TEXT_SCALE_LIMIT, Math.max(SUMMARY_TEXT_SCALE_MIN, fontScale));
-  const [didWrap, setDidWrap] = React.useState(false);
+  const measurementSignature = `${baseSize}-${baseLineHeight ?? 'auto'}-${scale}-${measurementKey}`;
+  const [heightGuard, setHeightGuard] = React.useState<{
+    signature: string;
+    minHeight: number;
+  } | null>(null);
 
-  const handleTextLayout: NonNullable<TextProps['onTextLayout']> = (event) => {
-    // RN 0.81 Fabric can round a wrapped iOS Text measurement one physical
-    // pixel too short, clipping the final visual line (facebook/react-native#53450).
-    // Match the upstream native fix (#57535) by adding that pixel only after
-    // TextKit reports multiple lines. Remove this when the RN fix ships here.
-    if (shouldCompensateWrappedText(Platform.OS, event.nativeEvent.lines.length)) {
-      setDidWrap(true);
+  const handleLayout: NonNullable<TextProps['onLayout']> = (event) => {
+    onLayout?.(event);
+
+    if (heightGuard?.signature !== measurementSignature) {
+      const minHeight = getIOSMeasuredTextMinHeight(
+        Platform.OS,
+        event.nativeEvent.layout.height,
+      );
+      if (minHeight !== undefined) {
+        setHeightGuard({ signature: measurementSignature, minHeight });
+      }
     }
-    onTextLayout?.(event);
   };
 
   return (
@@ -62,14 +68,14 @@ function ResponsiveSummaryText({
       {...props}
       allowFontScaling={false}
       lineBreakStrategyIOS="hangul-word"
-      onTextLayout={handleTextLayout}
+      onLayout={handleLayout}
       style={[
         style,
         {
           fontSize: baseSize * scale,
           ...(baseLineHeight ? { lineHeight: baseLineHeight * scale } : {}),
-          ...(Platform.OS === 'ios' && didWrap
-            ? { paddingBottom: IOS_WRAPPED_TEXT_HEIGHT_EPSILON }
+          ...(heightGuard?.signature === measurementSignature
+            ? { minHeight: heightGuard.minHeight }
             : {}),
         },
       ]}
@@ -234,7 +240,9 @@ export default function SummaryDetailScreen() {
           <ResponsiveSummaryText
             baseSize={15}
             baseLineHeight={24}
+            measurementKey={item}
             style={styles.bulletText}
+            testID={TEST_IDS.summaries.bulletText(keyPrefix, index)}
           >
             {renderInlineBold(item)}
           </ResponsiveSummaryText>
@@ -327,6 +335,7 @@ export default function SummaryDetailScreen() {
                       <View style={styles.detailTitleContainer}>
                         <ResponsiveSummaryText
                           baseSize={17}
+                          measurementKey={section.title}
                           style={[styles.detailTitle, isCoreHeading && styles.coreHeadingTitle]}
                         >
                           {section.title}
@@ -417,7 +426,7 @@ export default function SummaryDetailScreen() {
       </View>
 
       <View
-        key={`${width}-${height}-${fontScale}`}
+        key={`${videoId}-${width}-${height}-${fontScale}`}
         testID={TEST_IDS.summaries.detail(videoSummary.videoId)}
         style={styles.content}
       >
@@ -445,7 +454,13 @@ export default function SummaryDetailScreen() {
         </TouchableOpacity>
 
         <View style={styles.videoInfo}>
-          <ResponsiveSummaryText baseSize={23} style={styles.videoTitle}>{videoSummary.title}</ResponsiveSummaryText>
+          <ResponsiveSummaryText
+            baseSize={23}
+            measurementKey={videoSummary.title}
+            style={styles.videoTitle}
+          >
+            {videoSummary.title}
+          </ResponsiveSummaryText>
           <View style={styles.channelRow}>
             <Image 
               source={{ uri: cardData?.channelThumbnail || `https://via.placeholder.com/60/4285f4/ffffff?text=C` }}
@@ -453,8 +468,20 @@ export default function SummaryDetailScreen() {
               resizeMode="cover"
             />
             <View style={styles.channelInfo}>
-              <ResponsiveSummaryText baseSize={14} style={styles.channelName}>{cardData?.channelName || 'Unknown Channel'}</ResponsiveSummaryText>
-              <ResponsiveSummaryText baseSize={12} style={styles.publishDate}>{formatDate(videoSummary.publishedAt)}</ResponsiveSummaryText>
+              <ResponsiveSummaryText
+                baseSize={14}
+                measurementKey={cardData?.channelName || 'Unknown Channel'}
+                style={styles.channelName}
+              >
+                {cardData?.channelName || 'Unknown Channel'}
+              </ResponsiveSummaryText>
+              <ResponsiveSummaryText
+                baseSize={12}
+                measurementKey={videoSummary.publishedAt}
+                style={styles.publishDate}
+              >
+                {formatDate(videoSummary.publishedAt)}
+              </ResponsiveSummaryText>
             </View>
           </View>
         </View>

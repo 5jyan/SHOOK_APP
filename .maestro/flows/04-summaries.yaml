@@ -24,4 +24,18 @@ tags:
     timeout: 10000
 - assertVisible:
     id: "summary-detail-scroll"
-
+- scrollUntilVisible:
+    element:
+      id: "summary-bullet-section-4-1-text"
+    direction: DOWN
+    timeout: 20000
+    speed: 40
+    visibilityPercentage: 100
+    centerElement: true
+- assertVisible:
+    id: "summary-bullet-section-4-1-text"
+- assertVisible: "다만 전체 증시 분위기를 바꿀 만큼 강한 개선은 아니라는 평가"
+- takeScreenshot:
+    path: ios-wrapped-final-line
+    cropOn:
+      id: "summary-bullet-section-4-1-text"
