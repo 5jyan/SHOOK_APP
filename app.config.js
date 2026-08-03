@@ -120,6 +120,9 @@ export default {
         "@react-native-kakao/core",
         {
           nativeAppKey: KAKAO_NATIVE_APP_KEY,
+          android: {
+            authCodeHandlerActivity: true
+          },
           ios: {
             handleKakaoOpenUrl: true
           }
