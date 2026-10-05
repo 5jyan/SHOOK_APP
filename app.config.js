@@ -4,7 +4,9 @@ import { existsSync } from 'node:fs';
 const IS_LOCAL = process.env.EXPO_PUBLIC_IS_LOCAL === 'true';
 const IS_E2E = process.env.EXPO_PUBLIC_E2E_MODE === 'true';
 const IS_PREVIEW = process.env.APP_VARIANT === 'preview';
-const LOCAL_API_PORT = IS_E2E ? (process.env.EXPO_PUBLIC_E2E_API_PORT || '3100') : '3000';
+const LOCAL_API_PORT = IS_E2E
+  ? (process.env.EXPO_PUBLIC_E2E_API_PORT || '3100')
+  : (process.env.EXPO_PUBLIC_LOCAL_API_PORT || '3000');
 const KAKAO_NATIVE_APP_KEY = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY || 'eas-config-placeholder';
 const LOCAL_GOOGLE_SERVICES_FILE = './google-services.json';
 const GOOGLE_SERVICES_FILE = process.env.GOOGLE_SERVICES_JSON ||
@@ -139,7 +141,8 @@ export default {
       appScheme: process.env.EXPO_PUBLIC_APP_SCHEME || "com.shook.app",
       isLocal: IS_LOCAL,
       isE2E: IS_E2E,
-      minSupportedVersion: "1.1.1",
+      // The current public store release is 1.1.6.
+      minSupportedVersion: "1.1.6",
       appStoreUrl: "https://apps.apple.com/kr/app/shook-%EC%9C%A0%ED%8A%9C%EB%B8%8C-%EC%83%88-%EC%98%81%EC%83%81-%EC%9A%94%EC%95%BD-%EC%95%8C%EB%A6%BC/id6753907638",
       playStoreUrl: null,
       eas: {

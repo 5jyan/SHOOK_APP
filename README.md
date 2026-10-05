@@ -109,7 +109,7 @@ shook_app/
    `.env` 파일에 다음 값들을 설정:
    ```env
 
-EXPO_PUBLIC_API_URL_PRODUCTION=https://your-api-domain.com
+EXPO_PUBLIC_API_URL_PRODUCTION=https://shook.party
 
 # Kakao OAuth Configuration
 EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY=your-kakao-native-app-key
