@@ -1,6 +1,7 @@
 import { initializeKakaoSDK } from '@react-native-kakao/core';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { nativeApplicationVersion } from 'expo-application';
 import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
@@ -45,7 +46,9 @@ export default function RootLayout() {
   const hasHandledInitialNotification = useRef(false);
   const hasCompletedColdStart = useRef(false);
   const isSummarySyncInFlight = useRef(false);
-  const currentVersion = Constants.expoConfig?.version || '0.0.0';
+  // expoConfig can come from the downloaded OTA manifest and may report the
+  // update's version instead of the installed native binary's version.
+  const currentVersion = nativeApplicationVersion || Constants.expoConfig?.version || '0.0.0';
   const minSupportedVersion = Constants.expoConfig?.extra?.minSupportedVersion as string | undefined;
   const appStoreUrl = Constants.expoConfig?.extra?.appStoreUrl as string | undefined;
   const playStoreUrl = Constants.expoConfig?.extra?.playStoreUrl as string | undefined;
