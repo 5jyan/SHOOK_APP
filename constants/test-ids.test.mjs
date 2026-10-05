@@ -8,11 +8,13 @@ test('uses stable cross-platform IDs for core screens and tabs', () => {
     'screen-channel-search',
     'screen-summaries',
     'screen-summary-detail',
+    'screen-video-request',
     'screen-settings',
   ]);
   assert.deepEqual(Object.values(TEST_IDS.tabs), [
     'tab-channels',
     'tab-summaries',
+    'tab-video-request',
     'tab-settings',
   ]);
 });

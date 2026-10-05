@@ -224,7 +224,7 @@ export default function SummariesScreen() {
       edges={['top', 'left', 'right']}
     >
       <TabHeader
-        title="요약 리스트"
+        title="구독 요약"
         titlePrefix={<Image source={require('../../assets/images/Shook.png')} style={styles.titleLogo} resizeMode="contain" />}
       />
 

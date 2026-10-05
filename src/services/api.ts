@@ -511,6 +511,21 @@ class ApiService {
     return result;
   }
 
+  async requestVideoSummary(url: string): Promise<ApiResponse<VideoSummary>> {
+    return this.makeRequest<VideoSummary>('/api/video-requests', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    });
+  }
+
+  async getRequestedVideoSummaries(): Promise<ApiResponse<VideoSummary[]>> {
+    const result = await this.makeRequest<VideoSummary[]>('/api/video-requests');
+    if (result.success && Array.isArray(result.data)) {
+      result.data = decodeVideoHtmlEntities(result.data);
+    }
+    return result;
+  }
+
   // Push notification endpoints
   async registerPushToken(tokenData: PushTokenData): Promise<ApiResponse<RegisterPushTokenResponse>> {
     apiLogger.info('Registering push token', {

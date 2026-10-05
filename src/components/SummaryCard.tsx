@@ -28,9 +28,10 @@ interface SummaryData {
 interface SummaryCardProps {
   summary: SummaryData;
   onPress: () => void;
+  pendingLabel?: string;
 }
 
-export function SummaryCard({ summary, onPress }: SummaryCardProps) {
+export function SummaryCard({ summary, onPress, pendingLabel = '요약 준비 중' }: SummaryCardProps) {
   const isPending = !summary.isSummarized;
   const { width, fontScale } = useWindowDimensions();
   const contentWidth = Math.min(width, 752);
@@ -73,7 +74,7 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
     <Pressable 
       testID={TEST_IDS.summaries.row(summary.videoId)}
       accessibilityRole="button"
-      accessibilityLabel={`${summary.videoTitle}${isPending ? ', 요약 준비 중' : ', 요약 열기'}`}
+      accessibilityLabel={`${summary.videoTitle}${isPending ? `, ${pendingLabel}` : ', 요약 열기'}`}
       style={({ pressed }) => [
         styles.listItem,
         isPending && styles.listItemPending,
@@ -124,7 +125,7 @@ export function SummaryCard({ summary, onPress }: SummaryCardProps) {
               numberOfLines={1}
               allowFontScaling={false}
             >
-              {summary.channelName.trim()} · {isPending ? '요약 준비 중' : formatTimeAgo(summary.publishedAt)}
+              {summary.channelName.trim()} · {isPending ? pendingLabel : formatTimeAgo(summary.publishedAt)}
             </Text>
           </View>
           

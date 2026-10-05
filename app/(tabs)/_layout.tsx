@@ -99,9 +99,17 @@ export default function TabLayout() {
           <Tabs.Screen
             name="summaries"
             options={{
-              title: '요약',
+              title: '구독 요약',
               tabBarButtonTestID: TEST_IDS.tabs.summaries,
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="doc.text.fill" color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="video-request"
+            options={{
+              title: '영상 요약',
+              tabBarButtonTestID: TEST_IDS.tabs.videoRequest,
+              tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="movie-open-outline" color={color} />,
             }}
           />
           <Tabs.Screen

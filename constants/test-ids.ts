@@ -4,11 +4,13 @@ export const TEST_IDS = {
     channelSearch: 'screen-channel-search',
     summaries: 'screen-summaries',
     summaryDetail: 'screen-summary-detail',
+    videoRequest: 'screen-video-request',
     settings: 'screen-settings',
   },
   tabs: {
     channels: 'tab-channels',
     summaries: 'tab-summaries',
+    videoRequest: 'tab-video-request',
     settings: 'tab-settings',
   },
   channels: {
@@ -32,6 +34,10 @@ export const TEST_IDS = {
     detailScroll: 'summary-detail-scroll',
     share: 'summary-detail-share',
     bulletText: (scope: string, index: number) => `summary-bullet-${scope}-${index}-text`,
+  },
+  videoRequests: {
+    input: 'video-request-input',
+    submit: 'video-request-submit',
   },
   settings: {
     scroll: 'settings-scroll',
